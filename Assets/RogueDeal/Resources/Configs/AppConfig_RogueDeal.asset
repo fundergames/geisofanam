@@ -9,7 +9,7 @@ MonoBehaviour:
   m_GameObject: {fileID: 0}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d4fde0a056c341babcd9f0461e93737d, type: 3}
+  m_Script: {fileID: 11500000, guid: 7e3b7ac601abd4f0882a67b3f50e2e76, type: 3}
   m_Name: AppConfig_RogueDeal
   m_EditorClassIdentifier: 
   entrySceneName: Entry

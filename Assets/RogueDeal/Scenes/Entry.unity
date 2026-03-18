@@ -201,7 +201,7 @@ Transform:
   m_GameObject: {fileID: 269098354}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1086.1195, y: 505.36685, z: -2.461269}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -327,8 +327,8 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1371028652}
-  - component: {fileID: 1371028651}
   - component: {fileID: 1371028653}
+  - component: {fileID: 1371028654}
   m_Layer: 0
   m_Name: GameBootstrap
   m_TagString: Untagged
@@ -336,19 +336,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1371028651
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1371028650}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d2d85e3f7ea432f49b5ed6bc4eff0f8c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  config: {fileID: 11400000, guid: 196a3d3908bc00c41baced411210525a, type: 2}
 --- !u!4 &1371028652
 Transform:
   m_ObjectHideFlags: 0
@@ -377,6 +364,18 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: ae907c2043cdcd74c920363436f4b595, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!114 &1371028654
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1371028650}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e9ac78ea99eaa4c168ac31193016ef4f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Funder.Core.Runtime::Funder.Core.Services.GameBootstrap
 --- !u!1 &1701329771
 GameObject:
   m_ObjectHideFlags: 0

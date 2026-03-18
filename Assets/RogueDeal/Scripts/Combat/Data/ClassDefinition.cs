@@ -27,7 +27,7 @@ namespace RogueDeal.Combat
         public List<ClassAbility> abilities = new List<ClassAbility>();
         
         [Header("Attack Mappings")]
-        [Tooltip("Defines how each poker hand translates to attacks for this class")]
+        [Tooltip("Attack configurations for this class")]
         public List<ClassAttackMapping> attackMappings = new List<ClassAttackMapping>();
         
         [Header("Animation")]
@@ -65,9 +65,11 @@ namespace RogueDeal.Combat
             return available;
         }
 
-        public ClassAttackMapping GetAttackMapping(PokerHandType handType)
+        public ClassAttackMapping GetAttackMappingAt(int index)
         {
-            return attackMappings.Find(m => m.handType == handType);
+            if (attackMappings == null || index < 0 || index >= attackMappings.Count)
+                return null;
+            return attackMappings[index];
         }
 
         public int GetXPForLevel(int level)

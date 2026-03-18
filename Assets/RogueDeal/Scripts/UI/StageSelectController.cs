@@ -319,7 +319,7 @@ namespace RogueDeal.UI
         private async void StartLevel(LevelDefinition level)
         {
             await PanelManager.Instance.HideCurrentPanel();
-            FGFlowExtensions.StartCombatWithLoading();
+            await FGFlowExtensions.GoToGameWithLoading();
         }
 
         private async void OnBackClicked()

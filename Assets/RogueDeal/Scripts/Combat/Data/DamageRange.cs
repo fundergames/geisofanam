@@ -30,7 +30,7 @@ namespace RogueDeal.Combat
 
         public int RollDamage(IRandomStream stream)
         {
-            if (stream.Chance(critChance))
+            if (stream.NextFloat01() < critChance)
             {
                 return critDamage;
             }

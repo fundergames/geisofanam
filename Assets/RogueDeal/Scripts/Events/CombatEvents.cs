@@ -1,10 +1,8 @@
 using Funder.Core.Events;
 using RogueDeal.Combat;
-using RogueDeal.Combat.Cards;
 using RogueDeal.Crafting;
 using RogueDeal.Enemies;
 using RogueDeal.Items;
-using System.Collections.Generic;
 
 namespace RogueDeal.Events
 {
@@ -14,22 +12,8 @@ namespace RogueDeal.Events
         public int enemyCount;
     }
 
-    public struct HandDealtEvent : IEvent
-    {
-        public List<Card> cards;
-        public int turnNumber;
-    }
-
-    public struct HandEvaluatedEvent : IEvent
-    {
-        public PokerHandType handType;
-        public int baseDamage;
-        public bool isCrit;
-    }
-
     public struct PlayerAttackEvent : IEvent
     {
-        public PokerHandType handType;
         public int damageDealt;
         public bool isCrit;
         public DamageType damageType;

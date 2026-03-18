@@ -9,8 +9,8 @@ namespace RogueDeal.Combat
         public static DamageResult CalculateDamage(
             IRandomHub randomHub,
             PlayerCharacter player,
-            PokerHandDefinition handDefinition,
-            ClassAttackMapping attackMapping,
+            DamageRange damageRange,
+            float damageMultiplier,
             DamageType damageType)
         {
             if (randomHub == null)
@@ -20,22 +20,13 @@ namespace RogueDeal.Combat
             }
 
             var stream = randomHub.GetStream("Combat/Damage");
-            
-            int baseDamage = handDefinition.RollDamage(stream);
-            bool isCrit = baseDamage == handDefinition.damageRange.critDamage;
+
+            int baseDamage = damageRange.RollDamage(stream);
+            bool isCrit = baseDamage == damageRange.critDamage;
 
             int statModifier = GetStatModifier(player.effectiveStats, damageType);
-            
-            float totalMultiplier = player.effectiveStats.damageMultiplier;
-            if (attackMapping != null)
-            {
-                totalMultiplier *= attackMapping.damageMultiplier;
-            }
 
-            float classHandBonus = GetClassHandBonus(player, handDefinition.handType);
-            totalMultiplier *= classHandBonus;
-
-            int finalDamage = Mathf.RoundToInt((baseDamage + statModifier + player.effectiveStats.damageBonus) * totalMultiplier);
+            int finalDamage = Mathf.RoundToInt((baseDamage + statModifier + player.effectiveStats.damageBonus) * damageMultiplier * player.effectiveStats.damageMultiplier);
 
             return new DamageResult
             {
@@ -43,7 +34,7 @@ namespace RogueDeal.Combat
                 isCrit = isCrit,
                 baseDamage = baseDamage,
                 statModifier = statModifier,
-                totalMultiplier = totalMultiplier,
+                totalMultiplier = damageMultiplier * player.effectiveStats.damageMultiplier,
                 damageType = damageType
             };
         }
@@ -54,26 +45,10 @@ namespace RogueDeal.Combat
             {
                 DamageType.Weapon => stats.attack,
                 DamageType.Unarmed or DamageType.Physical => stats.damage,
-                DamageType.Magic or DamageType.Fire or DamageType.Water 
+                DamageType.Magic or DamageType.Fire or DamageType.Water
                     or DamageType.Wood or DamageType.Light or DamageType.Dark => stats.magic,
                 _ => stats.damage
             };
-        }
-
-        private static float GetClassHandBonus(PlayerCharacter player, PokerHandType handType)
-        {
-            var abilities = player.classDefinition.GetAvailableAbilities(player.level);
-            float bonus = 1f;
-
-            foreach (var ability in abilities)
-            {
-                if (ability.targetHand == handType)
-                {
-                    bonus *= ability.handDamageMultiplier;
-                }
-            }
-
-            return bonus;
         }
     }
 

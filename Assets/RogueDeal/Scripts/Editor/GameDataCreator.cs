@@ -35,13 +35,6 @@ namespace RogueDeal.Editor
 
             GUILayout.Space(5);
 
-            if (GUILayout.Button("Create Poker Hand Definitions", GUILayout.Height(40)))
-            {
-                CreatePokerHandDefinitions();
-            }
-            
-            GUILayout.Space(5);
-
             if (GUILayout.Button("Create Test Enemy (Goblin)", GUILayout.Height(40)))
             {
                 CreateTestEnemy();
@@ -60,7 +53,6 @@ namespace RogueDeal.Editor
             {
                 CreateWarriorClass();
                 CreateFireSword();
-                CreatePokerHandDefinitions();
                 CreateTestEnemy();
                 CreateTestLevel();
                 
@@ -117,16 +109,14 @@ namespace RogueDeal.Editor
             warrior.abilities.Add(new ClassAbility
             {
                 abilityName = "Straight Mastery",
-                description = "+20% damage to Straight hands",
+                description = "+20% bonus damage",
                 requiredLevel = 1,
                 isPassive = true,
-                targetHand = PokerHandType.Straight,
-                handDamageMultiplier = 1.2f
+                bonusDamageMultiplier = 1.2f
             });
 
             warrior.attackMappings.Add(new ClassAttackMapping
             {
-                handType = PokerHandType.HighCard,
                 attackName = "Quick Strike",
                 numberOfHits = 1,
                 damageMultiplier = 1f,
@@ -135,7 +125,6 @@ namespace RogueDeal.Editor
 
             warrior.attackMappings.Add(new ClassAttackMapping
             {
-                handType = PokerHandType.Pair,
                 attackName = "Double Strike",
                 numberOfHits = 2,
                 timeBetweenHits = 0.3f,
@@ -145,7 +134,6 @@ namespace RogueDeal.Editor
 
             warrior.attackMappings.Add(new ClassAttackMapping
             {
-                handType = PokerHandType.Straight,
                 attackName = "Blade Flurry",
                 numberOfHits = 5,
                 timeBetweenHits = 0.2f,
@@ -156,7 +144,6 @@ namespace RogueDeal.Editor
 
             warrior.attackMappings.Add(new ClassAttackMapping
             {
-                handType = PokerHandType.RoyalFlush,
                 attackName = "Legendary Rampage",
                 numberOfHits = 10,
                 timeBetweenHits = 0.1f,
@@ -220,44 +207,6 @@ namespace RogueDeal.Editor
             Debug.Log("Created Fire Sword equipment! (Note: Assign a StatusEffectDefinition for burning in the inspector)");
         }
 
-        private void CreatePokerHandDefinitions()
-        {
-            string path = "Assets/RogueDeal/Resources/Data/PokerHands";
-            if (!AssetDatabase.IsValidFolder(path))
-            {
-                System.IO.Directory.CreateDirectory(path);
-            }
-
-            var handsData = new[]
-            {
-                (PokerHandType.HighCard, "High Card", 1, 4, 5, 0.1f),
-                (PokerHandType.Pair, "Pair", 6, 8, 10, 0.12f),
-                (PokerHandType.TwoPair, "Two Pair", 11, 14, 17, 0.15f),
-                (PokerHandType.ThreeOfAKind, "Three of a Kind", 18, 22, 27, 0.18f),
-                (PokerHandType.Straight, "Straight", 28, 35, 42, 0.2f),
-                (PokerHandType.Flush, "Flush", 43, 52, 62, 0.22f),
-                (PokerHandType.FullHouse, "Full House", 63, 75, 90, 0.25f),
-                (PokerHandType.FourOfAKind, "Four of a Kind", 91, 110, 135, 0.28f),
-                (PokerHandType.StraightFlush, "Straight Flush", 136, 170, 210, 0.3f),
-                (PokerHandType.RoyalFlush, "Royal Flush", 300, 400, 500, 0.35f)
-            };
-
-            foreach (var (handType, name, min, max, crit, critChance) in handsData)
-            {
-                var handDef = ScriptableObject.CreateInstance<PokerHandDefinition>();
-                handDef.handType = handType;
-                handDef.displayName = name;
-                handDef.description = $"Base damage: {min}-{max}, Critical: {crit}";
-                handDef.damageRange = new DamageRange(min, max, crit, critChance);
-                handDef.allowClassOverrides = true;
-
-                AssetDatabase.CreateAsset(handDef, $"{path}/PokerHand_{handType}.asset");
-            }
-
-            AssetDatabase.SaveAssets();
-            Debug.Log($"Created {handsData.Length} poker hand definitions!");
-        }
-        
         private void CreateTestEnemy()
         {
             string path = "Assets/RogueDeal/Resources/Data/Enemies";

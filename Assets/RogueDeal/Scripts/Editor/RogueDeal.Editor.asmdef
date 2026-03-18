@@ -1,10 +1,9 @@
 {
   "name": "RogueDeal.Editor",
   "rootNamespace": "RogueDeal.Editor",
-  "references": [
-    "RogueDeal",
-    "Funder.Core",
-    "Funder.Core.Editor",
+"references": [
+        "RogueDeal",
+        "Funder.Core.Runtime",
     "Unity.TextMeshPro"
   ],
   "includePlatforms": [

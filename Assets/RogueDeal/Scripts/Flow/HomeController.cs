@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Funder.Core.Flow;
+using Funder.Core.Scenes;
 using Funder.Core.Services;
 using Funder.Core.Events;
 using Funder.Core.FSM;

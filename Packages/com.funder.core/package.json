@@ -1,0 +1,19 @@
+{
+  "name": "com.funder.core",
+  "displayName": "Funder Core",
+  "version": "0.1.0",
+  "unity": "6000.0",
+  "description": "Reusable core systems for Funder Games projects: FSM, random streams, service location, events, singleton helpers, and structured logging.",
+  "keywords": [
+    "funder",
+    "core",
+    "fsm",
+    "architecture",
+    "services"
+  ],
+  "author": {
+    "name": "Funder Games"
+  },
+  "license": "MIT",
+  "_fingerprint": "5aae9947700296f9fbeafb68baa59cb99befb432"
+}

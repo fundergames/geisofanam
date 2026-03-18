@@ -9,33 +9,6 @@ EditorBuildSettings:
     path: Assets/RogueDeal/Scenes/Entry.unity
     guid: 549e369be242b9840ae093b686a86f04
   - enabled: 1
-    path: Assets/RogueDeal/Scenes/GameLobby.unity
-    guid: 62f5c60aa0992734182c96b0dff79924
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/Login.unity
-    guid: 7581f8b7779ca8943b096ffbcd3a93d6
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/MainMenu.unity
-    guid: e5d1d45a43a643544aba524c000197e1
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/Splash.unity
-    guid: bf032619809961442937ff42bab579cf
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/StartScene.unity
-    guid: 99c9720ab356a0642a771bea13969a05
-  - enabled: 0
-    path: Assets/RogueDeal/Scenes/Panels/CharacterScreen.unity
-    guid: b05239c9d8e1ad346950b2ba1bd709ce
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/Combat.unity
-    guid: 3f61190f6f9f9864aa3c89795a0bf153
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/CharacterSelect.unity
-    guid: 05156b28123b5c54dac6e65308b7d8d1
-  - enabled: 0
-    path: Assets/Samples/Funder Core/0.1.0/Flow Sample/Results.unity
-    guid: 6389bafefd9940da8d1b596d23eacc67
-  - enabled: 1
     path: Assets/RogueDeal/Scenes/ThirdPersonCombatTest.unity
     guid: 6c8af219a5f90ac49b850dd7b7bf404b
   m_configObjects:

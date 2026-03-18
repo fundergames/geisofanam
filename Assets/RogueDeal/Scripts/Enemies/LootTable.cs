@@ -29,7 +29,7 @@ namespace RogueDeal.Enemies
             var loot = new List<BaseItem>();
             var stream = randomHub.GetStream($"Loot/{name}");
 
-            if (stream.NextFloat() > dropChance)
+            if (stream.NextFloat01() > dropChance)
                 return loot;
 
             int dropCount = stream.NextInt(minDrops, maxDrops + 1);
@@ -65,7 +65,7 @@ namespace RogueDeal.Enemies
                 currentWeight += entry.weight;
                 if (roll < currentWeight)
                 {
-                    if (stream.NextFloat() <= entry.rarityChance)
+                    if (stream.NextFloat01() <= entry.rarityChance)
                     {
                         return entry;
                     }

@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEditor;
-using RogueDeal.Combat.TurnBased;
 
 namespace RogueDeal.Combat.Training.Editor
 {
@@ -50,14 +49,7 @@ namespace RogueDeal.Combat.Training.Editor
             }
             
             GUILayout.Space(5);
-            
-            if (GUILayout.Button("Create Combat Presenter", GUILayout.Height(30)))
-            {
-                CreateCombatPresenter();
-            }
-            
-            GUILayout.Space(5);
-            
+
             if (GUILayout.Button("Create Training UI", GUILayout.Height(30)))
             {
                 CreateTrainingUI();
@@ -94,7 +86,6 @@ namespace RogueDeal.Combat.Training.Editor
             Debug.Log("[TrainingSetup] Starting quick setup...");
             
             CreateTrainingModeManager();
-            CreateCombatPresenter();
             AddTrainingDummy();
             
             Debug.Log("[TrainingSetup] Quick setup complete! Press Play and F12 to start training.");
@@ -139,27 +130,6 @@ namespace RogueDeal.Combat.Training.Editor
             EditorGUIUtility.PingObject(managerObj);
             
             Debug.Log("Training Mode Manager created with all components!");
-        }
-        
-        private void CreateCombatPresenter()
-        {
-            TurnBasedCombatPresenter existing = Object.FindObjectOfType<TurnBasedCombatPresenter>();
-            if (existing != null)
-            {
-                Debug.Log("CombatPresenter already exists!");
-                Selection.activeGameObject = existing.gameObject;
-                return;
-            }
-            
-            GameObject presenterObj = new GameObject("CombatPresenter");
-            TurnBasedCombatPresenter presenter = presenterObj.AddComponent<TurnBasedCombatPresenter>();
-            // Note: CombatAbilityExecutor is deprecated - CombatExecutor is added automatically by CombatEntity
-            // No need to add it manually anymore
-            
-            Selection.activeGameObject = presenterObj;
-            EditorGUIUtility.PingObject(presenterObj);
-            
-            Debug.Log("Combat Presenter created!");
         }
         
         private void CreateTrainingUI()

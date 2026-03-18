@@ -124,11 +124,6 @@ namespace Funder.GameFlow
             var config = FGConfigManager.GetConfig();
             await GoToWithLoading(FGFlow.State.Results, config, "Loading Results...");
         }
-        
-        public static async void StartCombatWithLoading()
-        {
-            await LoadCombatScene();
-        }
 
         public static async void BackToMenuWithLoading()
         {
@@ -195,50 +190,6 @@ namespace Funder.GameFlow
             {
                 Debug.LogWarning($"[FGFlowExtensions] Failed to publish LoadingScreenEvent: {ex.Message}");
             }
-        }
-        
-        private static async Task LoadCombatScene()
-        {
-            const string combatSceneName = "Combat";
-            var config = FGConfigManager.GetConfig();
-            
-            var loadingScreen = LoadingScreenManager.Instance;
-            bool hasLoadingScreen = loadingScreen != null && config != null && config.ShowLoadingCanvas;
-            
-            if (hasLoadingScreen)
-            {
-                PublishLoadingScreenEvent("show", "Entering Combat...", combatSceneName);
-                await loadingScreen.ShowAsync("Entering Combat...");
-                loadingScreen.UpdateProgress(0f);
-            }
-            
-            float startTime = Time.realtimeSinceStartup;
-            var fromScene = SceneManager.GetActiveScene().name;
-            
-            if (hasLoadingScreen)
-            {
-                await FGSceneLoaderWithProgress.LoadExclusiveWithProgress(combatSceneName, loadingScreen);
-            }
-            else
-            {
-                var asyncOp = SceneManager.LoadSceneAsync(combatSceneName, LoadSceneMode.Single);
-                while (!asyncOp.isDone)
-                {
-                    await Task.Yield();
-                }
-            }
-            
-            float loadTime = Time.realtimeSinceStartup - startTime;
-            PublishSceneTransitionEvent(fromScene, combatSceneName, "StartCombat", loadTime);
-            
-            if (hasLoadingScreen)
-            {
-                await Task.Delay(200);
-                await loadingScreen.HideAsync();
-                PublishLoadingScreenEvent("hide", "Entering Combat...", combatSceneName);
-            }
-            
-            Debug.Log($"[FLOW] Transitioned to Combat scene. Load time: {loadTime:F2}s");
         }
     }
 }

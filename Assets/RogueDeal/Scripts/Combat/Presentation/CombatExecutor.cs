@@ -30,7 +30,10 @@ namespace RogueDeal.Combat.Presentation
         private Vector3 currentTargetPosition;
         private int currentComboHit = 0;
         private bool isExecuting = false;
-        
+
+        /// <summary>True while an action is being executed (movement, animation, effects).</summary>
+        public bool IsExecuting => isExecuting;
+
         // Movement
         private Vector3 originalPosition;
         private bool needsToMove = false;

@@ -22,10 +22,9 @@ namespace RogueDeal.Combat
         public float magicModifier = 0f;
         public float defenseModifier = 0f;
         
-        [Header("Hand Bonuses")]
-        public PokerHandType targetHand = PokerHandType.HighCard;
-        public float handDamageMultiplier = 1f;
-        
+        [Header("Damage Bonuses")]
+        public float bonusDamageMultiplier = 1f;
+
         [Header("Deck Manipulation")]
         public bool grantsDeckManipulation = false;
         public int wildCardsGranted = 0;

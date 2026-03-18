@@ -1,3 +1,5 @@
+using Funder.Core.Config;
+using Funder.Core.Flow;
 using Funder.Core.Services;
 using UnityEngine;
 
@@ -6,6 +8,7 @@ namespace Funder.GameFlow
     public static class FGConfigManager
     {
         private static FGAppConfig _cachedConfig;
+        private static FeatureFlags _cachedFeatureFlags;
 
         public static void SetConfig(FGAppConfig config)
         {
@@ -45,9 +48,26 @@ namespace Funder.GameFlow
             return null;
         }
 
+        public static FeatureFlags GetFeatureFlags()
+        {
+            if (_cachedFeatureFlags != null)
+                return _cachedFeatureFlags;
+
+            _cachedFeatureFlags = Resources.Load<FeatureFlags>("Configs/FeatureFlags");
+            if (_cachedFeatureFlags != null)
+                Debug.Log("[FGConfigManager] Loaded feature flags from Resources/Configs/FeatureFlags");
+            return _cachedFeatureFlags;
+        }
+
+        public static void SetFeatureFlags(FeatureFlags flags)
+        {
+            _cachedFeatureFlags = flags;
+        }
+
         public static void ClearCache()
         {
             _cachedConfig = null;
+            _cachedFeatureFlags = null;
         }
     }
 }

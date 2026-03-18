@@ -1,5 +1,4 @@
 using RogueDeal.Combat;
-using RogueDeal.Combat.Cards;
 using System;
 using UnityEngine;
 
@@ -11,14 +10,12 @@ namespace RogueDeal.Levels
         public string objectiveName;
         [TextArea(2, 3)]
         public string description;
-        
+
         public ObjectiveType type;
-        
+
         [Header("Type-Specific Data")]
         public int targetValue;
-        public PokerHandType requiredHand;
-        public CardRank requiredRank;
-        
+
         [Header("Rewards")]
         public bool isRequired = true;
         public int bonusGold = 0;

@@ -15,10 +15,7 @@ namespace RogueDeal
     {
         [Header("Classes")]
         public List<ClassDefinition> classes = new List<ClassDefinition>();
-        
-        [Header("Poker Hands")]
-        public List<PokerHandDefinition> pokerHands = new List<PokerHandDefinition>();
-        
+
         [Header("Status Effects")]
         public List<StatusEffectDefinition> statusEffects = new List<StatusEffectDefinition>();
         
@@ -40,11 +37,6 @@ namespace RogueDeal
         public ClassDefinition GetClass(CharacterClass classType)
         {
             return classes.FirstOrDefault(c => c.classType == classType);
-        }
-
-        public PokerHandDefinition GetPokerHand(PokerHandType handType)
-        {
-            return pokerHands.FirstOrDefault(h => h.handType == handType);
         }
 
         public StatusEffectDefinition GetStatusEffect(StatusEffectType effectType)

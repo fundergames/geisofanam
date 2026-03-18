@@ -2,7 +2,7 @@
     "name": "RogueDeal",
     "rootNamespace": "RogueDeal",
     "references": [
-        "Funder.Core",
+        "Funder.Core.Runtime",
         "Unity.InputSystem",
         "Unity.TextMeshPro",
         "Unity.Timeline"

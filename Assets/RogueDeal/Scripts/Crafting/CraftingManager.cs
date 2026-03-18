@@ -98,7 +98,7 @@ namespace RogueDeal.Crafting
             if (recipe.allowQualityRoll && recipe.outputItem is EquipmentItem equipment)
             {
                 var stream = _randomHub.GetStream("Crafting/Quality");
-                float roll = stream.NextFloat();
+                float roll = stream.NextFloat01();
                 if (roll <= recipe.rarityUpgradeChance)
                 {
                     result.rarityUpgraded = true;

@@ -1,19 +1,20 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
-using RogueDeal.Combat.TurnBased;
 using System.Collections.Generic;
+using RogueDeal.Combat.Presentation;
+using RogueDeal.Combat.Core.Data;
 
 namespace RogueDeal.Combat.Training
 {
     public class TrainingAttackController : MonoBehaviour
     {
         [Header("Combat References")]
-        [SerializeField] private TurnBasedCombatPresenter combatPresenter;
+        [SerializeField] private CombatExecutor combatExecutor;
         [SerializeField] private CombatEntity playerEntity;
         [SerializeField] private CombatEntity dummyEntity;
-        
-        [Header("Abilities to Test")]
-        [SerializeField] private List<AbilityData> testAbilities = new List<AbilityData>();
+
+        [Header("Actions to Test")]
+        [SerializeField] private List<CombatAction> testActions = new List<CombatAction>();
         
         [Header("Attack Controls")]
         [SerializeField] private Key quickAttackKey = Key.Space;
@@ -76,15 +77,23 @@ namespace RogueDeal.Combat.Training
         
         private void FindReferences()
         {
-            if (combatPresenter == null)
+            if (combatExecutor == null && playerEntity != null)
             {
-                combatPresenter = FindObjectOfType<TurnBasedCombatPresenter>();
-                if (combatPresenter != null && showDebugLogs)
+                combatExecutor = playerEntity.GetComponent<CombatExecutor>();
+                if (combatExecutor != null && showDebugLogs)
+                    Debug.Log("[TrainingAttackController] Found CombatExecutor on player");
+            }
+            if (combatExecutor == null)
+            {
+                var entity = FindFirstObjectByType<CombatEntity>();
+                if (entity != null)
                 {
-                    Debug.Log("[TrainingAttackController] Found TurnBasedCombatPresenter");
+                    combatExecutor = entity.GetComponent<CombatExecutor>();
+                    if (combatExecutor != null)
+                        playerEntity = entity;
                 }
             }
-            
+
             if (playerEntity == null)
             {
                 CombatEntity[] entities = FindObjectsOfType<CombatEntity>();
@@ -115,16 +124,14 @@ namespace RogueDeal.Combat.Training
                 }
             }
             
-            if (testAbilities.Count == 0)
+            if (testActions.Count == 0)
             {
-                AbilityData[] abilities = Resources.LoadAll<AbilityData>("Combat/Abilities");
-                if (abilities.Length > 0)
+                CombatAction[] actions = Resources.LoadAll<CombatAction>("Combat/Actions");
+                if (actions.Length > 0)
                 {
-                    testAbilities.AddRange(abilities);
+                    testActions.AddRange(actions);
                     if (showDebugLogs)
-                    {
-                        Debug.Log($"[TrainingAttackController] Loaded {abilities.Length} abilities from Resources");
-                    }
+                        Debug.Log($"[TrainingAttackController] Loaded {actions.Length} actions from Resources");
                 }
             }
         }
@@ -132,13 +139,13 @@ namespace RogueDeal.Combat.Training
         private void ValidateSetup()
         {
             bool isValid = true;
-            
-            if (combatPresenter == null)
+
+            if (combatExecutor == null)
             {
-                Debug.LogError("[TrainingAttackController] Missing TurnBasedCombatPresenter! Assign it in the Inspector.");
+                Debug.LogError("[TrainingAttackController] Missing CombatExecutor! Assign player with CombatExecutor or assign in Inspector.");
                 isValid = false;
             }
-            
+
             if (playerEntity == null)
             {
                 Debug.LogError("[TrainingAttackController] Missing Player CombatEntity! Assign it in the Inspector.");
@@ -166,20 +173,20 @@ namespace RogueDeal.Combat.Training
                 }
             }
             
-            if (testAbilities.Count == 0)
+            if (testActions.Count == 0)
             {
-                Debug.LogWarning("[TrainingAttackController] No abilities assigned! Add some in the Inspector or create them in Resources/Combat/Abilities.");
+                Debug.LogWarning("[TrainingAttackController] No actions assigned! Add CombatAction assets in Inspector or Resources/Combat/Actions.");
             }
-            
+
             if (isValid && showDebugLogs)
             {
-                Debug.Log("[TrainingAttackController] Setup complete! Press SPACE to attack, or 1-5 for specific abilities.");
-                if (testAbilities.Count > 0)
+                Debug.Log("[TrainingAttackController] Setup complete! Press SPACE to attack, or 1-5 for specific actions.");
+                if (testActions.Count > 0)
                 {
-                    Debug.Log($"[TrainingAttackController] Loaded abilities:");
-                    for (int i = 0; i < testAbilities.Count; i++)
+                    Debug.Log("[TrainingAttackController] Loaded actions:");
+                    for (int i = 0; i < testActions.Count; i++)
                     {
-                        Debug.Log($"  [{i + 1}] {testAbilities[i].abilityName}");
+                        Debug.Log($"  [{i + 1}] {testActions[i].actionName}");
                     }
                 }
             }
@@ -187,97 +194,83 @@ namespace RogueDeal.Combat.Training
         
         public void PerformQuickAttack()
         {
-            if (testAbilities.Count > 0)
-            {
+            if (testActions.Count > 0)
                 PerformAbility(0);
-            }
             else
-            {
-                Debug.LogWarning("[TrainingAttackController] No abilities available for quick attack!");
-            }
+                Debug.LogWarning("[TrainingAttackController] No actions available for quick attack!");
         }
-        
+
         public void PerformAbility(int index)
         {
             if (isAttacking)
             {
                 if (showDebugLogs)
-                {
                     Debug.Log("[TrainingAttackController] Already attacking, ignoring input");
-                }
                 return;
             }
-            
-            if (index < 0 || index >= testAbilities.Count)
+            if (index < 0 || index >= testActions.Count)
             {
-                Debug.LogWarning($"[TrainingAttackController] Ability index {index} out of range (have {testAbilities.Count} abilities)");
+                Debug.LogWarning($"[TrainingAttackController] Action index {index} out of range (have {testActions.Count} actions)");
                 return;
             }
-            
-            if (combatPresenter == null || playerEntity == null || dummyEntity == null)
+            if (combatExecutor == null || playerEntity == null || dummyEntity == null)
             {
                 Debug.LogError("[TrainingAttackController] Missing required references!");
                 return;
             }
-            
-            AbilityData ability = testAbilities[index];
-            
-            if (ability == null)
+            CombatAction action = testActions[index];
+            if (action == null)
             {
-                Debug.LogWarning($"[TrainingAttackController] Ability at index {index} is null!");
+                Debug.LogWarning($"[TrainingAttackController] Action at index {index} is null!");
                 return;
             }
-            
             if (showDebugLogs)
-            {
-                Debug.Log($"[TrainingAttackController] Executing ability: {ability.abilityName}");
-            }
-            
+                Debug.Log($"[TrainingAttackController] Executing action: {action.actionName}");
             isAttacking = true;
-            combatPresenter.ExecuteTurnBasedAbility(playerEntity, ability, dummyEntity);
+            combatExecutor.ExecuteAction(action);
             StartCoroutine(WaitForAttackComplete());
         }
-        
+
         private System.Collections.IEnumerator WaitForAttackComplete()
         {
-            yield return new WaitUntil(() => combatPresenter.IsExecutionComplete);
+            yield return new WaitUntil(() => combatExecutor == null || !combatExecutor.IsExecuting);
             isAttacking = false;
         }
-        
+
         public void SetPlayerEntity(CombatEntity player)
         {
             playerEntity = player;
+            if (player != null)
+                combatExecutor = player.GetComponent<CombatExecutor>();
         }
-        
+
         public void SetDummyEntity(CombatEntity dummy)
         {
             dummyEntity = dummy;
         }
-        
-        public void AddAbility(AbilityData ability)
+
+        public void AddAction(CombatAction action)
         {
-            if (!testAbilities.Contains(ability))
-            {
-                testAbilities.Add(ability);
-            }
+            if (action != null && !testActions.Contains(action))
+                testActions.Add(action);
         }
-        
-        public void ClearAbilities()
+
+        public void ClearActions()
         {
-            testAbilities.Clear();
+            testActions.Clear();
         }
-        
+
         [ContextMenu("Print Current Setup")]
         public void PrintSetup()
         {
             Debug.Log("=== Training Attack Controller Setup ===");
-            Debug.Log($"Combat Presenter: {(combatPresenter != null ? combatPresenter.name : "NULL")}");
+            Debug.Log($"Combat Executor: {(combatExecutor != null ? combatExecutor.gameObject.name : "NULL")}");
             Debug.Log($"Player Entity: {(playerEntity != null ? playerEntity.gameObject.name : "NULL")}");
             Debug.Log($"Dummy Entity: {(dummyEntity != null ? dummyEntity.gameObject.name : "NULL")}");
-            Debug.Log($"Abilities ({testAbilities.Count}):");
-            for (int i = 0; i < testAbilities.Count; i++)
+            Debug.Log($"Actions ({testActions.Count}):");
+            for (int i = 0; i < testActions.Count; i++)
             {
-                Debug.Log($"  [{i + 1}] {(testAbilities[i] != null ? testAbilities[i].abilityName : "NULL")}");
+                Debug.Log($"  [{i + 1}] {(testActions[i] != null ? testActions[i].actionName : "NULL")}");
             }
         }
     }

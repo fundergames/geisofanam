@@ -12,15 +12,7 @@ namespace RogueDeal.Services
         {
         }
 
-        public RandomHubService(RandomConfig config)
-        {
-            if (config != null)
-            {
-                var seed = config.GetRuntimeSeed();
-                _implementation = new RandomHub(seed);
-                Debug.Log($"[RandomHubService] Created with config seed: {seed}");
-            }
-        }
+        public uint Seed => _implementation != null ? _implementation.Seed : 0;
 
         public void Initialize()
         {
@@ -32,36 +24,24 @@ namespace RogueDeal.Services
             }
         }
 
-        public uint RootSeed => _implementation.RootSeed;
-
         public IRandomStream GetStream(string name)
         {
+            EnsureInitialized();
             return _implementation.GetStream(name);
         }
 
-        public void Reseed(uint newRootSeed)
+        public void Reseed(uint seed)
         {
-            _implementation.Reseed(newRootSeed);
+            EnsureInitialized();
+            _implementation.Reseed(seed);
         }
 
-        public void ResetAll()
+        private void EnsureInitialized()
         {
-            _implementation.ResetAll();
-        }
-
-        public void BeginRecording(string label)
-        {
-            _implementation.BeginRecording(label);
-        }
-
-        public RandomReplay StopRecording()
-        {
-            return _implementation.StopRecording();
-        }
-
-        public void Play(RandomReplay replay)
-        {
-            _implementation.Play(replay);
+            if (_implementation == null)
+            {
+                Initialize();
+            }
         }
     }
 }

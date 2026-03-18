@@ -6,8 +6,6 @@ namespace RogueDeal.Combat
     [Serializable]
     public class ClassAttackMapping
     {
-        public PokerHandType handType;
-        
         [Header("Attack Properties")]
         public string attackName;
         [TextArea(2, 3)]

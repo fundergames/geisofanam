@@ -157,7 +157,7 @@ namespace RogueDeal.Combat.Core.Targeting
             return null;
         }
         
-        private void SyncAllEntityPositions()
+        private new void SyncAllEntityPositions()
         {
             var allEntities = Object.FindObjectsOfType<CombatEntity>();
             foreach (var entity in allEntities)

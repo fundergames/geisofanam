@@ -1,6 +1,6 @@
 using UnityEngine;
 using UnityEditor;
-using RogueDeal.Combat.TurnBased;
+using RogueDeal.Combat.Core.Data;
 
 namespace RogueDeal.Combat.Training.Editor
 {
@@ -49,18 +49,7 @@ namespace RogueDeal.Combat.Training.Editor
                 report.AppendLine("✗ TrainingAttackController NOT found - Will be auto-added");
             }
             
-            TurnBasedCombatPresenter presenter = Object.FindObjectOfType<TurnBasedCombatPresenter>();
-            if (presenter != null)
-            {
-                report.AppendLine("✓ TurnBasedCombatPresenter found");
-            }
-            else
-            {
-                report.AppendLine("✗ TurnBasedCombatPresenter NOT found - Create one!");
-                allGood = false;
-            }
-            
-            // Note: CombatAbilityExecutor is deprecated - use CombatExecutor instead
+            // CombatExecutor (on player) is used for real-time combat
             // CombatExecutor is automatically added by CombatEntity, no need to check for it
             var combatExecutor = Object.FindObjectOfType<RogueDeal.Combat.Presentation.CombatExecutor>();
             if (combatExecutor != null)
@@ -103,29 +92,22 @@ namespace RogueDeal.Combat.Training.Editor
                 report.AppendLine("⚠ TrainingDummy NOT found - Create one for best results");
             }
             
-            AbilityData[] abilities = Resources.LoadAll<AbilityData>("Combat/Abilities");
-            if (abilities.Length > 0)
+            CombatAction[] actions = Resources.LoadAll<CombatAction>("Combat/Actions");
+            if (actions.Length > 0)
             {
-                report.AppendLine($"✓ Found {abilities.Length} abilities in Resources/Combat/Abilities");
-                foreach (var ability in abilities)
+                report.AppendLine($"✓ Found {actions.Length} actions in Resources/Combat/Actions");
+                foreach (var action in actions)
                 {
-                    report.AppendLine($"  - {ability.abilityName}");
+                    report.AppendLine($"  - {action.actionName}");
                 }
             }
             else
             {
-                report.AppendLine("⚠ No abilities found in Resources/Combat/Abilities");
-                
-                string[] guids = AssetDatabase.FindAssets("t:AbilityData");
+                report.AppendLine("⚠ No CombatAction assets found in Resources/Combat/Actions");
+                string[] guids = AssetDatabase.FindAssets("t:CombatAction");
                 if (guids.Length > 0)
                 {
-                    report.AppendLine($"  But found {guids.Length} abilities elsewhere:");
-                    foreach (string guid in guids)
-                    {
-                        string path = AssetDatabase.GUIDToAssetPath(guid);
-                        AbilityData ability = AssetDatabase.LoadAssetAtPath<AbilityData>(path);
-                        report.AppendLine($"  - {ability.abilityName} at {path}");
-                    }
+                    report.AppendLine($"  But found {guids.Length} CombatAction assets elsewhere");
                 }
             }
             

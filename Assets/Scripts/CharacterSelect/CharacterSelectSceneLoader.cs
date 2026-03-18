@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
+using Funder.Core.Scenes;
 using Funder.Core.Services;
 using Funder.Core.FSM;
 using Funder.Core.Logging;

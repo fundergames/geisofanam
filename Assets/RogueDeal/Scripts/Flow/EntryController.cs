@@ -40,48 +40,9 @@ namespace Funder.GameFlow
                 return;
             }
 
-            await ShowSplash();
-
-            if (ShouldSkipLogin())
-            {
-                if (Application.isEditor && appConfig.SkipMainMenuInEditor)
-                {
-                    Debug.Log("[Entry] Skipping main menu - going directly to game (SkipMainMenuInEditor)");
-                    await FGFlowExtensions.GoToGameWithLoading();
-                }
-                else
-                {
-                    Debug.Log("[Entry] Skipping login - going directly to main menu");
-                    await FGFlowExtensions.GoToMenuWithLoading();
-                }
-            }
-            else
-            {
-                Debug.Log("[Entry] Going to login screen");
-                await FGFlowExtensions.GoToLoginWithLoading();
-            }
-        }
-
-        private async Task ShowSplash()
-        {
-            Debug.Log("[Entry] Loading splash screen...");
-            await FGSceneLoader.LoadExclusive("Splash");
-            await Task.Delay(2000);
-        }
-
-        private bool ShouldSkipLogin()
-        {
-            if (Application.isEditor && appConfig.SkipLoginInEditor)
-            {
-                return true;
-            }
-
-            if (!Application.isEditor && appConfig.SkipLoginInBuilds)
-            {
-                return true;
-            }
-
-            return false;
+            // Go directly to third-person combat scene
+            Debug.Log("[Entry] Loading third-person combat...");
+            await FGFlowExtensions.GoToGameWithLoading();
         }
     }
 }

@@ -1,4 +1,4 @@
-﻿/// Credit glennpow, Zarlang
+/// Credit glennpow, Zarlang
 /// Sourced from - http://forum.unity3d.com/threads/free-script-particle-systems-in-ui-screen-space-overlay.406862/
 /// Updated by Zarlang with a more robust implementation, including TextureSheet annimation support
 
@@ -133,19 +133,20 @@ namespace UnityEngine.UI.Extensions.FantasyRPG
 
         protected override void OnPopulateMesh(VertexHelper vh)
         {
-#if UNITY_EDITOR
-            if (!Application.isPlaying)
+            if (!Initialize())
             {
-                if (!Initialize())
-                {
-                    return;
-                }
+                vh.Clear();
+                return;
             }
-#endif
             // prepare vertices
             vh.Clear();
 
             if (!gameObject.activeInHierarchy)
+            {
+                return;
+            }
+
+            if (pSystem == null || particles == null)
             {
                 return;
             }

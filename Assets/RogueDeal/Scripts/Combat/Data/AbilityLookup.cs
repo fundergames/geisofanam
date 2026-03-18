@@ -1,103 +1,41 @@
-using RogueDeal.Combat.Cards;
 using RogueDeal.Combat.Core.Data;
 using UnityEngine;
 
 namespace RogueDeal.Combat
 {
     /// <summary>
-    /// Maps poker hand types to combat actions.
-    /// Migrated from AbilityData to CombatAction.
+    /// Maps action names or indices to CombatActions for real-time combat.
     /// </summary>
     [CreateAssetMenu(fileName = "AbilityLookup", menuName = "RogueDeal/Combat/Ability Lookup")]
     public class AbilityLookup : ScriptableObject
     {
-        [System.Serializable]
-        public class HandAbilityMapping
-        {
-            public PokerHandType handType;
-            public CombatAction action; // Changed from AbilityData to CombatAction
-        }
+        [Header("Actions")]
+        [SerializeField] private CombatAction[] actions = new CombatAction[0];
 
-        [Header("Hand to Action Mappings")]
-        [SerializeField] private HandAbilityMapping[] mappings = new HandAbilityMapping[10];
-
-        public CombatAction GetAction(PokerHandType? handType)
+        public CombatAction GetAction(int index)
         {
-            if (!handType.HasValue)
-            {
-                Debug.LogWarning("GetAction called with null hand type");
+            if (actions == null || index < 0 || index >= actions.Length)
                 return null;
-            }
+            return actions[index];
+        }
 
-            foreach (var mapping in mappings)
+        public CombatAction GetActionByName(string actionName)
+        {
+            if (actions == null || string.IsNullOrEmpty(actionName))
+                return null;
+            foreach (var a in actions)
             {
-                if (mapping != null && mapping.handType == handType.Value)
-                {
-                    return mapping.action;
-                }
+                if (a != null && a.actionName == actionName)
+                    return a;
             }
-
-            Debug.LogWarning($"No action mapping found for hand type: {handType.Value}");
             return null;
         }
 
-        /// <summary>
-        /// Legacy method name for backward compatibility
-        /// </summary>
-        [System.Obsolete("Use GetAction instead")]
-        public AbilityData GetAbility(PokerHandType? handType)
+        public bool HasAction(int index)
         {
-            Debug.LogWarning("GetAbility is deprecated. Use GetAction instead. Returning null.");
-            return null;
+            return GetAction(index) != null;
         }
 
-        public bool HasAction(PokerHandType handType)
-        {
-            foreach (var mapping in mappings)
-            {
-                if (mapping != null && mapping.handType == handType && mapping.action != null)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
-
-        /// <summary>
-        /// Legacy method name for backward compatibility
-        /// </summary>
-        [System.Obsolete("Use HasAction instead")]
-        public bool HasAbility(PokerHandType handType)
-        {
-            return HasAction(handType);
-        }
-
-        [ContextMenu("Validate Mappings")]
-        private void ValidateMappings()
-        {
-            Debug.Log("=== Ability Lookup Validation ===");
-            
-            if (mappings == null || mappings.Length == 0)
-            {
-                Debug.LogWarning("No mappings defined!");
-                return;
-            }
-
-            int validCount = 0;
-            foreach (var mapping in mappings)
-            {
-                if (mapping != null && mapping.action != null)
-                {
-                    Debug.Log($"✓ {mapping.handType} → {mapping.action.actionName}");
-                    validCount++;
-                }
-                else if (mapping != null)
-                {
-                    Debug.LogWarning($"✗ {mapping.handType} → MISSING ACTION");
-                }
-            }
-
-            Debug.Log($"Valid mappings: {validCount}/{mappings.Length}");
-        }
+        public int ActionCount => actions != null ? actions.Length : 0;
     }
 }
