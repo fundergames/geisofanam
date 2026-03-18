@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "com.funder.core": "https://github.com/fundergames/funder-core.git?path=Packages/com.funder.core#main",
+    "com.tonythedev.unity-claude-code-cli": "https://github.com/Exano/UnityClaudeCLI.git",
     "com.unity.2d.sprite": "1.0.0",
     "com.unity.addressables": "2.8.1",
     "com.unity.ai.navigation": "2.0.10",
