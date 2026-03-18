@@ -1,0 +1,48 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 909a13e8255193046b39de3003ad9476, type: 3}
+  m_Name: Action_BasicAttack
+  m_EditorClassIdentifier: 
+  actionName: Basic Attack
+  description: A simple melee attack
+  icon: {fileID: 0}
+  animationTrigger: Attack_1
+  comboAnimations: []
+  timelineAsset: {fileID: 0}
+  targetingStrategy: {fileID: 11400000, guid: 4e7e0a4f81386a64097b1100983da5b9, type: 2}
+  effects:
+  - {fileID: 11400000, guid: fd5e3cad552fc08458e9056d3b123b98, type: 2}
+  isCombo: 0
+  comboHitCount: 1
+  perHitEffects: []
+  isProjectile: 0
+  projectilePrefab: {fileID: 0}
+  projectileSpeed: 10
+  spawnsPersistentAOE: 0
+  persistentAOEPrefab: {fileID: 0}
+  aoeRadius: 5
+  pulseCount: 5
+  pulseDuration: 1
+  cooldownConfig:
+    cooldownType: 0
+    turnCooldown: 0
+    timeCooldown: 0
+    usesCharges: 0
+    maxCharges: 1
+    startingCharges: 1
+    chargeRecoveryTurns: 5
+    triggersGlobalCooldown: 0
+    globalCooldownTurns: 1
+    hasResourceCost: 0
+    manaCost: 0
+    staminaCost: 0
+  effectBindings: []

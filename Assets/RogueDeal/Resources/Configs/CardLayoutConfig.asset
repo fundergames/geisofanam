@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4ff6fbd72d8e734428cdbeece8011562, type: 3}
+  m_Name: CardLayoutConfig
+  m_EditorClassIdentifier: 
+  layoutType: 1
+  centerPosition: {x: 0, y: 0}
+  cardSpacing: 150
+  arcAngle: 32.5
+  arcRadius: 1200
+  arcVerticalOffset: -50
+  linearYOffset: 0
+  fanRotationRange: 20
+  dealDuration: 0.5
+  dealDelay: 0.1
+  flipDuration: 0.3
+  replaceDuration: 0.4
+  highlightDuration: 0.4
+  deckPosition: {x: 400, y: 150}
+  discardPosition: {x: -400, y: 150}

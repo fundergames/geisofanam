@@ -1,0 +1,45 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a38047f9d470c954fb154f203a13aa01, type: 3}
+  m_Name: TestMappings
+  m_EditorClassIdentifier: 
+  roadMappings:
+  - pattern: 9
+    variant: A
+  - pattern: 17
+    variant: B
+  - pattern: 33
+    variant: C
+  - pattern: 21
+    variant: D
+  - pattern: 25
+    variant: E
+  - pattern: 13
+    variant: F
+  - pattern: 35
+    variant: G
+  - pattern: 43
+    variant: H
+  - pattern: 54
+    variant: I
+  - pattern: 15
+    variant: J
+  - pattern: 55
+    variant: K
+  - pattern: 63
+    variant: A
+  - pattern: 1
+    variant: M
+  - pattern: 4
+    variant: E
+  riverMappings: []
+  coastMappings: []

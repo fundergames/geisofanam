@@ -1,0 +1,161 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 497371389f8e72c4c9fc4cc6157be5d4, type: 3}
+  m_Name: Class_Warrior
+  m_EditorClassIdentifier: 
+  classType: 4
+  displayName: Archer
+  description: High health and defense, bonus to straight hands
+  classIcon: {fileID: 0}
+  baseStats:
+    maxHealth: 150
+    currentHealth: 150
+    attack: 15
+    damage: 8
+    magic: 3
+    defense: 10
+    damageMultiplier: 1
+    defenseMultiplier: 1
+    damageBonus: 0
+    defenseBonus: 0
+    fireResistance: 0
+    waterResistance: 0
+    woodResistance: 0
+    lightResistance: 0
+    darkResistance: 0
+    dodgeChance: 0
+  healthPerLevel: 15
+  attackPerLevel: 3
+  damagePerLevel: 2
+  magicPerLevel: 1
+  defensePerLevel: 2
+  abilities:
+  - abilityName: Warrior's Fortitude
+    description: +20% max health
+    icon: {fileID: 0}
+    requiredLevel: 1
+    isPassive: 1
+    healthModifier: 0.2
+    attackModifier: 0
+    damageModifier: 0
+    magicModifier: 0
+    defenseModifier: 0
+    targetHand: 0
+    handDamageMultiplier: 1
+    grantsDeckManipulation: 0
+    wildCardsGranted: 0
+    usesPerCombat: 0
+    triggersOnKill: 0
+    healOnKillPercent: 0
+    triggersOnCombatStart: 0
+    firstAttackDamageMultiplier: 1
+  - abilityName: Straight Mastery
+    description: +20% damage to Straight hands
+    icon: {fileID: 0}
+    requiredLevel: 1
+    isPassive: 1
+    healthModifier: 0
+    attackModifier: 0
+    damageModifier: 0
+    magicModifier: 0
+    defenseModifier: 0
+    targetHand: 4
+    handDamageMultiplier: 1.2
+    grantsDeckManipulation: 0
+    wildCardsGranted: 0
+    usesPerCombat: 0
+    triggersOnKill: 0
+    healOnKillPercent: 0
+    triggersOnCombatStart: 0
+    firstAttackDamageMultiplier: 1
+  attackMappings:
+  - handType: 0
+    attackName: Quick Strike
+    attackDescription: 
+    numberOfHits: 1
+    timeBetweenHits: 0.3
+    isAOE: 0
+    damageMultiplier: 1
+    damageType: 2
+    attackVFXPrefab: {fileID: 0}
+    attackSound: {fileID: 0}
+    animationTrigger: 
+    enableScreenShake: 0
+    screenShakeIntensity: 0.2
+    screenShakeDuration: 0.3
+  - handType: 1
+    attackName: Double Strike
+    attackDescription: 
+    numberOfHits: 2
+    timeBetweenHits: 0.3
+    isAOE: 0
+    damageMultiplier: 1
+    damageType: 2
+    attackVFXPrefab: {fileID: 0}
+    attackSound: {fileID: 0}
+    animationTrigger: 
+    enableScreenShake: 0
+    screenShakeIntensity: 0.2
+    screenShakeDuration: 0.3
+  - handType: 4
+    attackName: Blade Flurry
+    attackDescription: 
+    numberOfHits: 5
+    timeBetweenHits: 0.2
+    isAOE: 0
+    damageMultiplier: 1.2
+    damageType: 2
+    attackVFXPrefab: {fileID: 0}
+    attackSound: {fileID: 0}
+    animationTrigger: 
+    enableScreenShake: 1
+    screenShakeIntensity: 0.2
+    screenShakeDuration: 0.3
+  - handType: 9
+    attackName: Legendary Rampage
+    attackDescription: 
+    numberOfHits: 10
+    timeBetweenHits: 0.1
+    isAOE: 0
+    damageMultiplier: 2
+    damageType: 2
+    attackVFXPrefab: {fileID: 0}
+    attackSound: {fileID: 0}
+    animationTrigger: 
+    enableScreenShake: 1
+    screenShakeIntensity: 0.5
+    screenShakeDuration: 0.3
+  animatorData: {fileID: 11400000, guid: 20f6f944f98fba14aa8b64c2c3e1d175, type: 2}
+  xpCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 1
+      value: 100
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 50
+      value: 10000
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4

@@ -1,0 +1,212 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &1917173234732986757
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4742892157249457142}
+  - component: {fileID: 5043913081236729803}
+  - component: {fileID: 8663268993191920898}
+  - component: {fileID: 7870988111428900455}
+  - component: {fileID: 428375348857750773}
+  - component: {fileID: 310796559519476945}
+  - component: {fileID: 8485255840284826011}
+  - component: {fileID: 6446893510899530854}
+  - component: {fileID: 5561714225541350689}
+  - component: {fileID: 5561714225541350690}
+  m_Layer: 7
+  m_Name: Player
+  m_TagString: Player
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4742892157249457142
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5043913081236729803
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a2698fb338bde1344a70b5ea057803c5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  currentTargetingStrategy: {fileID: 11400000, guid: ce3f76cb46159f541aa04f2c92c5a597, type: 2}
+  nearestEnemyStrategy: {fileID: 11400000, guid: 9e25a277052240941a5146bdd24cdbcb, type: 2}
+  coneTargetingStrategy: {fileID: 11400000, guid: 983fa273a5e3d9f489d4e7b7c60e87f2, type: 2}
+  clickToSelectStrategy: {fileID: 11400000, guid: e6dca1ab4865d974991248ffa5ad9e35, type: 2}
+  directionalStrategy: {fileID: 11400000, guid: 0b2ea0d46a4076141837ef2d2321ed5e, type: 2}
+  groundTargetingStrategy: {fileID: 11400000, guid: 2f3f0fba28b1daa4b8f78cfec0f0b8d3, type: 2}
+  enableDebugKeybinds: 1
+  rangeIndicator: {fileID: 0}
+--- !u!114 &8663268993191920898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27da310dce5399745a928f36c70d6792, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!143 &7870988111428900455
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 2.4
+  m_Radius: 0.38
+  m_SlopeLimit: 45
+  m_StepOffset: 0.3
+  m_SkinWidth: 0.08
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 1.22, z: 0}
+--- !u!114 &428375348857750773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 50107bdfc5e780d46a6ebbc9beb9ae87, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  heroData: {fileID: 0}
+  vfxSpawnPoint: {fileID: 0}
+  hitPoint: {fileID: 0}
+  attackTrigger: Attack_1
+  hitTrigger: TakeDamage
+  dodgeTrigger: Dodge
+  deathTrigger: Die
+  coneAngle: 60
+--- !u!114 &310796559519476945
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 03dd1fe17a3417245a63026d98183fb9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  walkSpeed: 2
+  runSpeed: 5
+  rotationSpeed: 5
+  gravity: -9.81
+  dashDistance: 5
+  dashDuration: 0.3
+  enemyLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  useManualDashMovement: 0
+  manualDashSpeed: 15
+  useWeaponColliders: 1
+  combatActions:
+  - {fileID: 11400000, guid: 5d20705545ea40540b63ce4a18e32fe0, type: 2}
+  actionStateCount: 2
+  actionIndexOffset: 0
+  useNewInputSystem: 0
+  defaultAnimatorController: {fileID: 0}
+--- !u!114 &8485255840284826011
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a33635c7df58a8749b1bcfbfded2c4a6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &6446893510899530854
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ccecc9188356ab4cbee54318a198746, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  pausePlayerMovementDuringDialog: 1
+--- !u!114 &5561714225541350689
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0b727aab1dbe69244b90b4d970ec95e9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  animator: {fileID: 0}
+  lightAttackTrigger: Attack_1
+  heavyAttackTrigger: Attack_2
+  specialAttackTrigger: Attack_3
+  hitReactionTrigger: TakeDamage
+  criticalHitTrigger: TakeDamage
+  dodgeTrigger: Dodge
+  blockTrigger: Block
+--- !u!114 &5561714225541350690
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1917173234732986757}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22e9c9869c3fe204a8ca3bda4dfa3c53, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  weaponSlots:
+  - {fileID: 11400000, guid: 9c3d4e5f6a7b8c9d0e1f2a3b4c5d6e7f, type: 2}
+  - {fileID: 11400000, guid: ad4e5f6a7b8c9d0e1f2a3b4c5d6e7f8a, type: 2}
+  - {fileID: 11400000, guid: be5f6a7b8c9d0e1f2a3b4c5d6e7f8a9b, type: 2}
+  - {fileID: 11400000, guid: cf6a7b8c9d0e1f2a3b4c5d6e7f8a9b0c, type: 2}
+  - {fileID: 11400000, guid: d07b8c9d0e1f2a3b4c5d6e7f8a9b0c1d, type: 2}

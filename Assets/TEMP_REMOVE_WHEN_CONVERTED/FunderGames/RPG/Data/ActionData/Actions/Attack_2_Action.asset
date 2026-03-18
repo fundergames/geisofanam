@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 960f34f65c25d7b4faa9ca880045f96f, type: 3}
+  m_Name: Attack_2_Action
+  m_EditorClassIdentifier: 
+  ActionName: Attack
+  ActionType: 0
+  RequiresTarget: 1
+  TargetType: 0
+  actionSequence: {fileID: 11400000, guid: 0e851e0c9ad92664fbecb58039d17234, type: 2}

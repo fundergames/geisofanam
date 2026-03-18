@@ -1,0 +1,145 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a38047f9d470c954fb154f203a13aa01, type: 3}
+  m_Name: ConnectionPatternMappings
+  m_EditorClassIdentifier: 
+  roadMappings:
+  - pattern: 0
+    variant: A
+  - pattern: 1
+    variant: A
+  - pattern: 2
+    variant: A
+  - pattern: 3
+    variant: B
+  - pattern: 4
+    variant: A
+  - pattern: 5
+    variant: B
+  - pattern: 6
+    variant: B
+  - pattern: 7
+    variant: E
+  - pattern: 8
+    variant: A
+  - pattern: 9
+    variant: A
+  - pattern: 10
+    variant: B
+  - pattern: 11
+    variant: E
+  - pattern: 12
+    variant: B
+  - pattern: 13
+    variant: E
+  - pattern: 14
+    variant: E
+  - pattern: 15
+    variant: H
+  - pattern: 16
+    variant: A
+  - pattern: 17
+    variant: B
+  - pattern: 18
+    variant: A
+  - pattern: 19
+    variant: E
+  - pattern: 20
+    variant: B
+  - pattern: 21
+    variant: E
+  - pattern: 22
+    variant: E
+  - pattern: 23
+    variant: H
+  - pattern: 24
+    variant: B
+  - pattern: 25
+    variant: E
+  - pattern: 26
+    variant: E
+  - pattern: 27
+    variant: H
+  - pattern: 28
+    variant: E
+  - pattern: 29
+    variant: H
+  - pattern: 30
+    variant: H
+  - pattern: 31
+    variant: I
+  - pattern: 32
+    variant: A
+  - pattern: 33
+    variant: B
+  - pattern: 34
+    variant: B
+  - pattern: 35
+    variant: E
+  - pattern: 36
+    variant: A
+  - pattern: 37
+    variant: E
+  - pattern: 38
+    variant: E
+  - pattern: 39
+    variant: H
+  - pattern: 40
+    variant: B
+  - pattern: 41
+    variant: E
+  - pattern: 42
+    variant: E
+  - pattern: 43
+    variant: H
+  - pattern: 44
+    variant: E
+  - pattern: 45
+    variant: H
+  - pattern: 46
+    variant: H
+  - pattern: 47
+    variant: I
+  - pattern: 48
+    variant: B
+  - pattern: 49
+    variant: E
+  - pattern: 50
+    variant: E
+  - pattern: 51
+    variant: H
+  - pattern: 52
+    variant: E
+  - pattern: 53
+    variant: H
+  - pattern: 54
+    variant: H
+  - pattern: 55
+    variant: I
+  - pattern: 56
+    variant: E
+  - pattern: 57
+    variant: H
+  - pattern: 58
+    variant: H
+  - pattern: 59
+    variant: I
+  - pattern: 60
+    variant: H
+  - pattern: 61
+    variant: I
+  - pattern: 62
+    variant: I
+  - pattern: 63
+    variant: I
+  riverMappings: []
+  coastMappings: []

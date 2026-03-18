@@ -1,0 +1,12 @@
+{
+    "dotnet.preferCSharpExtension": true,
+    "files.exclude": {
+        "**/Library": true,
+        "**/Logs": true,
+        "**/Temp": true,
+        "**/UserSettings": true,
+        "**/*.csproj": true,
+        "**/*.sln": true,
+        "**/*.meta": true
+    }
+}

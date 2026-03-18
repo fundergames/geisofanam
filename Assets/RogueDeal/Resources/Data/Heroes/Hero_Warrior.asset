@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ec4dd004a532cf246aea67886d416d56, type: 3}
+  m_Name: Hero_Warrior
+  m_EditorClassIdentifier: 
+  playerName: Baldric
+  level: 10
+  levelProgress: 55
+  power: 12
+  statList: {fileID: 11400000, guid: 9ebee34d2c29a4e458b5169bdaf38888, type: 2}
+  characterClass: {fileID: 11400000, guid: 6667d0976995fca48b333eb2185fc2a6, type: 2}
+  heroVisualData: {fileID: 11400000, guid: 0f0c6aecf80065c42b0b9149022c2c80, type: 2}
+  animatorData: {fileID: 11400000, guid: 3a97b1cb5f9fb7e4bae20b3c5ce085c0, type: 2}

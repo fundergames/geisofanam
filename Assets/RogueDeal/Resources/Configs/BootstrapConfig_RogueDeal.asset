@@ -1,0 +1,63 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 203239303532ad04db8024b25c2936b4, type: 3}
+  m_Name: BootstrapConfig_RogueDeal
+  m_EditorClassIdentifier: 
+  services:
+  - interfaceScript: {fileID: 11500000, guid: 7cdeb047b2f460247be4742ab7471fcd, type: 3}
+    implementationScript: {fileID: 11500000, guid: 29fd5d994f68b4b47bdee457d7e64b8b, type: 3}
+    interfaceTypeFullName: Funder.Core.Events.IEventBus, Funder.Core, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: Funder.Core.Events.EventBusService, Funder.Core,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    order: 0
+    config: {fileID: 0}
+  - interfaceScript: {fileID: 11500000, guid: 5659f538a28beb9409e53c136d672f90, type: 3}
+    implementationScript: {fileID: 11500000, guid: 2bf712c8a4f11314ca945137434913ba, type: 3}
+    interfaceTypeFullName: Funder.Core.Analytics.IAnalyticsService, Funder.Core,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: Funder.Core.Analytics.AnalyticsService, Funder.Core,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    order: 5
+    config: {fileID: 0}
+  - interfaceScript: {fileID: 11500000, guid: 3a1e7b5892ccf254da6560f76520044e, type: 3}
+    implementationScript: {fileID: 11500000, guid: d5488831651f6fc4981b8c40e91ad26b, type: 3}
+    interfaceTypeFullName: Funder.Core.Services.IStateMachine, Funder.Core, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: Funder.Core.Services.SimpleStateMachine, Funder.Core,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    order: 10
+    config: {fileID: 0}
+  - interfaceScript: {fileID: 11500000, guid: 5c5584caf32025d4991f1e188e236f08, type: 3}
+    implementationScript: {fileID: 11500000, guid: b492d8fa5ed2cce4689e3e7f9794245f, type: 3}
+    interfaceTypeFullName: Funder.Core.Analytics.IAnalyticsEventListener, Funder.Core,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: RogueDeal.Analytics.RogueDealAnalyticsListener, RogueDeal,
+      Version=0.0.0.0, Culture=neutral, PublicKeyToken=null
+    order: 20
+    config: {fileID: 0}
+  - interfaceScript: {fileID: 11500000, guid: ed853b0d992b194448796df4b42eb340, type: 3}
+    implementationScript: {fileID: 11500000, guid: 2abe01121ec52e6408b0bd2e32912155, type: 3}
+    interfaceTypeFullName: Funder.Core.Randoms.IRandomHub, Funder.Core, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: RogueDeal.Services.RandomHubService, RogueDeal, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    order: 20
+    config: {fileID: 0}
+  - interfaceScript: {fileID: 11500000, guid: 8b0a3c1d2e4f5a6b7c8d9e0f1a2b3c4d, type: 3}
+    implementationScript: {fileID: 11500000, guid: 17383d2feba15fc4599d1b68de0b46d2, type: 3}
+    interfaceTypeFullName: RogueDeal.Quests.IQuestService, RogueDeal, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    implementationTypeFullName: RogueDeal.Quests.QuestService, RogueDeal, Version=0.0.0.0,
+      Culture=neutral, PublicKeyToken=null
+    order: 10
+    config: {fileID: 0}

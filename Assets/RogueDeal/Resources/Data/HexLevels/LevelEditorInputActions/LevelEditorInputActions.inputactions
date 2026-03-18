@@ -1,0 +1,255 @@
+{
+    "version": 1,
+    "name": "LevelEditorInputActions",
+    "maps": [
+        {
+            "name": "Editor",
+            "id": "0331b066-3cb8-4b1b-9803-44f6f3c27405",
+            "actions": [
+                {
+                    "name": "PlacementMode",
+                    "type": "Button",
+                    "id": "9fe69e1a-39f2-4e4c-93cd-a87afb3a3834",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "EraseMode",
+                    "type": "Button",
+                    "id": "b41e3676-ed9e-4179-8777-84caa650a66f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MoveMode",
+                    "type": "Button",
+                    "id": "574ab0f7-66c9-4b66-9dc5-4a2e2b8cc87f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "SwitchLayer",
+                    "type": "Button",
+                    "id": "450a1840-d3e6-4f49-af44-a402a53efeff",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RotateClockwise",
+                    "type": "Button",
+                    "id": "b3f902c8-4a69-48c4-919f-a1768a9d4a43",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "RotateCounterClockwise",
+                    "type": "Button",
+                    "id": "424851d4-ad97-4fda-bbf2-03da7c6a651a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ElevationUp",
+                    "type": "Button",
+                    "id": "6179b061-5765-49d1-b6b0-77b6ea4b816a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "ElevationDown",
+                    "type": "Button",
+                    "id": "4f704976-58fd-4c36-8ee2-0eb25b8074a0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "NextAsset",
+                    "type": "Button",
+                    "id": "71495228-effb-43d0-9af8-29b96ad8b4d0",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "PreviousAsset",
+                    "type": "Button",
+                    "id": "d01bcf58-482d-4e4c-9051-364ac8f9cb2c",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Favorite",
+                    "type": "Button",
+                    "id": "0c4e8635-9da9-41e8-bf45-94dc1eff3aaa",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Cancel",
+                    "type": "Button",
+                    "id": "074c67c7-4cd9-4a36-aa77-3c4fafca60f5",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "e981b966-2f95-4277-9a1f-f3eda722cfd0",
+                    "path": "<Keyboard>/#(1)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PlacementMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "5f433f30-e644-4128-963d-bcd3b83c7a83",
+                    "path": "<Keyboard>/#(2)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "EraseMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "ea07f455-5126-4019-9e18-0ee7c08dcd9e",
+                    "path": "<Keyboard>/tab",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SwitchLayer",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "da34ff9a-d177-4434-bd1b-f0c0a8178639",
+                    "path": "<Keyboard>/#(3)",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MoveMode",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "fd0d1606-a5d4-4d24-8279-381f20de2814",
+                    "path": "<Mouse>/rightButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateClockwise",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "83af3db4-4138-4139-b779-1ad79a096143",
+                    "path": "<Keyboard>/numpadPlus",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ElevationUp",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "0ee6ba82-996d-4807-bfaf-85600a90da14",
+                    "path": "<Keyboard>/numpadMinus",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "ElevationDown",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "eb3e19a0-a7ae-48b5-ba13-aeceaf71c579",
+                    "path": "<Keyboard>/e",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "RotateCounterClockwise",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "8c66df0f-e3d5-49ca-8a64-b7d5de72d9bb",
+                    "path": "<Keyboard>/rightArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "NextAsset",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "7330c55e-c902-46ad-b69f-6af65f22e8fb",
+                    "path": "<Keyboard>/leftArrow",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "PreviousAsset",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "6a5d1475-fd4b-43b8-84fb-f37f076afc40",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Favorite",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "e55cd67d-374e-4c23-87ad-0a9b8522f418",
+                    "path": "<Keyboard>/escape",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Cancel",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}

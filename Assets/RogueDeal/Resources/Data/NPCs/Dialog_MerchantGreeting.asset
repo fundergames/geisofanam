@@ -1,0 +1,138 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aba26f8e4134f204cb7627432486a627, type: 3}
+  m_Name: Dialog_MerchantGreeting
+  m_EditorClassIdentifier: 
+  dialogId: merchant_greeting
+  displayName: Merchant Greeting
+  nodes:
+  - nodeId: greeting
+    displayName: Greeting
+    speaker: Merchant
+    text: Hello traveler! Welcome to my shop. What can I do for you today?
+    speakerPortrait: {fileID: 0}
+    choices:
+    - text: Do you have any quests for me?
+      nextNodeId: quest_ask
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions: []
+    - text: Just browsing, thanks.
+      nextNodeId: browsing
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions: []
+    - text: Goodbye.
+      nextNodeId: goodbye
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions: []
+    actions: []
+    nextNodeId: 
+    isEndNode: 0
+    editorPosition: {x: 0, y: 0}
+  - nodeId: quest_ask
+    displayName: Quest Ask
+    speaker: Merchant
+    text: Actually, yes! I need someone to collect 5 wolf pelts for me. The wolves
+      have been attacking my supply caravans. Can you help?
+    speakerPortrait: {fileID: 0}
+    choices:
+    - text: Sure, I'll help you out!
+      nextNodeId: quest_accept
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions:
+      - actionType: 0
+        questId: 
+        itemId: 
+        itemAmount: 0
+        goldAmount: 0
+        targetDialogTree: {fileID: 0}
+        closeBeforeSwitch: 0
+    - text: Not right now, sorry.
+      nextNodeId: quest_decline
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions: []
+    actions: []
+    nextNodeId: 
+    isEndNode: 0
+    editorPosition: {x: 0, y: 0}
+  - nodeId: quest_accept
+    displayName: Quest Accept
+    speaker: Merchant
+    text: Excellent! I'll mark the wolf den on your map. Good luck, and be careful!
+    speakerPortrait: {fileID: 0}
+    choices: []
+    actions:
+    - actionType: 1
+      questId: test_quest
+      itemId: 
+      itemAmount: 0
+      goldAmount: 0
+      targetDialogTree: {fileID: 0}
+      closeBeforeSwitch: 0
+    nextNodeId: 
+    isEndNode: 1
+    editorPosition: {x: 0, y: 0}
+  - nodeId: quest_decline
+    displayName: Quest Decline
+    speaker: Merchant
+    text: No worries, come back if you change your mind!
+    speakerPortrait: {fileID: 0}
+    choices: []
+    actions: []
+    nextNodeId: 
+    isEndNode: 1
+    editorPosition: {x: 0, y: 0}
+  - nodeId: browsing
+    displayName: Browsing
+    speaker: Merchant
+    text: Take your time! Let me know if you need anything.
+    speakerPortrait: {fileID: 0}
+    choices: []
+    actions: []
+    nextNodeId: 
+    isEndNode: 1
+    editorPosition: {x: 0, y: 0}
+  - nodeId: goodbye
+    displayName: Goodbye
+    speaker: Merchant
+    text: Safe travels, friend!
+    speakerPortrait: {fileID: 0}
+    choices: []
+    actions: []
+    nextNodeId: 
+    isEndNode: 1
+    editorPosition: {x: 0, y: 0}
+  entryNodeId: greeting

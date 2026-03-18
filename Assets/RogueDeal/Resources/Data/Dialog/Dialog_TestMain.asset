@@ -1,0 +1,61 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: aba26f8e4134f204cb7627432486a627, type: 3}
+  m_Name: Dialog_TestMain
+  m_EditorClassIdentifier: 
+  dialogId: welcome_dialog
+  displayName: Welcome
+  nodes:
+  - nodeId: welcome_1
+    displayName: Welcome
+    speaker: Atreus
+    text: Welcome, never seen you around here.  If you're willing to try and find
+      my sword I can reward you.
+    speakerPortrait: {fileID: 0}
+    choices:
+    - text: I can help you with finding your sword.
+      nextNodeId: 
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions:
+      - actionType: 1
+        questId: test_quest
+        itemId: 
+        itemAmount: 0
+        goldAmount: 0
+        targetDialogTree: {fileID: 0}
+        closeBeforeSwitch: 0
+    - text: Let me see your wares
+      nextNodeId: 
+      condition:
+        conditionType: 0
+        questId: 
+        requiredQuestStatus: 0
+        itemId: 
+        requiredItemAmount: 0
+      actions:
+      - actionType: 8
+        questId: open_store
+        itemId: 
+        itemAmount: 0
+        goldAmount: 0
+        targetDialogTree: {fileID: 0}
+        closeBeforeSwitch: 0
+    actions: []
+    nextNodeId: 
+    isEndNode: 1
+    editorPosition: {x: 0, y: 0}
+  entryNodeId: start

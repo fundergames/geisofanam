@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9e11d6043fc751e4cbffdaba9a8c2090, type: 3}
+  m_Name: TestQuest
+  m_EditorClassIdentifier: 
+  questId: test_quest
+  displayName: The wolves den
+  description: The blacksmith needs 4 wolf pelts to finish his project.
+  icon: {fileID: 0}
+  objectives:
+  - objectiveId: test_objective
+    description: Collect 4 wolf pelts
+    signalKey: enemy_killed
+    targetId: wolf
+    targetAmount: 4
+  goldReward: 0
+  xpReward: 0

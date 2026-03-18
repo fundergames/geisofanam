@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7a3d920d466325e4ab46a8ad55951fe5, type: 3}
+  m_Name: Spear_AnimatorData
+  m_EditorClassIdentifier: 
+  battleAnimator: {fileID: 9100000, guid: b03b94dafdd097349a72d1b089f04987, type: 2}
+  characterSelectAnimator: {fileID: 9100000, guid: c7bc331c03158ab4189641026517f26a, type: 2}
+  idleClip: {fileID: 1827226128182048838, guid: a0108ebad17650742b01c9dcd1540a39, type: 3}
+  attack1Clip: {fileID: 1827226128182048838, guid: a43b40125c0cf494cbffdf40f55d471a, type: 3}
+  attack2Clip: {fileID: 1827226128182048838, guid: cf03ee504daf56146a986980cf1dc048, type: 3}
+  attack3Clip: {fileID: 1827226128182048838, guid: 77f82f63daef0164c8e381bb222897ac, type: 3}
+  attack4Clip: {fileID: 1827226128182048838, guid: 0e491d30214b09345bb04fe922c8e672, type: 3}
+  attack5Clip: {fileID: 0}
+  tauntAnimationClip: {fileID: 1827226128182048838, guid: 8b7cf64b04aa0ad48bb21c5ae560b716, type: 3}
+  battleIdleClip: {fileID: 1827226128182048838, guid: ae7ea44471afaee43a7983166c92010b, type: 3}
+  levelUpClip: {fileID: 1827226128182048838, guid: ab4f9195d14fae64e8fe0d5bb46fce84, type: 3}
+  dieClip: {fileID: 1827226128182048838, guid: f945e0968af82f940b3a4eb1b3696208, type: 3}
+  dizzyClip: {fileID: 1827226128182048838, guid: 9d0929d81561f2f478541cc31df44d9e, type: 3}
+  takeDamage1Clip: {fileID: 1827226128182048838, guid: b3c697a6a7ff5ac4fa45f3d0c0f08c97, type: 3}
+  takeDamage2Clip: {fileID: 1827226128182048838, guid: 4fa1177d839d2b8489df366f6a29b8f8, type: 3}
+  defendClip: {fileID: 1827226128182048838, guid: 247c34fa1b5381c48b34397eaf79f39a, type: 3}
+  victoryClip: {fileID: 1827226128182048838, guid: 4915e8d70f886b542bf9d28b52b086c7, type: 3}
+  sprintClip: {fileID: 1827226128182048838, guid: a28c0af14daa3ae4dac9e65c23e6f4f9, type: 3}
+  comboClip: {fileID: 1827226128182048838, guid: a93e660c8fd3e3b44a31c3260cdc610d, type: 3}
