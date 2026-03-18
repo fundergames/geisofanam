@@ -25,7 +25,7 @@ namespace RogueDeal.Combat.Core.Targeting
             
             // Get attacker's CombatEntity to exclude it from targeting
             CombatEntity attackerEntity = null;
-            var allEntitiesForAttacker = Object.FindObjectsOfType<CombatEntity>();
+            var allEntitiesForAttacker = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
             foreach (var entity in allEntitiesForAttacker)
             {
                 var data = entity.GetEntityData();

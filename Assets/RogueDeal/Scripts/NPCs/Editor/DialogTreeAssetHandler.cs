@@ -9,7 +9,9 @@ namespace RogueDeal.NPCs.Editor
         [OnOpenAsset(1)]
         public static bool OnOpenAsset(int instanceID, int line)
         {
+#pragma warning disable CS0618 // OnOpenAsset still provides int; use EntityIdToObject when migrating to Unity 6+ EntityId
             Object obj = EditorUtility.InstanceIDToObject(instanceID);
+#pragma warning restore CS0618
             
             if (obj is DialogTree dialogTree)
             {

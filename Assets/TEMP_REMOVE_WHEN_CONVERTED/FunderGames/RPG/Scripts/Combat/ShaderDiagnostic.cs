@@ -105,7 +105,7 @@ namespace FunderGames.RPG
             Debug.Log("\n--- Testing Material Setup ---");
             
             // Find all materials in the scene
-            var renderers = FindObjectsOfType<Renderer>();
+            var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
             int materialCount = 0;
             int shaderErrorCount = 0;
             

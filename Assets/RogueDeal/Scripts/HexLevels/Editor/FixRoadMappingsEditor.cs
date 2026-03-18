@@ -28,7 +28,7 @@ namespace RogueDeal.HexLevels.Editor
             {
                 SmartTileSelector.SetMappingsAsset(mappings);
                 
-                var tool = FindObjectOfType<HexLevelEditorTool>();
+                var tool = FindFirstObjectByType<HexLevelEditorTool>();
                 if (tool != null)
                 {
                     tool.mappingsAsset = mappings;

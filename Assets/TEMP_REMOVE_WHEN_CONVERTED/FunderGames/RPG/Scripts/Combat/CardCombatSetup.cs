@@ -34,7 +34,7 @@ namespace FunderGames.RPG
             // Find all combatants if not manually assigned
             if (combatants == null || combatants.Length == 0)
             {
-                combatants = FindObjectsOfType<Combatant>();
+                combatants = FindObjectsByType<Combatant>(FindObjectsSortMode.None);
             }
             
             // Find all card transforms if not manually assigned

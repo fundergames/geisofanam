@@ -299,7 +299,7 @@ namespace RogueDeal.HexLevels.Editor
                             instance.name = $"TestNeighbor_{i}";
                             
                             HexTileData tileData = new HexTileData(_currentTileType, prefab);
-                            tileData.AddObject(instance);
+                            tileData.AddObjectLayer(null, instance, 0f);
                             _testGrid.SetTile(neighbor, tileData);
                             
                             Undo.RegisterCreatedObjectUndo(instance, "Place test neighbor");

@@ -23,7 +23,9 @@ namespace RogueDeal.Combat.Presentation
         [SerializeField] private float gravity = -9.81f;
         
         [Header("Combat Settings")]
+#pragma warning disable CS0414
         [SerializeField] private float dashDistance = 5f;
+#pragma warning restore CS0414
         [SerializeField] private float dashDuration = 0.3f;
         [SerializeField] private LayerMask enemyLayerMask = 1 << 6; // Default enemy layer
         [SerializeField] private bool useManualDashMovement = false; // If true, manually move during dash instead of relying on root motion
@@ -148,13 +150,13 @@ namespace RogueDeal.Combat.Presentation
             
             mainCamera = Camera.main;
             if (mainCamera == null)
-                mainCamera = FindObjectOfType<Camera>();
+                mainCamera = FindFirstObjectByType<Camera>();
 
             _inputProvider = inputProvider as ICombatInputProvider;
             if (_inputProvider == null && inputProvider != null)
                 _inputProvider = inputProvider.GetComponent<ICombatInputProvider>();
             if (_inputProvider == null)
-                _inputProvider = FindObjectOfType<CombatInputReader>();
+                _inputProvider = FindFirstObjectByType<CombatInputReader>();
             
             if (mainCamera == null)
             {
@@ -458,7 +460,7 @@ namespace RogueDeal.Combat.Presentation
             {
                 _inputProvider = inputProvider;
                 if (_inputProvider == null)
-                    _inputProvider = FindObjectOfType<CombatInputReader>();
+                    _inputProvider = FindFirstObjectByType<CombatInputReader>();
                 if (_inputProvider == null && !_loggedInputProviderMissing)
                 {
                     _loggedInputProviderMissing = true;

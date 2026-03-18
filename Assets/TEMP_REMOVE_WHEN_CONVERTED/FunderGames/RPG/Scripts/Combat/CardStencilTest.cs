@@ -40,7 +40,7 @@ namespace FunderGames.RPG
             Debug.Log("=== Testing Card Stencil System ===");
             
             // Find all CardCombatants
-            var cardCombatants = FindObjectsOfType<CardCombatant>();
+            var cardCombatants = FindObjectsByType<CardCombatant>(FindObjectsSortMode.None);
             Debug.Log($"Found {cardCombatants.Length} CardCombatants");
             
             foreach (var combatant in cardCombatants)
@@ -154,7 +154,7 @@ namespace FunderGames.RPG
             }
             
             // Find all objects with CardWindowObjectShader
-            var windowShaders = FindObjectsOfType<Renderer>();
+            var windowShaders = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
             int windowCount = 0;
             
             foreach (var renderer in windowShaders)

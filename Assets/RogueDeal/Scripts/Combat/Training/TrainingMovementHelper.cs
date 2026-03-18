@@ -107,7 +107,7 @@ namespace RogueDeal.Combat.Training
         [ContextMenu("Auto-Find References")]
         private void AutoFindReferences()
         {
-            CombatEntity[] entities = FindObjectsOfType<CombatEntity>();
+            CombatEntity[] entities = FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
             
             foreach (var entity in entities)
             {

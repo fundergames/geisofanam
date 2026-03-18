@@ -16,7 +16,7 @@ namespace RogueDeal.Combat.Training
         {
             if (trainingManager == null)
             {
-                trainingManager = FindObjectOfType<TrainingModeManager>();
+                trainingManager = FindFirstObjectByType<TrainingModeManager>();
             }
             
             if (startInTrainingMode && trainingManager != null)

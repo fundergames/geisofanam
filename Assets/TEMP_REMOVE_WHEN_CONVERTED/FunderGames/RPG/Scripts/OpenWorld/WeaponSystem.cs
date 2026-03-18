@@ -57,7 +57,9 @@ namespace FunderGames.RPG.OpenWorld
         
         [Header("Auto-Setup")]
         [SerializeField] private bool autoSetupWeapons = true;
+#pragma warning disable CS0414
         [SerializeField] private string weaponAnimationsPath = "Assets/RPGTinyHeroWavePBR/Animation";
+#pragma warning restore CS0414
         
         // Components
         private PlayerController playerController;

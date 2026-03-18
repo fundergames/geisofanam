@@ -24,7 +24,9 @@ namespace RogueDeal.HexLevels.Editor
         private bool showPrefabBrowser = true;
         
         // Raycast layer mask for ground plane (adjust as needed)
+#pragma warning disable CS0414
         private int groundLayerMask = 1 << 0; // Default layer
+#pragma warning restore CS0414
         
         // Preview instance for placement preview
         private GameObject previewInstance = null;
@@ -36,7 +38,9 @@ namespace RogueDeal.HexLevels.Editor
         private HexCoordinate? lastPlacedHex = null;
         
         // Manual rotation override flag for smart placement
+#pragma warning disable CS0414
         private bool manualRotationOverride = false;
+#pragma warning restore CS0414
         private int lastHoveredRotation = 0;
 
         private void OnEnable()

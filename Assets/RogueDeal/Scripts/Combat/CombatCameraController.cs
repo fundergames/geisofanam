@@ -36,7 +36,7 @@ namespace RogueDeal.Combat
             if (_input != null) return;
             _input = inputProvider;
             if (_input == null)
-                _input = FindObjectOfType<CombatInputReader>();
+                _input = FindFirstObjectByType<CombatInputReader>();
         }
 
         private void LateUpdate()

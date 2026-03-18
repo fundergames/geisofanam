@@ -327,7 +327,8 @@ namespace RogueDeal.Combat
             
             if (animationController != null)
             {
-                animationController.PlayAttack(ability);
+                // Legacy path: use entity's attack trigger (no CombatAction in event)
+                animationController.PlayAttack(attackTrigger);
             }
             else if (animator != null)
             {

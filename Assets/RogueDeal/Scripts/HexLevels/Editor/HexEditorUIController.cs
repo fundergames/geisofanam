@@ -51,7 +51,7 @@ namespace RogueDeal.HexLevels.Editor
                 editorState.OnStateChanged += OnStateChanged;
             }
             
-            hexGrid = FindObjectOfType<HexGrid>();
+            hexGrid = FindFirstObjectByType<HexGrid>();
             
             if (hexGrid != null && commandBus == null)
             {

@@ -10,17 +10,23 @@ namespace FunderGames.RPG.OpenWorld
     public class PlayerController : MonoBehaviour
     {
         [Header("Movement Settings")]
+#pragma warning disable CS0414
         [SerializeField] private float walkSpeed = 5f;
         [SerializeField] private float runSpeed = 8f;
+#pragma warning restore CS0414
         [SerializeField] private float jumpHeight = 2f;
+#pragma warning disable CS0414
         [SerializeField] private float rotationSpeed = 10f;
+#pragma warning restore CS0414
         [SerializeField] private float gravity = -9.81f;
         
         [Header("Camera Settings")]
         [SerializeField] private float mouseSensitivity = 2f;
         [SerializeField] private float cameraDistance = 5f;
         [SerializeField] private float cameraHeight = 2f;
+#pragma warning disable CS0414
         [SerializeField] private float cameraSmoothness = 5f;
+#pragma warning restore CS0414
         
         [Header("Combat Settings")]
         [SerializeField] private float attackRange = 2f;
@@ -149,7 +155,7 @@ namespace FunderGames.RPG.OpenWorld
                 playerCamera.tag = "MainCamera";
                 
                 // Add audio listener if none exists
-                if (FindObjectOfType<AudioListener>() == null)
+                if (FindFirstObjectByType<AudioListener>() == null)
                 {
                     cameraObj.AddComponent<AudioListener>();
                 }

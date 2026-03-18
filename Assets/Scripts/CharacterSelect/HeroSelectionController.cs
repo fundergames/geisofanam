@@ -40,7 +40,9 @@ namespace RogueDeal.CharacterSelect
         private HeroData selectedHero;
         private ISceneLoader _sceneLoader;
         private ILoggingService _logger;
+#pragma warning disable CS0414
         private bool _isInitialized;
+#pragma warning restore CS0414
 
         private void Start()
         {

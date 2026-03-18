@@ -92,7 +92,7 @@ namespace RogueDeal.Combat.Core.Targeting
             // Fallback: search all CombatEntities if collider search failed
             if (nearest == null)
             {
-                var allEntities = Object.FindObjectsOfType<CombatEntity>();
+                var allEntities = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
                 foreach (var entity in allEntities)
                 {
                     if (entity == attackerEntity) continue;
@@ -145,7 +145,7 @@ namespace RogueDeal.Combat.Core.Targeting
         
         private CombatEntity FindCombatEntity(CombatEntityData data)
         {
-            var allEntities = Object.FindObjectsOfType<CombatEntity>();
+            var allEntities = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
             foreach (var entity in allEntities)
             {
                 var entityData = entity.GetEntityData();
@@ -159,7 +159,7 @@ namespace RogueDeal.Combat.Core.Targeting
         
         private new void SyncAllEntityPositions()
         {
-            var allEntities = Object.FindObjectsOfType<CombatEntity>();
+            var allEntities = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
             foreach (var entity in allEntities)
             {
                 var data = entity.GetEntityData();

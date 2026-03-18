@@ -29,7 +29,9 @@ namespace RogueDeal.Combat.Core.Targeting
         
         // For free-flow mode: store pending target position
         private Vector3? pendingTargetPosition = null;
+#pragma warning disable CS0414
         private bool isWaitingForInput = false;
+#pragma warning restore CS0414
         
         public override TargetResult ResolveTargets(CombatEntityData attacker)
         {

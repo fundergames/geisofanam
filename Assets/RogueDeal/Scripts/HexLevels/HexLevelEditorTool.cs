@@ -66,7 +66,7 @@ namespace RogueDeal.HexLevels
                 targetGrid = GetComponent<HexGrid>();
                 if (targetGrid == null)
                 {
-                    targetGrid = FindObjectOfType<HexGrid>();
+                    targetGrid = FindFirstObjectByType<HexGrid>();
                 }
             }
         }

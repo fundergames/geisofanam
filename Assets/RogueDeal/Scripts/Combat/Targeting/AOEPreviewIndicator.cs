@@ -36,7 +36,7 @@ namespace RogueDeal.Combat.Targeting
             mainCamera = Camera.main;
             if (mainCamera == null)
             {
-                mainCamera = FindObjectOfType<Camera>();
+                mainCamera = FindFirstObjectByType<Camera>();
             }
             
             // Create circle renderer if needed

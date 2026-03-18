@@ -40,8 +40,8 @@ namespace RogueDeal.HexLevels.Editor
         
         private void FindReferences()
         {
-            editorTool = FindObjectOfType<HexLevelEditorTool>();
-            hexGrid = FindObjectOfType<HexGrid>();
+            editorTool = FindFirstObjectByType<HexLevelEditorTool>();
+            hexGrid = FindFirstObjectByType<HexGrid>();
             
             if (editorTool == null && hexGrid != null)
             {

@@ -20,8 +20,10 @@ namespace RogueDeal.UI
         [SerializeField] private GameObject windowPanel;
 
         [Header("Settings")]
+#pragma warning disable CS0414 // Reserved for layout logic
         [SerializeField] private float windowWidth = 300f;
         [SerializeField] private float windowHeight = 400f;
+#pragma warning restore CS0414
 
         private void Awake()
         {

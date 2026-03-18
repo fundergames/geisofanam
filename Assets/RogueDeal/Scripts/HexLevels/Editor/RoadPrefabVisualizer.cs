@@ -118,7 +118,7 @@ namespace RogueDeal.HexLevels.Editor
 
         void ClearTestRoads()
         {
-            GameObject[] allObjects = FindObjectsOfType<GameObject>();
+            GameObject[] allObjects = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
             List<GameObject> toDelete = new List<GameObject>();
             
             foreach (GameObject obj in allObjects)

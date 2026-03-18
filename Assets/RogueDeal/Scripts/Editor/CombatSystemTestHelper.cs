@@ -14,7 +14,6 @@ namespace RogueDeal.Combat.Editor
     /// </summary>
     public class CombatSystemTestHelper : EditorWindow
     {
-        [MenuItem("Tools/Combat System/Create Test Assets")]
         public static void CreateTestAssets()
         {
             string basePath = "Assets/RogueDeal/Resources/Combat/TestAssets/";

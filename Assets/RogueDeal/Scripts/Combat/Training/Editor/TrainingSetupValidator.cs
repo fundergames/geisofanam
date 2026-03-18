@@ -20,7 +20,6 @@ namespace RogueDeal.Combat.Training.Editor
             }
         }
         
-        [MenuItem("RogueDeal/Combat/Validate Training Setup")]
         public static void ValidateTrainingSetup()
         {
             bool allGood = true;
@@ -28,7 +27,7 @@ namespace RogueDeal.Combat.Training.Editor
             
             report.AppendLine("=== Training Mode Setup Validation ===\n");
             
-            TrainingModeManager manager = Object.FindObjectOfType<TrainingModeManager>();
+            TrainingModeManager manager = Object.FindFirstObjectByType<TrainingModeManager>();
             if (manager != null)
             {
                 report.AppendLine("✓ TrainingModeManager found");
@@ -39,7 +38,7 @@ namespace RogueDeal.Combat.Training.Editor
                 allGood = false;
             }
             
-            TrainingAttackController attackController = Object.FindObjectOfType<TrainingAttackController>();
+            TrainingAttackController attackController = Object.FindFirstObjectByType<TrainingAttackController>();
             if (attackController != null)
             {
                 report.AppendLine("✓ TrainingAttackController found");
@@ -51,7 +50,7 @@ namespace RogueDeal.Combat.Training.Editor
             
             // CombatExecutor (on player) is used for real-time combat
             // CombatExecutor is automatically added by CombatEntity, no need to check for it
-            var combatExecutor = Object.FindObjectOfType<RogueDeal.Combat.Presentation.CombatExecutor>();
+            var combatExecutor = Object.FindFirstObjectByType<RogueDeal.Combat.Presentation.CombatExecutor>();
             if (combatExecutor != null)
             {
                 report.AppendLine("✓ CombatExecutor found (new system)");
@@ -61,7 +60,7 @@ namespace RogueDeal.Combat.Training.Editor
                 report.AppendLine("⚠ CombatExecutor not found - will be auto-added by CombatEntity");
             }
             
-            CombatEntity[] entities = Object.FindObjectsOfType<CombatEntity>();
+            CombatEntity[] entities = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
             if (entities.Length >= 2)
             {
                 report.AppendLine($"✓ Found {entities.Length} CombatEntities");
@@ -82,7 +81,7 @@ namespace RogueDeal.Combat.Training.Editor
                 allGood = false;
             }
             
-            TrainingDummy dummy = Object.FindObjectOfType<TrainingDummy>();
+            TrainingDummy dummy = Object.FindFirstObjectByType<TrainingDummy>();
             if (dummy != null)
             {
                 report.AppendLine($"✓ TrainingDummy found: {dummy.gameObject.name}");

@@ -48,7 +48,7 @@ namespace RogueDeal.Combat.Targeting
             mainCamera = Camera.main;
             if (mainCamera == null)
             {
-                mainCamera = FindObjectOfType<Camera>();
+                mainCamera = FindFirstObjectByType<Camera>();
             }
             
             // If no strategy assigned, default to nearest enemy

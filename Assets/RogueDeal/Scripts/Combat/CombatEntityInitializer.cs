@@ -34,7 +34,8 @@ namespace RogueDeal.Combat
             EnsureHitPoint(target, entity);
             EnsureVFXSpawnPoint(target, entity);
 
-            Debug.Log($"[CombatEntityInitializer] Initialized CombatEntity for {target.name} (HP: {entity.stats?.CurrentHealth ?? 0})");
+            var data = entity.GetEntityData();
+            Debug.Log($"[CombatEntityInitializer] Initialized CombatEntity for {target.name} (HP: {data?.currentHealth ?? 0})");
 
             return entity;
         }

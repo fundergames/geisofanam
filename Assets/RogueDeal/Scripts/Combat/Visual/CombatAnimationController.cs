@@ -8,12 +8,16 @@ namespace RogueDeal.Combat
         
         [Header("Attack Animations")]
         [SerializeField] private string lightAttackTrigger = "Attack_1";
+#pragma warning disable CS0414
         [SerializeField] private string heavyAttackTrigger = "Attack_2";
         [SerializeField] private string specialAttackTrigger = "Attack_3";
-        
+#pragma warning restore CS0414
+
         [Header("Reaction Animations")]
         [SerializeField] private string hitReactionTrigger = "TakeDamage";
+#pragma warning disable CS0414
         [SerializeField] private string criticalHitTrigger = "TakeDamage";
+#pragma warning restore CS0414
         [SerializeField] private string dodgeTrigger = "Dodge";
         [SerializeField] private string blockTrigger = "Block";
         
@@ -67,30 +71,35 @@ namespace RogueDeal.Combat
             }
 
             // Use animation trigger from CombatAction
-            if (!string.IsNullOrEmpty(action.animationTrigger))
+            PlayAttack(!string.IsNullOrEmpty(action.animationTrigger) ? action.animationTrigger : null);
+        }
+
+        /// <summary>
+        /// Plays attack animation by trigger name. Uses default light attack trigger if triggerName is null or empty.
+        /// </summary>
+        public void PlayAttack(string triggerName)
+        {
+            if (animator == null)
             {
-                if (HasParameter(action.animationTrigger))
-                {
-                    Debug.Log($"[CombatAnimationController] Setting trigger '{action.animationTrigger}' on {gameObject.name}");
-                    animator.SetTrigger(action.animationTrigger);
-                }
-                else
-                {
-                    Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{action.animationTrigger}' parameter. Available parameters: {GetParameterList()}");
-                }
+                Debug.LogWarning($"[CombatAnimationController] Cannot play attack on {gameObject.name} - no Animator");
+                return;
+            }
+
+            if (animator.runtimeAnimatorController == null)
+            {
+                Debug.LogWarning($"[CombatAnimationController] No AnimatorController assigned to {animator.gameObject.name}. Cannot play animations.");
+                return;
+            }
+
+            string trigger = !string.IsNullOrEmpty(triggerName) ? triggerName : lightAttackTrigger;
+            if (HasParameter(trigger))
+            {
+                Debug.Log($"[CombatAnimationController] Setting trigger '{trigger}' on {gameObject.name}");
+                animator.SetTrigger(trigger);
             }
             else
             {
-                // Fallback to default attack trigger
-                if (HasParameter(lightAttackTrigger))
-                {
-                    Debug.Log($"[CombatAnimationController] No animation trigger in action, using default '{lightAttackTrigger}' on {gameObject.name}");
-                    animator.SetTrigger(lightAttackTrigger);
-                }
-                else
-                {
-                    Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{lightAttackTrigger}' parameter. Available parameters: {GetParameterList()}");
-                }
+                Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{trigger}' parameter. Available parameters: {GetParameterList()}");
             }
         }
 

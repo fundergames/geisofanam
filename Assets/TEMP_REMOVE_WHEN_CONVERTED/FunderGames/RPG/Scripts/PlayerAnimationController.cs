@@ -10,7 +10,9 @@ namespace FunderGames.RPG
         [SerializeField] private ClassAnimatorData animatorData;
         
         [Header("Animation Parameters")]
+#pragma warning disable CS0414
         [SerializeField] private float speedThreshold = 0.1f;
+#pragma warning restore CS0414
         [SerializeField] private float runSpeedThreshold = 6f;
         
         private Animator animator;

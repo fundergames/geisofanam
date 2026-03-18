@@ -11,8 +11,10 @@ namespace FunderGames.RPG
         [SerializeField] private float runSpeed = 8f;
         [SerializeField] private float jumpHeight = 2f;
         [SerializeField] private float gravity = -9.81f;
+#pragma warning disable CS0414
         [SerializeField] private float rollSpeed = 10f;
         [SerializeField] private float dashSpeed = 15f;
+#pragma warning restore CS0414
         
         [Header("Input Settings")]
         [SerializeField] private KeyCode jumpKey = KeyCode.Space;

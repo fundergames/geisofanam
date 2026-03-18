@@ -28,12 +28,12 @@ namespace RogueDeal.HexLevels.Runtime
         {
             if (editorState == null)
             {
-                editorState = FindObjectOfType<HexEditorRuntimeState>();
+                editorState = FindFirstObjectByType<HexEditorRuntimeState>();
             }
             
             if (editorController == null)
             {
-                editorController = FindObjectOfType<HexEditorController>();
+                editorController = FindFirstObjectByType<HexEditorController>();
             }
         }
         

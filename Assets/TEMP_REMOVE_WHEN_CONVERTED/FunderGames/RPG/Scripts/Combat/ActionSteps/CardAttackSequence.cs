@@ -8,8 +8,10 @@ namespace FunderGames.RPG
     public class CardAttackSequence : ActionSequence
     {
         [Header("Card Attack Sequence Settings")]
+#pragma warning disable CS0414
         [SerializeField] private float attackDamage = 10f;
         [SerializeField] private string attackAnimationTrigger = "Attack01_NoWeapon";
+#pragma warning restore CS0414
         
         private void OnEnable()
         {

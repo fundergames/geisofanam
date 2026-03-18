@@ -96,7 +96,7 @@ namespace RogueDeal.Combat.Training
 
             if (playerEntity == null)
             {
-                CombatEntity[] entities = FindObjectsOfType<CombatEntity>();
+                CombatEntity[] entities = FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
                 foreach (var entity in entities)
                 {
                     if (entity.gameObject.name.Contains("Player") || entity.gameObject.name.Contains("Hero"))
@@ -113,7 +113,7 @@ namespace RogueDeal.Combat.Training
             
             if (dummyEntity == null)
             {
-                TrainingDummy dummy = FindObjectOfType<TrainingDummy>();
+                TrainingDummy dummy = FindFirstObjectByType<TrainingDummy>();
                 if (dummy != null)
                 {
                     dummyEntity = dummy.GetComponent<CombatEntity>();
@@ -153,7 +153,8 @@ namespace RogueDeal.Combat.Training
             }
             else
             {
-                if (playerEntity.stats == null)
+                var playerData = playerEntity.GetEntityData();
+                if (playerData == null || playerData.maxHealth <= 0)
                 {
                     Debug.LogWarning($"[TrainingAttackController] Player {playerEntity.gameObject.name} has no stats! Initializing default stats...");
                     playerEntity.InitializeStatsWithoutHeroData(100f, 25f, 10f);
@@ -167,7 +168,8 @@ namespace RogueDeal.Combat.Training
             }
             else
             {
-                if (dummyEntity.stats == null)
+                var dummyData = dummyEntity.GetEntityData();
+                if (dummyData == null || dummyData.maxHealth <= 0)
                 {
                     Debug.LogWarning($"[TrainingAttackController] Dummy {dummyEntity.gameObject.name} has no stats! This should be handled by TrainingDummy component.");
                 }

@@ -57,8 +57,6 @@ namespace RogueDeal.Editor
                 CreateTestLevel();
                 
                 Debug.Log("=== ALL EXAMPLE DATA CREATED! ===");
-                Debug.Log("Running auto-fix for combat data references...");
-                FixEnemyModelReference.FixCombatDataReferences();
             }
 
             GUILayout.Space(10);

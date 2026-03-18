@@ -86,7 +86,7 @@ namespace FunderGames.RPG
             
             Debug.Log("=== Converting Materials to URP ===");
             
-            var renderers = FindObjectsOfType<Renderer>();
+            var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
             int convertedCount = 0;
             
             foreach (var renderer in renderers)

@@ -18,7 +18,7 @@ namespace RogueDeal.HexLevels
         
         private void OnEnable()
         {
-            selectedGrid = FindObjectOfType<HexGrid>();
+            selectedGrid = FindFirstObjectByType<HexGrid>();
             
             string[] guids = AssetDatabase.FindAssets("t:ConnectionPatternMappings");
             if (guids.Length > 0)
@@ -40,7 +40,7 @@ namespace RogueDeal.HexLevels
             
             if (GUILayout.Button("Refresh Grid"))
             {
-                selectedGrid = FindObjectOfType<HexGrid>();
+                selectedGrid = FindFirstObjectByType<HexGrid>();
                 Repaint();
             }
             

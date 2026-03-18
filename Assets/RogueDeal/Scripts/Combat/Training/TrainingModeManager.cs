@@ -24,17 +24,23 @@ namespace RogueDeal.Combat.Training
         [SerializeField] private int maxRecordedInputs = 100;
         
         [Header("Visual Feedback")]
+#pragma warning disable CS0414
         [SerializeField] private bool showAttackArcs = true;
+#pragma warning restore CS0414
         [SerializeField] private Color attackArcColor = new Color(1f, 0f, 0f, 0.3f);
+#pragma warning disable CS0414
         [SerializeField] private bool showTimingWindows = true;
-        
+#pragma warning restore CS0414
+
         private GameObject currentDummy;
         private ComboRecorder comboRecorder;
         private TrainingUI trainingUI;
         private TrainingAttackController attackController;
         private List<AttackTimingData> attackTimings = new List<AttackTimingData>();
         private float currentAttackStartTime;
+#pragma warning disable CS0414
         private bool isAttacking;
+#pragma warning restore CS0414
         
         public bool IsTrainingMode => trainingModeActive;
         public float CurrentTimeScale => timeScale;

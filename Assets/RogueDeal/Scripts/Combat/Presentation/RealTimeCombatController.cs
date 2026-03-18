@@ -13,7 +13,9 @@ namespace RogueDeal.Combat.RealTime
         [SerializeField] private CombatEntity combatEntity;
         [SerializeField] private CombatAction[] equippedActions;
         [SerializeField] private LayerMask enemyLayer;
+#pragma warning disable CS0414
         [SerializeField] private float maxTargetRange = 20f;
+#pragma warning restore CS0414
 
         private CombatExecutor combatExecutor;
 

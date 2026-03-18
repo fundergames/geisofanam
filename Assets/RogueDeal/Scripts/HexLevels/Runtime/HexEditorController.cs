@@ -59,10 +59,10 @@ namespace RogueDeal.HexLevels.Runtime
             
             if (hexGrid == null)
             {
-                hexGrid = FindObjectOfType<HexGrid>();
+                hexGrid = FindFirstObjectByType<HexGrid>();
             }
             
-            cachedUIDocuments = FindObjectsOfType<UIDocument>();
+            cachedUIDocuments = FindObjectsByType<UIDocument>(FindObjectsSortMode.None);
             
             CreateDefaultPreviewMaterialsIfNeeded();
         }

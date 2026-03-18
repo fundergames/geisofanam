@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using RogueDeal.Combat.Core.Data;
 
 namespace RogueDeal.Combat.UI
 {
@@ -21,29 +22,33 @@ namespace RogueDeal.Combat.UI
 
         private void OnEnable()
         {
-            if (targetEntity != null && targetEntity.stats != null)
-            {
-                targetEntity.stats.OnHealthChanged += UpdateHealthBar;
-                UpdateHealthBar(targetEntity.stats.CurrentHealth, targetEntity.stats.MaxHealth);
-            }
-        }
-
-        private void OnDisable()
-        {
-            if (targetEntity != null && targetEntity.stats != null)
-            {
-                targetEntity.stats.OnHealthChanged -= UpdateHealthBar;
-            }
+            RefreshHealthFromEntity();
         }
 
         private void LateUpdate()
         {
-            if (followWorldPosition && targetEntity != null && mainCamera != null)
+            if (targetEntity == null)
+                return;
+
+            var data = targetEntity.GetEntityData();
+            if (data != null)
+                UpdateHealthBar(data.currentHealth, data.maxHealth);
+
+            if (followWorldPosition && mainCamera != null)
             {
                 Vector3 worldPos = targetEntity.transform.position + worldOffset;
                 Vector3 screenPos = mainCamera.WorldToScreenPoint(worldPos);
                 transform.position = screenPos;
             }
+        }
+
+        private void RefreshHealthFromEntity()
+        {
+            if (targetEntity == null)
+                return;
+            var data = targetEntity.GetEntityData();
+            if (data != null)
+                UpdateHealthBar(data.currentHealth, data.maxHealth);
         }
 
         private void UpdateHealthBar(float currentHealth, float maxHealth)
@@ -61,18 +66,8 @@ namespace RogueDeal.Combat.UI
 
         public void SetTarget(CombatEntity entity)
         {
-            if (targetEntity != null && targetEntity.stats != null)
-            {
-                targetEntity.stats.OnHealthChanged -= UpdateHealthBar;
-            }
-
             targetEntity = entity;
-
-            if (targetEntity != null && targetEntity.stats != null)
-            {
-                targetEntity.stats.OnHealthChanged += UpdateHealthBar;
-                UpdateHealthBar(targetEntity.stats.CurrentHealth, targetEntity.stats.MaxHealth);
-            }
+            RefreshHealthFromEntity();
         }
     }
 }

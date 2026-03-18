@@ -37,7 +37,9 @@ namespace RogueDeal.Combat.Presentation
         // Movement
         private Vector3 originalPosition;
         private bool needsToMove = false;
+#pragma warning disable CS0414
         private bool isMoving = false;
+#pragma warning restore CS0414
         
         private void Awake()
         {
