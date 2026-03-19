@@ -1,0 +1,10 @@
+[
+  {
+    "slug": "forest-guardian",
+    "type": "enemy",
+    "status": "concept",
+    "owner": "Design",
+    "priority": "high",
+    "last_updated": null
+  }
+]

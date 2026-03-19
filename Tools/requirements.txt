@@ -1,0 +1,2 @@
+# For meshy_generate.py - Meshy.ai Text-to-3D API
+requests>=2.28.0
