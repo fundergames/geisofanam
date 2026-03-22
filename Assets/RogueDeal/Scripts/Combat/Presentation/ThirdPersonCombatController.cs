@@ -1,6 +1,5 @@
 using System.Collections;
 using UnityEngine;
-using UnityEngine.InputSystem;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Targeting;
@@ -9,1295 +8,1169 @@ using RogueDeal.Combat.Targeting;
 namespace RogueDeal.Combat.Presentation
 {
     /// <summary>
-    /// Third-person controller for free-flow combat with dashing and attacks using Animator Controller
+    /// Third-person combat controller based on Synty SamplePlayerAnimationController locomotion,
+    /// with combat (dash, attacks, lock-on) layered on top.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(CombatExecutor))]
     [RequireComponent(typeof(CombatEntity))]
     public class ThirdPersonCombatController : MonoBehaviour
     {
-        [Header("Movement Settings")]
-        [SerializeField] private float walkSpeed = 5f;
-        [SerializeField] private float runSpeed = 8f;
-        [SerializeField] private float rotationSpeed = 10f;
-        [SerializeField] private float gravity = -9.81f;
-        
-        [Header("Combat Settings")]
-#pragma warning disable CS0414
-        [SerializeField] private float dashDistance = 5f;
-#pragma warning restore CS0414
-        [SerializeField] private float dashDuration = 0.3f;
-        [SerializeField] private LayerMask enemyLayerMask = 1 << 6; // Default enemy layer
-        [SerializeField] private bool useManualDashMovement = false; // If true, manually move during dash instead of relying on root motion
-        [SerializeField] private float manualDashSpeed = 15f; // Speed for manual dash movement
-        [Tooltip("If true, combat uses weapon colliders for hit detection instead of targeting system")]
-        [SerializeField] private bool useWeaponColliders = true; // Default to weapon collider mode
-        
-        [Header("Combat Actions")]
-        [Tooltip("Combat actions available to the player. If empty, will try to get from CombatEntity's CombatProfile.")]
-        [SerializeField] private CombatAction[] combatActions;
-        
-        [Header("Action System Settings")]
-        [Tooltip("Number of action states in Animator Controller (Action_1, Action_2, etc.). Default: 2")]
-        [SerializeField] private int actionStateCount = 2;
-        
-        [Tooltip("ActionIndex offset. If Action_1 uses index 0, set to 0. If Action_1 uses index 1, set to 1. Default: 0")]
-        [SerializeField] private int actionIndexOffset = 0;
-        
-        [Header("Input Settings")]
-        [Tooltip("Assign the CombatInputReader in the scene (e.g. on the same or another GameObject). When unset, will try to find one.")]
-        [SerializeField] private CombatInputReader inputProvider;
-        [SerializeField] private bool useNewInputSystem = true; // Used only when inputProvider is unset
-        
-        [Header("Animator Settings")]
-        [Tooltip("Default AnimatorController to assign if the Animator doesn't have one. If not set, will try to load from Resources.")]
-        [SerializeField] private RuntimeAnimatorController defaultAnimatorController;
-        
-        // Components
-        private CharacterController characterController;
-        private Animator animator;
-        private CombatExecutor combatExecutor;
-        private CombatEntity combatEntity;
-        private Camera mainCamera;
-        private TargetingManager targetingManager;
-        private LockOnIndicator lockOnIndicator;
-        private ICombatInputProvider _inputProvider;
-        private static bool _loggedInputProviderMissing;
+        #region State Enums
 
-        // Movement state
-        private Vector3 moveDirection;
-        private Vector3 velocity;
-        private bool isGrounded;
-        private bool isDashing;
-        private bool isAttacking; // Maps to IsAction in animator
-        private float dashTimer;
-        private float attackStateTimeout = 0f; // Timeout to reset attack state if animation event doesn't fire
-        private Vector3 dashDirection;
-        
-        // Input
-        private Vector2 moveInput;
-        private bool dashInput;
-        private bool attackInput;
-        private bool runInput;
-        
-        // Animator parameter hashes
-        private readonly int speedHash = Animator.StringToHash("Speed");
-        private readonly int isGroundedHash = Animator.StringToHash("IsGrounded");
-        private readonly int isRunningHash = Animator.StringToHash("IsRunning");
-        private readonly int runHash = Animator.StringToHash("Run"); // Alternative to IsRunning
-        private readonly int dashTriggerHash = Animator.StringToHash("Dash");
-        private readonly int takeActionTriggerHash = Animator.StringToHash("TakeAction");
-        private readonly int actionIndexHash = Animator.StringToHash("ActionIndex");
-        private readonly int isActionHash = Animator.StringToHash("IsAction");
-        
-        // Attack trigger hashes (for controllers that use Attack_1/2/3 directly)
-        private readonly int attack1Hash = Animator.StringToHash("Attack_1");
-        private readonly int attack2Hash = Animator.StringToHash("Attack_2");
-        private readonly int attack3Hash = Animator.StringToHash("Attack_3");
-        
-        // Parameter detection (set at runtime)
-        private bool useLegacyRunParameter = false;
-        private bool useLegacyAttackTriggers = false;
-        
-        // Combat actions
-        private CombatAction[] availableActions;
-        private int currentComboIndex = 0;
-        
+        private enum AnimationState
+        {
+            Base,
+            Locomotion,
+            Jump,
+            Fall,
+            Crouch,
+            Dash,
+            Attack
+        }
+
+        private enum GaitState
+        {
+            Idle,
+            Walk,
+            Run,
+            Sprint
+        }
+
+        #endregion
+
+        #region Animation Hashes
+
+        private readonly int _movementInputTappedHash = Animator.StringToHash("MovementInputTapped");
+        private readonly int _movementInputPressedHash = Animator.StringToHash("MovementInputPressed");
+        private readonly int _movementInputHeldHash = Animator.StringToHash("MovementInputHeld");
+        private readonly int _moveSpeedHash = Animator.StringToHash("MoveSpeed");
+        private readonly int _currentGaitHash = Animator.StringToHash("CurrentGait");
+        private readonly int _strafeDirectionXHash = Animator.StringToHash("StrafeDirectionX");
+        private readonly int _strafeDirectionZHash = Animator.StringToHash("StrafeDirectionZ");
+        private readonly int _isStrafingHash = Animator.StringToHash("IsStrafing");
+        private readonly int _isCrouchingHash = Animator.StringToHash("IsCrouching");
+        private readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
+        private readonly int _isJumpingHash = Animator.StringToHash("IsJumping");
+        private readonly int _speedHash = Animator.StringToHash("Speed");
+        private readonly int _isWalkingHash = Animator.StringToHash("IsWalking");
+        private readonly int _dashTriggerHash = Animator.StringToHash("Dash");
+        private readonly int _takeActionHash = Animator.StringToHash("TakeAction");
+        private readonly int _actionIndexHash = Animator.StringToHash("ActionIndex");
+        private readonly int _actionTypeHash = Animator.StringToHash("ActionType");
+        private readonly int _isActionHash = Animator.StringToHash("IsAction");
+        private readonly int _attack1Hash = Animator.StringToHash("Attack_1");
+        private readonly int _attack2Hash = Animator.StringToHash("Attack_2");
+        private readonly int _attack3Hash = Animator.StringToHash("Attack_3");
+
+        private readonly int _leanValueHash = Animator.StringToHash("LeanValue");
+        private readonly int _headLookXHash = Animator.StringToHash("HeadLookX");
+        private readonly int _headLookYHash = Animator.StringToHash("HeadLookY");
+        private readonly int _bodyLookXHash = Animator.StringToHash("BodyLookX");
+        private readonly int _bodyLookYHash = Animator.StringToHash("BodyLookY");
+        private readonly int _inclineAngleHash = Animator.StringToHash("InclineAngle");
+        private readonly int _shuffleDirectionXHash = Animator.StringToHash("ShuffleDirectionX");
+        private readonly int _shuffleDirectionZHash = Animator.StringToHash("ShuffleDirectionZ");
+        private readonly int _forwardStrafeHash = Animator.StringToHash("ForwardStrafe");
+        private readonly int _cameraRotationOffsetHash = Animator.StringToHash("CameraRotationOffset");
+        private readonly int _isTurningInPlaceHash = Animator.StringToHash("IsTurningInPlace");
+        private readonly int _isStoppedHash = Animator.StringToHash("IsStopped");
+        private readonly int _isStartingHash = Animator.StringToHash("IsStarting");
+        private readonly int _locomotionStartDirectionHash = Animator.StringToHash("LocomotionStartDirection");
+        private readonly int _fallingDurationHash = Animator.StringToHash("FallingDuration");
+
+        private const float MovementInputHoldThreshold = 0.15f;
+        private const float StrafeDirectionDampTime = 20f;
+        private const float MovementRampTime = 0.12f;
+        private const float AnimationDampTime = 5f;
+
+        #endregion
+
+        #region Serialized Fields
+
+        [Header("Locomotion (Sample Style)")]
+        [SerializeField] private float walkSpeed = 1.4f;
+        [SerializeField] private float runSpeed = 2.5f;
+        [SerializeField] private float sprintSpeed = 7f;
+        [SerializeField] private float speedChangeDamping = 10f;
+        [SerializeField] private float rotationSmoothing = 10f;
+        [SerializeField] private bool alwaysStrafe = true;
+        [Tooltip("When true, disables strafe when sprinting (face forward). When false, strafe works at all speeds.")]
+        [SerializeField] private bool disableStrafeWhenSprinting = false;
+
+        [Header("Capsule (Crouch)")]
+        [SerializeField] private float capsuleStandingHeight = 1.8f;
+        [SerializeField] private float capsuleStandingCentre = 0.93f;
+        [SerializeField] private float capsuleCrouchingHeight = 1.2f;
+        [SerializeField] private float capsuleCrouchingCentre = 0.6f;
+
+        [Header("Jump / Gravity")]
+        [SerializeField] private float jumpForce = 10f;
+        [SerializeField] private float gravity = -20f;
+        [SerializeField] private float groundedOffset = -0.14f;
+        [SerializeField] private LayerMask groundLayerMask = ~0;
+
+        [Header("Grounded (Incline)")]
+        [Tooltip("Position of the rear ray for incline check. Leave null to skip incline.")]
+        [SerializeField] private Transform rearRayPos;
+        [Tooltip("Position of the front ray for incline check. Leave null to skip incline.")]
+        [SerializeField] private Transform frontRayPos;
+
+        [Header("Strafing")]
+        [SerializeField] private float forwardStrafeMinThreshold = -55f;
+        [SerializeField] private float forwardStrafeMaxThreshold = 125f;
+
+        [Header("Head Look")]
+        [SerializeField] private bool enableHeadTurn = true;
+        [SerializeField] private AnimationCurve headLookXCurve;
+
+        [Header("Body Look")]
+        [SerializeField] private bool enableBodyTurn = true;
+        [SerializeField] private AnimationCurve bodyLookXCurve;
+
+        [Header("Lean")]
+        [SerializeField] private bool enableLean = true;
+        [SerializeField] private AnimationCurve leanCurve;
+
+        [Header("Combat")]
+        [SerializeField] private float dashDuration = 0.3f;
+        [SerializeField] private float manualDashSpeed = 15f;
+        [SerializeField] private bool useWeaponColliders = true;
+        [SerializeField] private CombatAction[] combatActions;
+        [SerializeField] private int actionStateCount = 2;
+        [SerializeField] private int actionIndexOffset = 0;
+
+        [Header("References")]
+        [SerializeField] private CombatInputReader inputProvider;
+        [SerializeField] private CombatCameraController cameraController;
+        [SerializeField] private RuntimeAnimatorController defaultAnimatorController;
+
+        #endregion
+
+        #region Component Refs
+
+        private CharacterController _controller;
+        private Animator _animator;
+        private CombatExecutor _combatExecutor;
+        private CombatEntity _combatEntity;
+        private Camera _mainCamera;
+        private TargetingManager _targetingManager;
+        private LockOnIndicator _lockOnIndicator;
+        private ICombatInputProvider _inputProvider;
+
+        #endregion
+
+        #region Runtime State
+
+        private AnimationState _currentState = AnimationState.Locomotion;
+        private Vector3 _velocity;
+        private Vector3 _moveDirection;
+        private Vector3 _targetVelocity;
+        private bool _isGrounded = true;
+        private bool _isCrouching;
+        private bool _isSprinting;
+        private bool _isStrafing;
+        private bool _isLockedOn;
+        private bool _isWalking;
+        private float _speed2D;
+        private GaitState _currentGait;
+        private float _strafeDirectionX;
+        private float _strafeDirectionZ;
+        private float _currentMaxSpeed;
+        private float _targetMaxSpeed;
+        private float _movementInputDuration;
+        private float _timeSinceMoveStart;
+
+        // Combat
+        private float _dashTimer;
+        private float _attackStateTimeout;
+        private Vector3 _dashDirection;
+        private CombatAction[] _availableActions;
+        private int _currentComboIndex;
+
+        private bool _usePolygonParams;
+        private bool _useLegacyAttackTriggers;
+        private bool _useSyntyMovementParams;
+
+        private bool _movementInputTapped;
+        private bool _movementInputPressed;
+        private bool _movementInputHeld;
+
+        // Incline, head/body look, lean
+        private float _inclineAngle;
+        private float _headLookX;
+        private float _headLookY;
+        private float _bodyLookX;
+        private float _bodyLookY;
+        private float _leanValue;
+        private float _cameraRotationOffset;
+        private float _forwardStrafe = 1f;
+        private float _shuffleDirectionX;
+        private float _shuffleDirectionZ;
+        private float _strafeAngle;
+        private float _newDirectionDifferenceAngle;
+        private float _locomotionStartDirection;
+        private float _locomotionStartTimer;
+        private float _headLookDelay;
+        private float _bodyLookDelay;
+        private float _leanDelay;
+        private float _rotationRate;
+        private float _fallStartTime;
+        private float _fallingDuration;
+        private bool _isStarting;
+        private bool _isStopped = true;
+        private bool _isTurningInPlace;
+        private bool _cannotStandUp;
+        private bool _enableHeadTurn = true;
+        private bool _enableBodyTurn = true;
+        private bool _enableLean = true;
+        private Vector3 _currentRotation;
+        private Vector3 _previousRotation;
+        private float _initialLeanValue;
+        private float _initialTurnValue;
+
+        #endregion
+
+        #region Lifecycle
+
         private void Awake()
         {
-            characterController = GetComponent<CharacterController>();
-            
-            // Get animator - try self first, then children (animator is often on child visual object)
-            animator = GetComponent<Animator>();
-            if (animator == null)
-            {
-                animator = GetComponentInChildren<Animator>();
-            }
-            // Also try getting from CombatEntity (it also searches children)
-            if (animator == null)
-            {
-                combatEntity = GetComponent<CombatEntity>();
-                if (combatEntity != null)
-                {
-                    animator = combatEntity.animator;
-                }
-            }
-            
-            combatExecutor = GetComponent<CombatExecutor>();
-            if (combatEntity == null)
-            {
-                combatEntity = GetComponent<CombatEntity>();
-            }
-            
-            // Get or add TargetingManager
-            targetingManager = GetComponent<TargetingManager>();
-            if (targetingManager == null)
-            {
-                targetingManager = gameObject.AddComponent<TargetingManager>();
-                Debug.Log("[ThirdPersonCombatController] Added TargetingManager component");
-            }
-            
-            // Get or add LockOnIndicator
-            lockOnIndicator = GetComponentInChildren<LockOnIndicator>();
-            if (lockOnIndicator == null)
-            {
-                GameObject indicatorObj = new GameObject("LockOnIndicator");
-                indicatorObj.transform.SetParent(transform);
-                indicatorObj.transform.localPosition = Vector3.zero;
-                lockOnIndicator = indicatorObj.AddComponent<LockOnIndicator>();
-                Debug.Log("[ThirdPersonCombatController] Created LockOnIndicator");
-            }
-            
-            mainCamera = Camera.main;
-            if (mainCamera == null)
-                mainCamera = FindFirstObjectByType<Camera>();
+            _controller = GetComponent<CharacterController>();
+            _animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+            _combatEntity = GetComponent<CombatEntity>();
+            if (_animator == null && _combatEntity != null)
+                _animator = _combatEntity.animator;
+            _combatExecutor = GetComponent<CombatExecutor>();
+            _mainCamera = Camera.main ?? FindFirstObjectByType<Camera>();
 
-            _inputProvider = inputProvider as ICombatInputProvider;
-            if (_inputProvider == null && inputProvider != null)
-                _inputProvider = inputProvider.GetComponent<ICombatInputProvider>();
-            if (_inputProvider == null)
-                _inputProvider = FindFirstObjectByType<CombatInputReader>();
-            
-            if (mainCamera == null)
+            _targetingManager = GetComponent<TargetingManager>();
+            if (_targetingManager == null)
+                _targetingManager = gameObject.AddComponent<TargetingManager>();
+
+            _lockOnIndicator = GetComponentInChildren<LockOnIndicator>();
+            if (_lockOnIndicator == null)
             {
-                Debug.LogWarning("[ThirdPersonCombatController] No camera found! Movement will use world space. Make sure there's a camera tagged 'MainCamera' in the scene.");
+                var go = new GameObject("LockOnIndicator");
+                go.transform.SetParent(transform);
+                go.transform.localPosition = Vector3.zero;
+                _lockOnIndicator = go.AddComponent<LockOnIndicator>();
             }
-            else
+
+            if (cameraController == null)
+                cameraController = FindFirstObjectByType<CombatCameraController>();
+
+            _inputProvider = inputProvider as ICombatInputProvider ?? inputProvider?.GetComponent<ICombatInputProvider>() ?? FindFirstObjectByType<CombatInputReader>();
+            _availableActions = combatActions != null && combatActions.Length > 0 ? combatActions : new CombatAction[0];
+
+            if (_animator != null)
             {
-                Debug.Log($"[ThirdPersonCombatController] Using camera: {mainCamera.name}");
+                _animator.applyRootMotion = true;
+                _usePolygonParams = HasParameter("MoveSpeed");
+                _useLegacyAttackTriggers = HasParameter("Attack_1") && HasParameter("Attack_2");
+                _useSyntyMovementParams = HasParameter("MovementInputHeld");
+                if (_animator.runtimeAnimatorController == null && defaultAnimatorController != null)
+                    _animator.runtimeAnimatorController = defaultAnimatorController;
             }
-            
-            // Ensure root motion is enabled
-            if (animator != null)
-            {
-                animator.applyRootMotion = true;
-                Debug.Log($"[ThirdPersonCombatController] Found animator on: {animator.gameObject.name}");
-                
-                // Check if animator has a runtime controller assigned
-                if (animator.runtimeAnimatorController == null)
-                {
-                    // Try to auto-assign a controller
-                    RuntimeAnimatorController controllerToAssign = null;
-                    
-                    // First, try the assigned default controller
-                    if (defaultAnimatorController != null)
-                    {
-                        controllerToAssign = defaultAnimatorController;
-                        Debug.Log($"[ThirdPersonCombatController] Using assigned default AnimatorController: {defaultAnimatorController.name}");
-                    }
-                    // If no default assigned, try to load from Resources
-                    else
-                    {
-                        // Try common resource paths
-                        string[] resourcePaths = new string[]
-                        {
-                            "Combat/Animations/ThirdPerson_Controller",
-                            "RogueDeal/Combat/Animations/ThirdPerson_Controller",
-                            "Animations/ThirdPerson_Controller"
-                        };
-                        
-                        foreach (string path in resourcePaths)
-                        {
-                            RuntimeAnimatorController loadedController = Resources.Load<RuntimeAnimatorController>(path);
-                            if (loadedController != null)
-                            {
-                                controllerToAssign = loadedController;
-                                Debug.Log($"[ThirdPersonCombatController] Loaded AnimatorController from Resources: {path}");
-                                break;
-                            }
-                        }
-                    }
-                    
-                    // Assign the controller if we found one
-                    if (controllerToAssign != null)
-                    {
-                        animator.runtimeAnimatorController = controllerToAssign;
-                        Debug.Log($"[ThirdPersonCombatController] ✅ Auto-assigned AnimatorController: {controllerToAssign.name}");
-                    }
-                    else
-                    {
-                        Debug.LogError($"[ThirdPersonCombatController] ❌ Animator found on '{animator.gameObject.name}' but no AnimatorController is assigned! " +
-                                     $"Please assign an AnimatorController in the Inspector or set the 'Default Animator Controller' field. " +
-                                     $"The animator will not work without a controller.");
-                    }
-                }
-                else
-                {
-                    Debug.Log($"[ThirdPersonCombatController] ✅ AnimatorController assigned: {animator.runtimeAnimatorController.name}");
-                }
-                
-                // Detect which parameter system is available
-                DetectAnimatorParameters();
-            }
-            else
-            {
-                Debug.LogError("[ThirdPersonCombatController] No animator found on self or children! " +
-                             $"Searched: {gameObject.name} and all children. " +
-                             $"Make sure an Animator component exists on this GameObject or a child GameObject.");
-            }
-            
-            // Get combat actions
-            InitializeCombatActions();
+
+            _isStrafing = alwaysStrafe;
+            _previousRotation = transform.forward;
+
+            if (headLookXCurve == null)
+                headLookXCurve = CreateDefaultHeadLookCurve();
+            if (bodyLookXCurve == null)
+                bodyLookXCurve = CreateDefaultBodyLookCurve();
+            if (leanCurve == null)
+                leanCurve = CreateDefaultLeanCurve();
         }
-        
-        private void DetectAnimatorParameters()
+
+        private static AnimationCurve CreateDefaultHeadLookCurve()
         {
-            if (animator == null || animator.runtimeAnimatorController == null) return;
-            
-            // Check if controller uses Run (legacy) instead of IsRunning
-            useLegacyRunParameter = HasParameter("Run") && !HasParameter("IsRunning");
-            
-            // Check if controller uses Attack_1/2/3 triggers directly (legacy)
-            useLegacyAttackTriggers = HasParameter("Attack_1") && HasParameter("Attack_2");
-            
-            if (useLegacyRunParameter)
-            {
-                Debug.Log("[ThirdPersonCombatController] Using legacy 'Run' parameter instead of 'IsRunning'");
-            }
-            
-            if (useLegacyAttackTriggers)
-            {
-                Debug.Log("[ThirdPersonCombatController] Using legacy Attack_1/2/3 triggers instead of TakeAction+ActionIndex");
-            }
+            return new AnimationCurve(
+                new Keyframe(-1f, -0.3f),
+                new Keyframe(0f, 0f),
+                new Keyframe(1f, 0.3f)
+            );
         }
-        
-        /// <summary>
-        /// Checks if the animator is valid (not null and has a runtime controller assigned)
-        /// </summary>
-        private bool IsAnimatorValid()
+
+        private static AnimationCurve CreateDefaultBodyLookCurve()
         {
-            if (animator == null)
-            {
-                return false;
-            }
-            
-            if (animator.runtimeAnimatorController == null)
-            {
-                return false;
-            }
-            
-            return true;
+            return new AnimationCurve(
+                new Keyframe(-1f, -1f),
+                new Keyframe(0f, 0f),
+                new Keyframe(1f, 1f)
+            );
         }
-        
-        private bool HasParameter(string paramName)
+
+        private static AnimationCurve CreateDefaultLeanCurve()
         {
-            if (!IsAnimatorValid()) return false;
-            
-            foreach (AnimatorControllerParameter param in animator.parameters)
-            {
-                if (param.name == paramName) return true;
-            }
-            return false;
+            return new AnimationCurve(
+                new Keyframe(0f, 0f),
+                new Keyframe(0.1f, 0.3f),
+                new Keyframe(0.5f, 0.65f),
+                new Keyframe(1f, 1f)
+            );
         }
-        
-        /// <summary>
-        /// Gets a string listing all animator parameters for debugging
-        /// </summary>
-        private string GetAnimatorParametersString()
-        {
-            if (!IsAnimatorValid()) return "Animator not valid";
-            
-            System.Text.StringBuilder sb = new System.Text.StringBuilder();
-            foreach (AnimatorControllerParameter param in animator.parameters)
-            {
-                if (sb.Length > 0) sb.Append(", ");
-                sb.Append($"{param.name} ({param.type})");
-            }
-            return sb.Length > 0 ? sb.ToString() : "No parameters";
-        }
-        
-        private void InitializeCombatActions()
-        {
-            // Use assigned actions if available
-            if (combatActions != null && combatActions.Length > 0)
-            {
-                availableActions = combatActions;
-                Debug.Log($"[ThirdPersonCombatController] Using {availableActions.Length} assigned combat actions");
-            }
-            // Otherwise try to get from CombatExecutor (which has access to entityData)
-            else if (combatExecutor != null)
-            {
-                // CombatExecutor has access to entityData through its internal system
-                // For now, we'll require actions to be assigned in inspector
-                Debug.LogWarning("[ThirdPersonCombatController] No combat actions assigned. Please assign CombatAction assets in the inspector.");
-            }
-            else
-            {
-                Debug.LogWarning("[ThirdPersonCombatController] No combat actions available. Please assign CombatAction assets in the inspector.");
-            }
-        }
-        
+
         private void Update()
         {
-            HandleInput();
-            HandleMovement();
-            UpdateAnimator();
-            UpdateTimers();
-            CheckAttackState(); // Check if attack state should be reset
-            UpdateLockOnIndicator(); // Update lock-on indicator position
-        }
-        
-        private void UpdateLockOnIndicator()
-        {
-            if (lockOnIndicator == null || targetingManager == null)
+            _isLockedOn = _targetingManager != null && _targetingManager.IsLockedOn();
+            _isStrafing = alwaysStrafe || _isLockedOn;
+            if (disableStrafeWhenSprinting && _isSprinting) _isStrafing = false;
+
+            HandleLockOnInput();
+            GroundedCheck();
+
+            var state = _inputProvider?.GetState() ?? default;
+            if (state.CrouchPressed && _isGrounded)
             {
-                if (lockOnIndicator == null)
-                {
-                    Debug.LogWarning("[ThirdPersonCombatController] LockOnIndicator is null!");
-                }
-                if (targetingManager == null)
-                {
-                    Debug.LogWarning("[ThirdPersonCombatController] TargetingManager is null!");
-                }
-                return;
-            }
-            
-            // Check for locked-on target first (click-to-select)
-            var lockedTarget = targetingManager.GetLockedOnTarget();
-            if (lockedTarget != null)
-            {
-                lockOnIndicator.SetTarget(lockedTarget, true);
-                return;
-            }
-            
-            // For single target strategies, continuously resolve targets to detect changes
-            var currentStrategy = targetingManager.GetCurrentStrategy();
-            if (currentStrategy == null)
-            {
-                // No strategy set - clear indicator
-                Debug.LogWarning("[ThirdPersonCombatController] No targeting strategy is set!");
-                lockOnIndicator.ClearTarget();
-                return;
-            }
-            
-            // Debug.Log($"[ThirdPersonCombatController] Current strategy: {currentStrategy.GetType().Name}");
-            
-            if (currentStrategy is SingleTargetSelector)
-            {
-                // Get a default action to use for targeting (or use null if we just need the strategy)
-                CombatAction actionForTargeting = null;
-                if (availableActions != null && availableActions.Length > 0)
-                {
-                    actionForTargeting = availableActions[0]; // Use first action for targeting resolution
-                }
-                
-                // Try to resolve targets - use action if available, otherwise use strategy directly
-                TargetResult targetResult = null;
-                
-                if (actionForTargeting != null)
-                {
-                    // Debug.Log($"[ThirdPersonCombatController] Using action '{actionForTargeting.actionName}' for targeting");
-                    targetResult = targetingManager.GetTargets(actionForTargeting);
-                }
-                else if (combatEntity != null)
-                {
-                    // No action available, try to resolve using just the strategy
-                    var attackerData = combatEntity.GetEntityData();
-                    if (attackerData != null)
-                    {
-                        Debug.Log("[ThirdPersonCombatController] No action available, using strategy directly");
-                        targetResult = currentStrategy.ResolveTargets(attackerData);
-                    }
-                    else
-                    {
-                        Debug.LogWarning("[ThirdPersonCombatController] CombatEntity has no EntityData!");
-                    }
-                }
+                if (_isCrouching && _cannotStandUp)
+                    _isCrouching = true; // Can't stand - ceiling too low
                 else
                 {
-                    Debug.LogWarning("[ThirdPersonCombatController] CombatEntity is null!");
-                }
-                
-                // Update indicator based on result
-                if (targetResult != null && targetResult.isReady && targetResult.targets != null && targetResult.targets.Count > 0)
-                {
-                    var currentTarget = targetResult.targets[0];
-                    if (currentTarget != null)
-                    {
-                        // Debug.Log($"[ThirdPersonCombatController] ✅ Setting lock-on indicator to: {currentTarget.name}");
-                        lockOnIndicator.SetTarget(currentTarget, true);
-                    }
-                    else
-                    {
-                        // Debug.LogWarning("[ThirdPersonCombatController] Target result has null target!");
-                        lockOnIndicator.ClearTarget();
-                    }
-                }
-                else
-                {
-                    // No valid target in range
-                    if (targetResult == null)
-                    {
-                        Debug.LogWarning("[ThirdPersonCombatController] TargetResult is null!");
-                    }
-                    else if (!targetResult.isReady)
-                    {
-                        // Debug.LogWarning("[ThirdPersonCombatController] TargetResult is not ready!");
-                    }
-                    else if (targetResult.targets == null || targetResult.targets.Count == 0)
-                    {
-                        // Debug.LogWarning("[ThirdPersonCombatController] TargetResult has no targets!");
-                    }
-                    lockOnIndicator.ClearTarget();
+                    _isCrouching = !_isCrouching;
+                    SetCapsuleCrouch(_isCrouching);
                 }
             }
-            else
-            {
-                // Not a single target strategy - clear indicator
-                Debug.Log($"[ThirdPersonCombatController] Current strategy is not SingleTargetSelector, it's {currentStrategy.GetType().Name}");
-                lockOnIndicator.ClearTarget();
-            }
-        }
-        
-        private void HandleInput()
-        {
-            moveInput = Vector2.zero;
-            runInput = false;
-            dashInput = false;
-            attackInput = false;
+            _isSprinting = state.SprintHeld && !_isCrouching;
+            _isWalking = _currentGait == GaitState.Walk && !_isSprinting && !_isStrafing;
 
-            if (_inputProvider == null)
+            // Combat interrupts: Dash and Attack
+            if (state.DashPressed && _isGrounded && !_isCrouching && _currentState != AnimationState.Attack)
             {
-                _inputProvider = inputProvider;
-                if (_inputProvider == null)
-                    _inputProvider = FindFirstObjectByType<CombatInputReader>();
-                if (_inputProvider == null && !_loggedInputProviderMissing)
-                {
-                    _loggedInputProviderMissing = true;
-                    Debug.LogWarning("[ThirdPersonCombatController] No CombatInputReader found. Add one to the scene, or assign Input Provider in the inspector. Using fallback input.");
-                }
-            }
-
-            if (_inputProvider != null)
-            {
-                CombatInputState state = _inputProvider.GetState();
-                moveInput = state.Move;
-                runInput = state.Run;
-                dashInput = state.DashPressed;
-                attackInput = state.AttackPressed;
-                if (state.AttackPressed && state.HasAttackClickPosition && targetingManager != null)
-                    targetingManager.HandleMouseClick(state.AttackClickScreenPosition);
+                SwitchState(AnimationState.Dash);
                 return;
             }
-
-            // Fallback: read directly when no input provider is set
-            if (useNewInputSystem)
-            {
-                var keyboard = Keyboard.current;
-                var mouse = Mouse.current;
-                if (keyboard != null)
-                {
-                    if (keyboard.wKey.isPressed) moveInput.y += 1f;
-                    if (keyboard.sKey.isPressed) moveInput.y -= 1f;
-                    if (keyboard.aKey.isPressed) moveInput.x -= 1f;
-                    if (keyboard.dKey.isPressed) moveInput.x += 1f;
-                    runInput = keyboard.leftShiftKey.isPressed;
-                    dashInput = keyboard.spaceKey.wasPressedThisFrame;
-                }
-                if (mouse != null)
-                {
-                    attackInput = mouse.leftButton.wasPressedThisFrame;
-                    if (attackInput && targetingManager != null)
-                        targetingManager.HandleMouseClick(mouse.position.ReadValue());
-                }
-                var gamepad = Gamepad.current;
-                if (gamepad != null)
-                {
-                    Vector2 stick = gamepad.leftStick.ReadValue();
-                    if (stick.sqrMagnitude > 0.01f) moveInput = stick;
-                    runInput = runInput || gamepad.leftStickButton.isPressed;
-                    dashInput = dashInput || gamepad.buttonSouth.wasPressedThisFrame;
-                    attackInput = attackInput || gamepad.buttonWest.wasPressedThisFrame || gamepad.rightTrigger.wasPressedThisFrame;
-                }
-                return;
-            }
-
-            try
-            {
-                moveInput = new Vector2(Input.GetAxis("Horizontal"), Input.GetAxis("Vertical"));
-                runInput = Input.GetKey(KeyCode.LeftShift);
-                dashInput = Input.GetKeyDown(KeyCode.Space);
-                attackInput = Input.GetMouseButtonDown(0);
-                if (attackInput && targetingManager != null)
-                    targetingManager.HandleMouseClick(Input.mousePosition);
-            }
-            catch (System.InvalidOperationException)
-            {
-                useNewInputSystem = true;
-                Debug.Log("[ThirdPersonCombatController] Legacy Input not available - switched to New Input System");
-            }
-        }
-        
-        private void HandleMovement()
-        {
-            isGrounded = characterController.isGrounded;
-            
-            if (isGrounded && velocity.y < 0)
-            {
-                velocity.y = -2f;
-            }
-            
-            // Apply gravity
-            velocity.y += gravity * Time.deltaTime;
-            
-            // Handle dashing
-            if (isDashing)
-            {
-                dashTimer -= Time.deltaTime;
-                if (dashTimer <= 0)
-                {
-                    isDashing = false;
-                    
-                    // Dash just ended - apply gravity
-                    if (characterController != null && characterController.enabled)
-                    {
-                        characterController.Move(velocity * Time.deltaTime);
-                    }
-                }
-                else
-                {
-                    // Always use manual dash movement (either as primary or fallback)
-                    // This ensures dash moves even if animation doesn't have root motion enabled
-                    if (useManualDashMovement && characterController != null && characterController.enabled)
-                    {
-                        Vector3 dashMovement = dashDirection * manualDashSpeed * Time.deltaTime;
-                        
-                        // Combine horizontal dash movement with vertical velocity (gravity)
-                        Vector3 combinedMovement = dashMovement + (velocity * Time.deltaTime);
-                        
-                        // Apply combined movement (horizontal dash + vertical gravity)
-                        characterController.Move(combinedMovement);
-                    }
-                    else if (!useManualDashMovement)
-                    {
-                        // Manual dash not enabled - rely on root motion only
-                        
-                        // Still apply gravity
-                        if (characterController != null && characterController.enabled)
-                        {
-                            characterController.Move(velocity * Time.deltaTime);
-                        }
-                    }
-                    
-                    // Note: Root motion from animation will ALSO be applied in OnAnimatorMove if available
-                    // Manual movement acts as primary or fallback
-                }
-                
-                // Skip normal movement during dash (movement already applied above)
-                return;
-            }
-            
-            // Handle attacking (limited movement)
-            if (isAttacking)
-            {
-                // Limited movement during attack (uses root motion from animation)
-                // Animation will handle the movement via root motion
-                // Skip normal movement but still apply gravity at the end
-            }
-            // Normal movement (only if not dashing or attacking)
-            else if (!isDashing && !isAttacking && moveInput.magnitude > 0.1f)
-            {
-                // Calculate move direction relative to camera
-                if (mainCamera == null)
-                {
-                    // Fallback: use world space if no camera
-                    if (Time.frameCount % 60 == 0)
-                    {
-                        Debug.LogWarning("[ThirdPersonCombatController] Main camera is null! Using world space movement.");
-                    }
-                    moveDirection = new Vector3(moveInput.x, 0f, moveInput.y).normalized;
-                }
-                else
-                {
-                    // Camera-relative movement
-                    Vector3 cameraForward = mainCamera.transform.forward;
-                    Vector3 cameraRight = mainCamera.transform.right;
-                    
-                    // Flatten to horizontal plane
-                    cameraForward.y = 0f;
-                    cameraRight.y = 0f;
-                    cameraForward.Normalize();
-                    cameraRight.Normalize();
-                    
-                    // Calculate movement direction (God of War style: W = forward into screen, A/D = strafe)
-                    // moveInput.y is forward/back (W/S), moveInput.x is left/right (A/D)
-                    moveDirection = (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
-                }
-
-                // Rotate character to face movement direction (mouse rotates only the camera)
-                if (moveDirection.sqrMagnitude > 0.01f)
-                {
-                    Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, rotationSpeed * Time.deltaTime);
-                }
-
-                // Calculate speed
-                float currentSpeed = runInput ? runSpeed : walkSpeed;
-                
-                // Calculate movement vector - move in the intended direction
-                Vector3 movement = moveDirection * currentSpeed * Time.deltaTime;
-                
-                // Move character
-                if (characterController != null && characterController.enabled)
-                {
-                    characterController.Move(movement);
-                }
-            }
-            else
-            {
-                // No input - reset move direction
-                moveDirection = Vector3.zero;
-            }
-            
-            // Apply gravity
-            characterController.Move(velocity * Time.deltaTime);
-            
-            // Handle dash input
-            if (dashInput && !isDashing && !isAttacking && isGrounded)
-            {
-                StartDash();
-            }
-            
-            // Handle attack input
-            if (attackInput && !isAttacking && !isDashing)
+            if (state.AttackPressed && _currentState != AnimationState.Attack && _currentState != AnimationState.Dash)
             {
                 StartAttack();
-                // Clear attack input after processing to prevent double-triggering
-                // This ensures the input is only processed once per press
-                attackInput = false;
-            }
-        }
-        
-        private void StartDash()
-        {
-            isDashing = true;
-            dashTimer = dashDuration;
-            
-            // Determine dash direction
-            if (moveInput.magnitude > 0.1f)
-            {
-                // Dash in movement direction
-                Vector3 cameraForward = mainCamera.transform.forward;
-                Vector3 cameraRight = mainCamera.transform.right;
-                
-                cameraForward.y = 0f;
-                cameraRight.y = 0f;
-                cameraForward.Normalize();
-                cameraRight.Normalize();
-                
-                dashDirection = (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
-            }
-            else
-            {
-                // Dash forward
-                dashDirection = transform.forward;
-            }
-            
-            // Rotate character towards dash direction
-            transform.rotation = Quaternion.LookRotation(dashDirection);
-            
-            // Trigger dash animation
-            if (animator != null && IsAnimatorValid())
-            {
-                // Ensure root motion is enabled for dash
-                if (!animator.applyRootMotion)
-                {
-                    Debug.LogWarning("[ThirdPersonCombatController] Root motion is disabled! Enabling for dash.");
-                    animator.applyRootMotion = true;
-                }
-                
-                // Set Speed to 0 to prevent unwanted transitions
-                if (HasParameter("Speed"))
-                {
-                    animator.SetFloat(speedHash, 0f);
-                }
-                
-                // Clear running state
-                if (useLegacyRunParameter && HasParameter("Run"))
-                {
-                    animator.SetBool(runHash, false);
-                }
-                else if (HasParameter("IsRunning"))
-                {
-                    animator.SetBool(isRunningHash, false);
-                }
-                
-                if (HasParameter("Dash"))
-                {
-                    animator.SetTrigger(dashTriggerHash);
-                }
-                else
-                {
-                    // Force manual dash movement if no Dash parameter
-                    useManualDashMovement = true;
-                }
-                
-                // Start coroutine to check dash animation info
-                StartCoroutine(CheckDashAnimationInfo());
-            }
-            else
-            {
-                // No animator or invalid - use manual dash movement
-                useManualDashMovement = true;
-            }
-        }
-        
-        /// <summary>
-        /// Checks dash animation info to diagnose root motion issues
-        /// </summary>
-        private IEnumerator CheckDashAnimationInfo()
-        {
-            // Wait a frame for animation to start
-            yield return null;
-            
-            if (isDashing)
-            {
-                // Check if animator is valid (not null and has controller)
-                if (!IsAnimatorValid())
-                {
-                    yield break;
-                }
-                
-                AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-                AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(0);
-                
-                if (clipInfo != null && clipInfo.Length > 0)
-                {
-                    AnimationClip clip = clipInfo[0].clip;
-                    
-                    // Check if animation is "InPlace" - these don't have root motion
-                    bool isInPlace = clip.name.Contains("InPlace") || clip.name.Contains("In_Place");
-                    
-                    // Also check if root motion is actually working
-                    // If OnAnimatorMove reports zero deltaPosition, the animation likely has no root motion
-                    if (isInPlace)
-                    {
-                        useManualDashMovement = true;
-                    }
-                }
-            }
-        }
-        
-        private void StartAttack()
-        {
-            // Set attack state IMMEDIATELY to prevent double-triggering
-            // This must be done first, before any other logic
-            if (isAttacking)
-            {
-                return; // Already attacking, prevent re-entry
-            }
-            
-            isAttacking = true;
-            
-            // Calculate action index for animator
-            int actionCount = availableActions != null && availableActions.Length > 0 
-                ? availableActions.Length 
-                : actionStateCount;
-            int actionIndex = (currentComboIndex % actionCount) + actionIndexOffset;
-            CombatAction actionToUse = null;
-            
-            // Get the action we're trying to use
-            if (availableActions != null && availableActions.Length > 0)
-            {
-                actionToUse = availableActions[currentComboIndex % actionCount];
-                
-                    // Check if action is available (cooldown check)
-                    if (combatExecutor != null)
-                    {
-                        var cooldownManager = combatExecutor.GetCooldownManager();
-                        if (cooldownManager != null && !cooldownManager.IsActionAvailable(actionToUse))
-                        {
-                            // Reset attack state since we can't attack
-                            isAttacking = false;
-                            return; // Don't start attack if on cooldown
-                        }
-                    }
-            }
-            
-            // Get target using TargetingManager
-            CombatEntity target = null;
-            Vector3 targetPosition = transform.position;
-            
-            if (targetingManager != null && actionToUse != null)
-            {
-                var targetResult = targetingManager.GetTargets(actionToUse);
-                if (targetResult != null && targetResult.isReady && targetResult.targets != null && targetResult.targets.Count > 0)
-                {
-                    target = targetResult.targets[0]; // Get first target
-                    targetPosition = targetResult.targetPosition;
-                }
-            }
-            else
-            {
-                // Fallback to old method if no TargetingManager
-                target = FindNearestTarget();
-                if (target != null)
-                {
-                    targetPosition = target.transform.position;
-                }
-            }
-            
-            // Update lock-on indicator
-            if (lockOnIndicator != null)
-            {
-                if (target != null && targetingManager != null && targetingManager.IsLockedOn())
-                {
-                    lockOnIndicator.SetTarget(target, true);
-                }
-                else
-                {
-                    lockOnIndicator.ClearTarget();
-                }
-            }
-            
-            // Rotate towards target if we have one
-            if (target != null)
-            {
-                Vector3 directionToTarget = (targetPosition - transform.position);
-                directionToTarget.y = 0f;
-                if (directionToTarget.magnitude > 0.01f)
-                {
-                    transform.rotation = Quaternion.LookRotation(directionToTarget.normalized);
-                }
-            }
-            // For directional targeting, rotate towards movement direction if moving
-            else if (moveInput.magnitude > 0.1f)
-            {
-                // Directional targeting - rotate towards movement direction
-                Vector3 moveDir = new Vector3(moveInput.x, 0f, moveInput.y).normalized;
-                if (mainCamera != null)
-                {
-                    Vector3 cameraForward = mainCamera.transform.forward;
-                    Vector3 cameraRight = mainCamera.transform.right;
-                    cameraForward.y = 0f;
-                    cameraRight.y = 0f;
-                    cameraForward.Normalize();
-                    cameraRight.Normalize();
-                    moveDir = (cameraForward * moveInput.y + cameraRight * moveInput.x).normalized;
-                }
-                if (moveDir.magnitude > 0.01f)
-                {
-                    transform.rotation = Quaternion.LookRotation(moveDir);
-                }
-            }
-            
-            // Always trigger the animation first (even if no targets)
-            if (animator != null)
-            {
-                // Check if animator is valid (has controller)
-                if (!IsAnimatorValid())
-                {
-                    Debug.LogWarning("[ThirdPersonCombatController] Animator is not valid (null or no controller)! Cannot start attack.");
-                    isAttacking = false;
-                    return;
-                }
-                
-                // Check if we're already in an action state to prevent double-triggering
-                AnimatorStateInfo currentState = animator.GetCurrentAnimatorStateInfo(0);
-                bool isInActionState = (HasParameter("IsAction") && animator.GetBool(isActionHash)) || 
-                                       currentState.IsName("Action_1") || 
-                                       currentState.IsName("Action_2") || 
-                                       currentState.IsName("Attack_1") ||
-                                       currentState.IsName("Attack_2") ||
-                                       currentState.IsName("Attack_3");
-                
-                if (isInActionState)
-                {
-                    return;
-                }
-                
-                // CRITICAL: Set Speed to 0 BEFORE setting the trigger to prevent Walk → Idle → Action
-                // This ensures direct transitions from Walk/Run to Action states
-                if (HasParameter("Speed"))
-                {
-                    animator.SetFloat(speedHash, 0f);
-                }
-                
-                // Clear running state
-                if (useLegacyRunParameter && HasParameter("Run"))
-                {
-                    animator.SetBool(runHash, false);
-                }
-                else if (HasParameter("IsRunning"))
-                {
-                    animator.SetBool(isRunningHash, false);
-                }
-                
-                // Use Attack_1/2/3 triggers if available (legacy system)
-                if (useLegacyAttackTriggers)
-                {
-                    // Determine which attack trigger to use (0=Attack_1, 1=Attack_2, 2=Attack_3)
-                    int attackNumber = (currentComboIndex % actionCount) + 1; // 1, 2, or 3
-                    
-                    if (attackNumber == 1 && HasParameter("Attack_1"))
-                    {
-                        animator.SetTrigger(attack1Hash);
-                    }
-                    else if (attackNumber == 2 && HasParameter("Attack_2"))
-                    {
-                        animator.SetTrigger(attack2Hash);
-                    }
-                    else if (attackNumber >= 3 && HasParameter("Attack_3"))
-                    {
-                        animator.SetTrigger(attack3Hash);
-                    }
-                }
-                else
-                {
-                    // Use new system (TakeAction + ActionIndex)
-                    if (HasParameter("ActionIndex"))
-                    {
-                        animator.SetInteger(actionIndexHash, actionIndex);
-                    }
-                    if (HasParameter("IsAction"))
-                    {
-                        animator.SetBool(isActionHash, true);
-                    }
-                    if (HasParameter("TakeAction"))
-                    {
-                        animator.SetTrigger(takeActionTriggerHash);
-                    }
-                }
-                
-                // Set timeout based on animation length (will be updated next frame when animation starts)
-                // For now, set a default, then update it next frame
-                attackStateTimeout = 5f; // Default fallback
-                StartCoroutine(UpdateAttackTimeoutFromAnimation());
-            }
-            else
-            {
-                // No animator - use default timeout
-                attackStateTimeout = 5f;
-            }
-            
-            // Set up combat action - either use weapon colliders or targeting system
-            if (actionToUse != null && combatExecutor != null)
-            {
-                if (useWeaponColliders)
-                {
-                    // Weapon collider mode: Set the current action so WeaponHitbox can use it
-                    // The WeaponHitbox will handle damage application when it detects collisions
-                    combatExecutor.SetCurrentAction(actionToUse);
-                    
-                    // Increment combo index for next attack
-                    currentComboIndex++;
-                    if (currentComboIndex >= actionCount)
-                    {
-                        currentComboIndex = 0;
-                    }
-                }
-                else
-                {
-                    // Legacy targeting mode: Execute action with targeting system
-                    bool executed = combatExecutor.ExecuteAction(actionToUse);
-                    
-                    // Increment combo index for next attack
-                    currentComboIndex++;
-                    if (currentComboIndex >= actionCount)
-                    {
-                        currentComboIndex = 0;
-                    }
-                }
-            }
-            else
-            {
-                // No combat actions assigned - just play animation
-                // Increment combo index for next attack
-                currentComboIndex++;
-                if (currentComboIndex >= actionCount)
-                {
-                    currentComboIndex = 0;
-                }
-            }
-        }
-        
-        private CombatEntity FindNearestTarget()
-        {
-            Collider[] colliders = Physics.OverlapSphere(transform.position, 10f, enemyLayerMask);
-            
-            CombatEntity nearestTarget = null;
-            float nearestDistance = float.MaxValue;
-            
-            foreach (Collider col in colliders)
-            {
-                CombatEntity entity = col.GetComponent<CombatEntity>();
-                if (entity != null && entity != combatEntity)
-                {
-                    float distance = Vector3.Distance(transform.position, entity.transform.position);
-                    if (distance < nearestDistance)
-                    {
-                        nearestDistance = distance;
-                        nearestTarget = entity;
-                    }
-                }
-            }
-            
-            return nearestTarget;
-        }
-        
-        private void UpdateAnimator()
-        {
-            if (animator == null) return;
-            
-            // Check if animator is valid
-            if (!IsAnimatorValid())
-            {
                 return;
             }
-            
-            // Don't update movement parameters during attacks - let the action animation play
-            // This prevents transitions from Action → Idle → Action
-            if (!isAttacking && !isDashing)
+            if (state.AttackPressed && state.HasAttackClickPosition && _targetingManager != null)
+                _targetingManager.HandleMouseClick(state.AttackClickScreenPosition);
+
+            switch (_currentState)
             {
-                // Update speed parameter
-                // Try normalized first: walk = 0.5, run = 1.0 (many animators expect 0-1 range)
-                if (moveInput.magnitude > 0.1f)
+                case AnimationState.Locomotion:
+                    UpdateLocomotionState(state);
+                    break;
+                case AnimationState.Jump:
+                    UpdateJumpState(state);
+                    break;
+                case AnimationState.Fall:
+                    UpdateFallState(state);
+                    break;
+                case AnimationState.Crouch:
+                    UpdateCrouchState(state);
+                    break;
+                case AnimationState.Dash:
+                    UpdateDashState();
+                    break;
+                case AnimationState.Attack:
+                    UpdateAttackState(state);
+                    break;
+            }
+
+            UpdateLockOnIndicator();
+        }
+
+        #endregion
+
+        #region Lock-on
+
+        private void HandleLockOnInput()
+        {
+            if (_inputProvider == null || _targetingManager == null || cameraController == null) return;
+            var state = _inputProvider.GetState();
+            if (state.LockOnPressed)
+            {
+                _targetingManager.ToggleLockOn();
+                cameraController.LockOn(_targetingManager.IsLockedOn(), _targetingManager.GetLockOnTargetTransform());
+            }
+        }
+
+        private void UpdateLockOnIndicator()
+        {
+            if (_lockOnIndicator == null || _targetingManager == null) return;
+            var locked = _targetingManager.GetLockedOnTarget();
+            if (locked != null)
+                _lockOnIndicator.SetTarget(locked, true);
+            else
+                _lockOnIndicator.ClearTarget();
+        }
+
+        #endregion
+
+        #region Base Logic (from Sample)
+
+        private void GroundedCheck()
+        {
+            var spherePos = new Vector3(transform.position.x, transform.position.y - groundedOffset, transform.position.z);
+            _isGrounded = Physics.CheckSphere(spherePos, _controller.radius, groundLayerMask, QueryTriggerInteraction.Ignore);
+
+            if (_isGrounded && rearRayPos != null && frontRayPos != null)
+                GroundInclineCheck();
+        }
+
+        private void GroundInclineCheck()
+        {
+            float rayDistance = 5f;
+            Vector3 downDir = Vector3.down;
+            bool rearHit = Physics.Raycast(rearRayPos.position, downDir, out RaycastHit rearHitData, rayDistance, groundLayerMask);
+            bool frontHit = Physics.Raycast(frontRayPos.position, downDir, out RaycastHit frontHitData, rayDistance, groundLayerMask);
+
+            if (rearHit && frontHit)
+            {
+                Vector3 hitDifference = frontHitData.point - rearHitData.point;
+                float xPlaneLength = new Vector2(hitDifference.x, hitDifference.z).magnitude;
+                float angle = Mathf.Atan2(hitDifference.y, Mathf.Max(xPlaneLength, 0.001f)) * Mathf.Rad2Deg;
+                _inclineAngle = Mathf.Lerp(_inclineAngle, angle, 20f * Time.deltaTime);
+            }
+        }
+
+        private void CeilingHeightCheck()
+        {
+            if (frontRayPos == null) { _cannotStandUp = false; return; }
+            float rayDistance = Mathf.Infinity;
+            float minimumStandingHeight = capsuleStandingHeight - frontRayPos.localPosition.y;
+            Vector3 midpoint = new Vector3(transform.position.x, transform.position.y + frontRayPos.localPosition.y, transform.position.z);
+            if (Physics.Raycast(midpoint, transform.TransformDirection(Vector3.up), out RaycastHit ceilingHit, rayDistance, groundLayerMask))
+                _cannotStandUp = ceilingHit.distance < minimumStandingHeight;
+            else
+                _cannotStandUp = false;
+        }
+
+        private void SetCapsuleCrouch(bool crouching)
+        {
+            _controller.height = crouching ? capsuleCrouchingHeight : capsuleStandingHeight;
+            _controller.center = new Vector3(0, crouching ? capsuleCrouchingCentre : capsuleStandingCentre, 0);
+        }
+
+        private void CalculateInput(CombatInputState state)
+        {
+            _moveDirection = GetCameraForwardZeroedYNormalized() * state.Move.y + GetCameraRightZeroedYNormalized() * state.Move.x;
+            bool hasInput = _moveDirection.sqrMagnitude > 0.0001f;
+
+            if (hasInput)
+            {
+                _movementInputDuration += Time.deltaTime;
+                _timeSinceMoveStart += Time.deltaTime;
+
+                float effectiveDuration = _movementInputDuration;
+                if (_isStrafing)
+                    effectiveDuration = Mathf.Max(effectiveDuration, MovementInputHoldThreshold);
+
+                if (effectiveDuration <= 0f)
+                    _movementInputTapped = true;
+                else if (effectiveDuration > 0f && effectiveDuration < MovementInputHoldThreshold)
                 {
-                    float normalizedSpeed = runInput ? 1.0f : 0.5f;
-                    animator.SetFloat(speedHash, normalizedSpeed);
+                    _movementInputTapped = false;
+                    _movementInputPressed = true;
+                    _movementInputHeld = false;
                 }
                 else
                 {
-                    // No input - set speed to 0
-                    animator.SetFloat(speedHash, 0f);
-                }
-                
-                // Update running state - use Run if available, otherwise IsRunning
-                bool isRunning = runInput && moveInput.magnitude > 0.1f;
-                if (useLegacyRunParameter && HasParameter("Run"))
-                {
-                    animator.SetBool(runHash, isRunning);
-                }
-                else if (HasParameter("IsRunning"))
-                {
-                    animator.SetBool(isRunningHash, isRunning);
+                    _movementInputTapped = false;
+                    _movementInputPressed = false;
+                    _movementInputHeld = true;
                 }
             }
-            // During attacks/dashes, keep speed at 0 to prevent unwanted transitions
             else
             {
-                if (HasParameter("Speed"))
-                {
-                    animator.SetFloat(speedHash, 0f);
-                }
-                
-                if (useLegacyRunParameter && HasParameter("Run"))
-                {
-                    animator.SetBool(runHash, false);
-                }
-                else if (HasParameter("IsRunning"))
-                {
-                    animator.SetBool(isRunningHash, false);
-                }
-            }
-            
-            // Always update grounded state (independent of attack state) - only if parameter exists
-            if (HasParameter("IsGrounded"))
-            {
-                animator.SetBool(isGroundedHash, isGrounded);
+                _movementInputTapped = false;
+                _movementInputPressed = false;
+                _movementInputHeld = false;
+                _movementInputDuration = 0f;
+                _timeSinceMoveStart = 0f;
             }
         }
-        
-        private void UpdateTimers()
+
+        private void CalculateMoveDirection(CombatInputState state)
         {
-            // Attack cooldown is now handled by CombatExecutor's ActionCooldownManager
-            // No need for a separate attack timer
+            CalculateInput(state);
+
+            if (_isCrouching)
+                _targetMaxSpeed = walkSpeed;
+            else if (_isSprinting)
+                _targetMaxSpeed = sprintSpeed;
+            else if (_isWalking)
+                _targetMaxSpeed = walkSpeed;
+            else
+                _targetMaxSpeed = state.Run || state.SprintHeld ? runSpeed : walkSpeed;
+
+            _currentMaxSpeed = Mathf.Lerp(_currentMaxSpeed, _targetMaxSpeed, speedChangeDamping * Time.deltaTime);
+
+            // Movement ramp when starting from idle (Sample-style, prevents sliding)
+            bool hasMoveInput = _moveDirection.sqrMagnitude > 0.0001f;
+            float velocityScale = hasMoveInput ? Mathf.Clamp01(_timeSinceMoveStart / MovementRampTime) : 1f;
+            float effectiveSpeed = hasMoveInput ? _currentMaxSpeed * velocityScale : 0f;
+
+            _targetVelocity.x = _moveDirection.normalized.x * effectiveSpeed;
+            _targetVelocity.z = _moveDirection.normalized.z * effectiveSpeed;
+
+            _velocity.x = Mathf.Lerp(_velocity.x, _targetVelocity.x, speedChangeDamping * Time.deltaTime);
+            _velocity.z = Mathf.Lerp(_velocity.z, _targetVelocity.z, speedChangeDamping * Time.deltaTime);
+
+            _speed2D = new Vector3(_velocity.x, 0f, _velocity.z).magnitude;
+            _speed2D = Mathf.Round(_speed2D * 1000f) / 1000f;
+
+            Vector3 playerForwardVector = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+            Vector3 moveDirFlat = new Vector3(_moveDirection.x, 0f, _moveDirection.z).normalized;
+            _newDirectionDifferenceAngle = playerForwardVector.sqrMagnitude > 0.001f && moveDirFlat.sqrMagnitude > 0.001f
+                ? Vector3.SignedAngle(playerForwardVector, moveDirFlat, Vector3.up)
+                : 0f;
+
+            CalculateGait();
         }
-        
-        private void CheckAttackState()
+
+        private void CalculateGait()
         {
-            // If we're in an attack state, check if we should reset it
-            if (isAttacking)
+            float runThreshold = (walkSpeed + runSpeed) / 2f;
+            float sprintThreshold = (runSpeed + sprintSpeed) / 2f;
+
+            if (_speed2D < 0.01f)
+                _currentGait = GaitState.Idle;
+            else if (_speed2D < runThreshold)
+                _currentGait = GaitState.Walk;
+            else if (_speed2D < sprintThreshold)
+                _currentGait = GaitState.Run;
+            else
+                _currentGait = GaitState.Sprint;
+        }
+
+        private void FaceMoveDirection()
+        {
+            Vector3 charFwd = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+            Vector3 charRight = new Vector3(transform.right.x, 0f, transform.right.z).normalized;
+            Vector3 dirFwd = _moveDirection.magnitude > 0.01f ? new Vector3(_moveDirection.x, 0f, _moveDirection.z).normalized : charFwd;
+            Vector3 camFwd = GetCameraForwardZeroedYNormalized();
+            Quaternion strafingTargetRotation = camFwd.sqrMagnitude > 0.001f ? Quaternion.LookRotation(camFwd) : transform.rotation;
+
+            _strafeAngle = charFwd.sqrMagnitude > 0.001f && dirFwd.sqrMagnitude > 0.001f
+                ? Vector3.SignedAngle(charFwd, dirFwd, Vector3.up)
+                : 0f;
+            _isTurningInPlace = false;
+
+            if (_isStrafing)
             {
-                // Decrement timeout
-                if (attackStateTimeout > 0)
+                if (_moveDirection.magnitude > 0.01f)
                 {
-                    attackStateTimeout -= Time.deltaTime;
-                    if (attackStateTimeout <= 0)
+                    if (camFwd.sqrMagnitude > 0.001f)
                     {
-                        // Timeout reached - force reset attack state
-                        ResetAttackState();
+                        _shuffleDirectionZ = Vector3.Dot(charFwd, dirFwd);
+                        _shuffleDirectionX = Vector3.Dot(charRight, dirFwd);
+                        UpdateStrafeDirection(Vector3.Dot(charFwd, dirFwd), Vector3.Dot(charRight, dirFwd));
+                        _cameraRotationOffset = Mathf.Lerp(_cameraRotationOffset, 0f, rotationSmoothing * Time.deltaTime);
+
+                        float targetValue = _strafeAngle > forwardStrafeMinThreshold && _strafeAngle < forwardStrafeMaxThreshold ? 1f : 0f;
+                        if (Mathf.Abs(_forwardStrafe - targetValue) <= 0.001f)
+                            _forwardStrafe = targetValue;
+                        else
+                            _forwardStrafe = Mathf.SmoothStep(_forwardStrafe, targetValue, Mathf.Clamp01(StrafeDirectionDampTime * Time.deltaTime));
                     }
-                }
-                
-                // Also check animator state - if IsAction is false, we're no longer in an action state
-                // (Only if using new system with IsAction parameter)
-                if (animator != null && !useLegacyAttackTriggers && HasParameter("IsAction"))
-                {
-                    bool isAction = animator.GetBool(isActionHash);
-                    if (!isAction)
-                    {
-                        // Animator says we're not in action state, but our flag says we are
-                        // This means the animator transitioned out but the event didn't fire
-                        ResetAttackState();
-                    }
-                }
-            }
-        }
-        
-        private void ResetAttackState()
-        {
-            isAttacking = false;
-            attackStateTimeout = 0f;
-            
-            // Clear current action in CombatExecutor when attack completes (for weapon collider mode)
-            if (useWeaponColliders && combatExecutor != null)
-            {
-                combatExecutor.ClearCurrentAction();
-            }
-            
-            if (animator != null && !useLegacyAttackTriggers && HasParameter("IsAction"))
-            {
-                animator.SetBool(isActionHash, false);
-            }
-        }
-        
-        /// <summary>
-        /// Updates the attack timeout based on the actual animation length.
-        /// Waits a frame for the animation to start, then gets its length.
-        /// </summary>
-        private IEnumerator UpdateAttackTimeoutFromAnimation()
-        {
-            // Wait a frame for the animation to start playing
-            yield return null;
-            
-            if (isAttacking)
-            {
-                // Check if animator is valid (not null and has controller)
-                if (!IsAnimatorValid())
-                {
-                    attackStateTimeout = 5f;
-                    yield break;
-                }
-                
-                // Try to get the clip info first (most reliable)
-                AnimatorClipInfo[] clipInfo = animator.GetCurrentAnimatorClipInfo(0);
-                if (clipInfo != null && clipInfo.Length > 0)
-                {
-                    // Get the length of the actual animation clip
-                    float clipLength = clipInfo[0].clip.length;
-                    // Account for animator speed multiplier
-                    AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-                    float speedMultiplier = stateInfo.speed;
-                    float actualLength = clipLength / Mathf.Max(speedMultiplier, 0.01f); // Avoid division by zero
-                    
-                    // Set timeout to animation length + small buffer (0.2s) to account for transition time
-                    attackStateTimeout = actualLength + 0.2f;
+
+                    transform.rotation = Quaternion.Slerp(transform.rotation, strafingTargetRotation, rotationSmoothing * Time.deltaTime);
                 }
                 else
                 {
-                    // Fallback: use state info length
-                    AnimatorStateInfo stateInfo = animator.GetCurrentAnimatorStateInfo(0);
-                    if (stateInfo.length > 0)
+                    UpdateStrafeDirection(1f, 0f);
+                    float newOffset = charFwd.sqrMagnitude > 0.001f && camFwd.sqrMagnitude > 0.001f
+                        ? Vector3.SignedAngle(charFwd, camFwd, Vector3.up)
+                        : 0f;
+                    _cameraRotationOffset = Mathf.Lerp(_cameraRotationOffset, newOffset, 20f * Time.deltaTime);
+                    _isTurningInPlace = Mathf.Abs(_cameraRotationOffset) > 10f;
+                }
+            }
+            else
+            {
+                UpdateStrafeDirection(1f, 0f);
+                _shuffleDirectionZ = 1f;
+                _shuffleDirectionX = 0f;
+                _cameraRotationOffset = Mathf.Lerp(_cameraRotationOffset, 0f, rotationSmoothing * Time.deltaTime);
+
+                Vector3 faceDirection = new Vector3(_velocity.x, 0f, _velocity.z);
+                if (faceDirection.sqrMagnitude > 0.0001f)
+                    transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(faceDirection), rotationSmoothing * Time.deltaTime);
+            }
+        }
+
+        private void UpdateStrafeDirection(float targetZ, float targetX)
+        {
+            _strafeDirectionZ = Mathf.Lerp(_strafeDirectionZ, targetZ, AnimationDampTime * Time.deltaTime);
+            _strafeDirectionX = Mathf.Lerp(_strafeDirectionX, targetX, AnimationDampTime * Time.deltaTime);
+            _strafeDirectionZ = Mathf.Round(_strafeDirectionZ * 1000f) / 1000f;
+            _strafeDirectionX = Mathf.Round(_strafeDirectionX * 1000f) / 1000f;
+        }
+
+        private void CheckIfStopped()
+        {
+            _isStopped = _moveDirection.magnitude < 0.01f && _speed2D < 0.5f;
+        }
+
+        private void CheckIfStarting()
+        {
+            _locomotionStartTimer = VariableOverrideDelayTimer(_locomotionStartTimer);
+            bool isStartingCheck = false;
+
+            if (_locomotionStartTimer <= 0f)
+            {
+                if (_moveDirection.magnitude > 0.01f && _speed2D < 1f && !_isStrafing)
+                    isStartingCheck = true;
+
+                if (isStartingCheck)
+                {
+                    if (!_isStarting)
                     {
-                        attackStateTimeout = stateInfo.length + 0.2f;
+                        _locomotionStartDirection = _newDirectionDifferenceAngle;
+                        if (_animator != null && HasParameter("LocomotionStartDirection"))
+                            _animator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
+                    }
+                    float delayTime = 0.2f;
+                    _leanDelay = delayTime;
+                    _headLookDelay = delayTime;
+                    _bodyLookDelay = delayTime;
+                    _locomotionStartTimer = delayTime;
+                }
+            }
+            else
+            {
+                isStartingCheck = true;
+            }
+
+            _isStarting = isStartingCheck;
+        }
+
+        private float VariableOverrideDelayTimer(float timeVariable)
+        {
+            if (timeVariable > 0f)
+            {
+                timeVariable -= Time.deltaTime;
+                timeVariable = Mathf.Clamp(timeVariable, 0f, 1f);
+            }
+            else
+            {
+                timeVariable = 0f;
+            }
+            return timeVariable;
+        }
+
+        private void CheckEnableTurns()
+        {
+            _headLookDelay = VariableOverrideDelayTimer(_headLookDelay);
+            _bodyLookDelay = VariableOverrideDelayTimer(_bodyLookDelay);
+            _enableHeadTurn = enableHeadTurn && _headLookDelay == 0f && !_isStarting;
+            _enableBodyTurn = enableBodyTurn && _bodyLookDelay == 0f && !(_isStarting || _isTurningInPlace);
+        }
+
+        private void CheckEnableLean()
+        {
+            _leanDelay = VariableOverrideDelayTimer(_leanDelay);
+            _enableLean = enableLean && _leanDelay == 0f && !(_isStarting || _isTurningInPlace);
+        }
+
+        private void CalculateRotationalAdditives(bool leansActivated, bool headLookActivated, bool bodyLookActivated)
+        {
+            bool anyActive = headLookActivated || leansActivated || bodyLookActivated;
+            if (anyActive)
+            {
+                _currentRotation = transform.forward;
+                _rotationRate = _currentRotation.sqrMagnitude > 0.001f && _previousRotation.sqrMagnitude > 0.001f
+                    ? Vector3.SignedAngle(_currentRotation, _previousRotation, Vector3.up) / Mathf.Max(Time.deltaTime, 0.001f) * -1f
+                    : 0f;
+            }
+
+            const float maxLeanRotationRate = 275f;
+            float referenceValue = _speed2D / sprintSpeed;
+
+            if (leansActivated)
+            {
+                _initialLeanValue = _rotationRate;
+                _leanValue = CalculateSmoothedValue(_leanValue, _initialLeanValue, maxLeanRotationRate, 5f, leanCurve, referenceValue, true);
+            }
+            else
+            {
+                _leanValue = CalculateSmoothedValue(_leanValue, 0f, maxLeanRotationRate, 5f, leanCurve, referenceValue, true);
+            }
+
+            if (headLookActivated && _isTurningInPlace)
+            {
+                _initialTurnValue = _cameraRotationOffset;
+                _headLookX = Mathf.Lerp(_headLookX, _initialTurnValue / 200f, 5f * Time.deltaTime);
+            }
+            else if (headLookActivated)
+            {
+                _initialTurnValue = _rotationRate;
+                _headLookX = CalculateSmoothedValue(_headLookX, _initialTurnValue, maxLeanRotationRate, 5f, headLookXCurve, _headLookX, false);
+            }
+            else
+            {
+                _headLookX = CalculateSmoothedValue(_headLookX, 0f, maxLeanRotationRate, 5f, headLookXCurve, _headLookX, false);
+            }
+
+            if (bodyLookActivated)
+            {
+                _initialTurnValue = _rotationRate;
+                _bodyLookX = CalculateSmoothedValue(_bodyLookX, _initialTurnValue, maxLeanRotationRate, 5f, bodyLookXCurve, _bodyLookX, false);
+            }
+            else
+            {
+                _bodyLookX = CalculateSmoothedValue(_bodyLookX, 0f, maxLeanRotationRate, 5f, bodyLookXCurve, _bodyLookX, false);
+            }
+
+            float cameraTilt = cameraController != null ? cameraController.GetCameraTiltX() : 0f;
+            cameraTilt = (cameraTilt > 180f ? cameraTilt - 360f : cameraTilt) / -180f;
+            cameraTilt = Mathf.Clamp(cameraTilt, -0.1f, 1f);
+            _headLookY = cameraTilt;
+            _bodyLookY = cameraTilt;
+
+            _previousRotation = _currentRotation;
+        }
+
+        private float CalculateSmoothedValue(float mainVariable, float newValue, float maxRateChange, float smoothness,
+            AnimationCurve referenceCurve, float referenceValue, bool isMultiplier)
+        {
+            if (referenceCurve == null) return mainVariable;
+
+            float changeVariable = newValue / maxRateChange;
+            changeVariable = Mathf.Clamp(changeVariable, -1f, 1f);
+
+            if (isMultiplier)
+                changeVariable *= referenceCurve.Evaluate(referenceValue);
+            else
+                changeVariable = referenceCurve.Evaluate(changeVariable);
+
+            if (Mathf.Abs(changeVariable - mainVariable) > 0.0001f)
+                changeVariable = Mathf.Lerp(mainVariable, changeVariable, smoothness * Time.deltaTime);
+
+            return changeVariable;
+        }
+
+        private void ApplyGravity()
+        {
+            if (_isGrounded && _velocity.y < 0)
+                _velocity.y = -2f;
+            _velocity.y += gravity * Time.deltaTime;
+        }
+
+        private void Move()
+        {
+            if (_controller != null && _controller.enabled)
+                _controller.Move(_velocity * Time.deltaTime);
+        }
+
+        private Vector3 GetCameraForwardZeroedYNormalized()
+        {
+            if (cameraController != null)
+                return cameraController.GetCameraForwardZeroedYNormalised();
+            return _mainCamera != null ? Vector3.ProjectOnPlane(_mainCamera.transform.forward, Vector3.up).normalized : transform.forward;
+        }
+
+        private Vector3 GetCameraRightZeroedYNormalized()
+        {
+            if (cameraController != null)
+                return cameraController.GetCameraRightZeroedYNormalised();
+            return _mainCamera != null ? Vector3.ProjectOnPlane(_mainCamera.transform.right, Vector3.up).normalized : transform.right;
+        }
+
+        #endregion
+
+        #region Locomotion State
+
+        private void UpdateLocomotionState(CombatInputState state)
+        {
+            ApplyGravity();
+
+            if (_isCrouching)
+            {
+                _currentState = AnimationState.Crouch;
+                return;
+            }
+
+            if (state.JumpPressed && _isGrounded)
+            {
+                SwitchState(AnimationState.Jump);
+                return;
+            }
+            if (HasParameter("IsJumping") && _animator != null)
+                _animator.SetBool(_isJumpingHash, false);
+
+            CheckEnableTurns();
+            CheckEnableLean();
+            CalculateRotationalAdditives(_enableLean, _enableHeadTurn, _enableBodyTurn);
+
+            CalculateMoveDirection(state);
+            CheckIfStarting();
+            CheckIfStopped();
+            FaceMoveDirection();
+            Move();
+            UpdateAnimatorController();
+        }
+
+        #endregion
+
+        #region Jump State
+
+        private void SwitchToJumpState()
+        {
+            _currentState = AnimationState.Jump;
+            if (_animator != null && HasParameter("IsJumping"))
+                _animator.SetBool(_isJumpingHash, true);
+            _velocity.y = jumpForce;
+        }
+
+        private void UpdateJumpState(CombatInputState state)
+        {
+            ApplyGravity();
+
+            CheckEnableTurns();
+            CalculateRotationalAdditives(false, _enableHeadTurn, _enableBodyTurn);
+
+            if (_velocity.y <= 0f)
+            {
+                if (_animator != null && HasParameter("IsJumping"))
+                    _animator.SetBool(_isJumpingHash, false);
+                SwitchState(AnimationState.Fall);
+                return;
+            }
+
+            CalculateMoveDirection(state);
+            FaceMoveDirection();
+            Move();
+            UpdateAnimatorController();
+        }
+
+        #endregion
+
+        #region Fall State
+
+        private void SwitchState(AnimationState newState)
+        {
+            _currentState = newState;
+            if (newState == AnimationState.Fall)
+            {
+                _velocity.y = 0f;
+                _fallStartTime = Time.time;
+                _fallingDuration = 0f;
+            }
+            else if (newState == AnimationState.Dash)
+                EnterDashState();
+        }
+
+        private void SwitchToLocomotionFromFall()
+        {
+            _currentState = AnimationState.Locomotion;
+        }
+
+        private void UpdateFallState(CombatInputState state)
+        {
+            ApplyGravity();
+            _fallingDuration = Time.time - _fallStartTime;
+
+            CheckEnableTurns();
+            CalculateRotationalAdditives(false, _enableHeadTurn, _enableBodyTurn);
+
+            CalculateMoveDirection(state);
+            FaceMoveDirection();
+            Move();
+            UpdateAnimatorController();
+
+            if (_controller != null && _controller.isGrounded)
+                SwitchToLocomotionFromFall();
+        }
+
+        #endregion
+
+        #region Crouch State
+
+        private void UpdateCrouchState(CombatInputState state)
+        {
+            GroundedCheck();
+            if (!_isGrounded)
+            {
+                SetCapsuleCrouch(false);
+                _isCrouching = false;
+                SwitchState(AnimationState.Fall);
+                return;
+            }
+
+            CeilingHeightCheck();
+
+            if (state.JumpPressed && !_cannotStandUp)
+            {
+                SetCapsuleCrouch(false);
+                _isCrouching = false;
+                SwitchToJumpState();
+                return;
+            }
+
+            if (!_isCrouching && !_cannotStandUp)
+            {
+                SetCapsuleCrouch(false);
+                _currentState = AnimationState.Locomotion;
+                return;
+            }
+
+            CheckEnableTurns();
+            CheckEnableLean();
+            CalculateRotationalAdditives(false, _enableHeadTurn, false);
+
+            ApplyGravity();
+            CalculateMoveDirection(state);
+            CheckIfStarting();
+            CheckIfStopped();
+            FaceMoveDirection();
+            Move();
+            UpdateAnimatorController();
+        }
+
+        #endregion
+
+        #region Dash State
+
+        private void EnterDashState()
+        {
+            _dashTimer = dashDuration;
+            var state = _inputProvider?.GetState() ?? default;
+            Vector2 moveInput = state.Move;
+            if (moveInput.sqrMagnitude > 0.01f)
+            {
+                _dashDirection = (GetCameraForwardZeroedYNormalized() * moveInput.y + GetCameraRightZeroedYNormalized() * moveInput.x).normalized;
+            }
+            else
+            {
+                _dashDirection = transform.forward;
+            }
+            transform.rotation = Quaternion.LookRotation(_dashDirection);
+            if (_animator != null && HasParameter("Dash"))
+                _animator.SetTrigger(_dashTriggerHash);
+        }
+
+        private void UpdateDashState()
+        {
+            ApplyGravity();
+            _dashTimer -= Time.deltaTime;
+
+            if (_dashTimer <= 0)
+            {
+                _currentState = AnimationState.Locomotion;
+                return;
+            }
+
+            if (_controller != null && _controller.enabled)
+                _controller.Move((_dashDirection * manualDashSpeed + _velocity) * Time.deltaTime);
+
+            UpdateAnimatorController();
+        }
+
+        #endregion
+
+        #region Attack State
+
+        private void StartAttack()
+        {
+            int actionCount = Mathf.Max(_availableActions?.Length ?? actionStateCount, 1);
+            CombatAction actionToUse = _availableActions != null && _availableActions.Length > 0 ? _availableActions[_currentComboIndex % _availableActions.Length] : null;
+
+            if (actionToUse != null && _combatExecutor != null)
+            {
+                var cm = _combatExecutor.GetCooldownManager();
+                if (cm != null && !cm.IsActionAvailable(actionToUse))
+                    return;
+            }
+
+            _currentState = AnimationState.Attack;
+            _attackStateTimeout = 5f;
+
+            CombatEntity target = null;
+            if (_targetingManager != null && actionToUse != null)
+            {
+                var tr = _targetingManager.GetTargets(actionToUse);
+                if (tr != null && tr.isReady && tr.targets != null && tr.targets.Count > 0)
+                {
+                    target = tr.targets[0];
+                    Vector3 toTarget = target.transform.position - transform.position;
+                    toTarget.y = 0;
+                    if (toTarget.sqrMagnitude > 0.001f)
+                        transform.rotation = Quaternion.LookRotation(toTarget.normalized);
+                }
+            }
+
+            int actionIndex = (_currentComboIndex % actionCount) + actionIndexOffset;
+
+            if (_animator != null && IsAnimatorValid())
+            {
+                int weaponTypeInt = actionToUse != null ? (int)actionToUse.weaponType : 0;
+                if (HasParameter("ActionType")) _animator.SetInteger(_actionTypeHash, weaponTypeInt);
+
+                if (_useLegacyAttackTriggers)
+                {
+                    int n = (_currentComboIndex % actionCount) + 1;
+                    if (actionToUse != null && actionToUse.weaponType == WeaponType.Bow)
+                    {
+                        if (n == 1 && HasParameter("Attack_1")) _animator.SetTrigger(_attack1Hash);
+                        else if (HasParameter("Attack_2")) _animator.SetTrigger(_attack2Hash);
                     }
                     else
                     {
-                        // Final fallback: use default timeout
-                        attackStateTimeout = 5f;
+                        if (n == 1 && HasParameter("Attack_1")) _animator.SetTrigger(_attack1Hash);
+                        else if (n == 2 && HasParameter("Attack_2")) _animator.SetTrigger(_attack2Hash);
+                        else if (n >= 3 && HasParameter("Attack_3")) _animator.SetTrigger(_attack3Hash);
                     }
                 }
+                else
+                {
+                    if (HasParameter("ActionIndex")) _animator.SetInteger(_actionIndexHash, actionIndex);
+                    if (HasParameter("IsAction")) _animator.SetBool(_isActionHash, true);
+                    if (HasParameter("TakeAction")) _animator.SetTrigger(_takeActionHash);
+                }
+                StartCoroutine(UpdateAttackTimeoutFromAnimation());
+            }
+
+            if (actionToUse != null && _combatExecutor != null)
+            {
+                if (useWeaponColliders)
+                    _combatExecutor.SetCurrentAction(actionToUse);
+                else
+                    _combatExecutor.ExecuteAction(actionToUse);
+            }
+
+            _currentComboIndex = (_currentComboIndex + 1) % Mathf.Max(actionCount, 1);
+        }
+
+        private void UpdateAttackState(CombatInputState state)
+        {
+            ApplyGravity();
+
+            if (_controller != null && _controller.enabled)
+                _controller.Move(_velocity * Time.deltaTime);
+
+            _attackStateTimeout -= Time.deltaTime;
+            if (_attackStateTimeout <= 0)
+                ResetAttackState();
+            else if (!_useLegacyAttackTriggers && _animator != null && HasParameter("IsAction") && !_animator.GetBool(_isActionHash))
+                ResetAttackState();
+
+            UpdateAnimatorController();
+        }
+
+        private void ResetAttackState()
+        {
+            _currentState = AnimationState.Locomotion;
+            if (useWeaponColliders && _combatExecutor != null)
+                _combatExecutor.ClearCurrentAction();
+            if (_animator != null && HasParameter("IsAction"))
+                _animator.SetBool(_isActionHash, false);
+        }
+
+        private IEnumerator UpdateAttackTimeoutFromAnimation()
+        {
+            yield return null;
+            if (_currentState == AnimationState.Attack && _animator != null)
+            {
+                var clipInfo = _animator.GetCurrentAnimatorClipInfo(0);
+                if (clipInfo != null && clipInfo.Length > 0)
+                    _attackStateTimeout = clipInfo[0].clip.length + 0.2f;
             }
         }
-        
+
+        public void OnAttackEnd() => ResetAttackState();
+        public void OnDashEnd() => _currentState = AnimationState.Locomotion;
+
+        #endregion
+
+        #region Animator Controller (Sample-style params)
+
+        private void UpdateAnimatorController()
+        {
+            if (_animator == null || !IsAnimatorValid()) return;
+
+            bool inCombatAction = _currentState == AnimationState.Attack || _currentState == AnimationState.Dash;
+            if (inCombatAction)
+            {
+                _leanValue = Mathf.Lerp(_leanValue, 0f, 10f * Time.deltaTime);
+                _headLookX = Mathf.Lerp(_headLookX, 0f, 10f * Time.deltaTime);
+                _headLookY = Mathf.Lerp(_headLookY, 0f, 10f * Time.deltaTime);
+                _bodyLookX = Mathf.Lerp(_bodyLookX, 0f, 10f * Time.deltaTime);
+                _bodyLookY = Mathf.Lerp(_bodyLookY, 0f, 10f * Time.deltaTime);
+            }
+
+            if (_useSyntyMovementParams && !inCombatAction)
+            {
+                if (HasParameter("MovementInputTapped")) _animator.SetBool(_movementInputTappedHash, _movementInputTapped);
+                if (HasParameter("MovementInputPressed")) _animator.SetBool(_movementInputPressedHash, _movementInputPressed);
+                if (HasParameter("MovementInputHeld")) _animator.SetBool(_movementInputHeldHash, _movementInputHeld);
+                if (HasParameter("IsWalking")) _animator.SetBool(_isWalkingHash, _isWalking);
+            }
+
+            if (_usePolygonParams)
+            {
+                if (HasParameter("MoveSpeed")) _animator.SetFloat(_moveSpeedHash, _speed2D);
+                if (HasParameter("CurrentGait")) _animator.SetInteger(_currentGaitHash, (int)_currentGait);
+                if (HasParameter("StrafeDirectionX")) _animator.SetFloat(_strafeDirectionXHash, _strafeDirectionX);
+                if (HasParameter("StrafeDirectionZ")) _animator.SetFloat(_strafeDirectionZHash, _strafeDirectionZ);
+                if (HasParameter("IsStrafing")) _animator.SetFloat(_isStrafingHash, _isStrafing ? 1f : 0f);
+                if (HasParameter("IsCrouching")) _animator.SetBool(_isCrouchingHash, _isCrouching);
+            }
+
+            if (HasParameter("LeanValue")) _animator.SetFloat(_leanValueHash, _leanValue);
+            if (HasParameter("HeadLookX")) _animator.SetFloat(_headLookXHash, _headLookX);
+            if (HasParameter("HeadLookY")) _animator.SetFloat(_headLookYHash, _headLookY);
+            if (HasParameter("BodyLookX")) _animator.SetFloat(_bodyLookXHash, _bodyLookX);
+            if (HasParameter("BodyLookY")) _animator.SetFloat(_bodyLookYHash, _bodyLookY);
+            if (HasParameter("InclineAngle")) _animator.SetFloat(_inclineAngleHash, _inclineAngle);
+            if (HasParameter("ShuffleDirectionX")) _animator.SetFloat(_shuffleDirectionXHash, _shuffleDirectionX);
+            if (HasParameter("ShuffleDirectionZ")) _animator.SetFloat(_shuffleDirectionZHash, _shuffleDirectionZ);
+            if (HasParameter("ForwardStrafe")) _animator.SetFloat(_forwardStrafeHash, _forwardStrafe);
+            if (HasParameter("CameraRotationOffset")) _animator.SetFloat(_cameraRotationOffsetHash, _cameraRotationOffset);
+            if (HasParameter("IsTurningInPlace")) _animator.SetBool(_isTurningInPlaceHash, _isTurningInPlace);
+            if (HasParameter("IsStopped")) _animator.SetBool(_isStoppedHash, _isStopped);
+            if (HasParameter("IsStarting")) _animator.SetBool(_isStartingHash, _isStarting);
+            if (HasParameter("LocomotionStartDirection")) _animator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
+            if (HasParameter("FallingDuration")) _animator.SetFloat(_fallingDurationHash, _fallingDuration);
+
+            if (HasParameter("IsGrounded")) _animator.SetBool(_isGroundedHash, _isGrounded);
+            if (HasParameter("Speed")) _animator.SetFloat(_speedHash, _currentState == AnimationState.Attack || _currentState == AnimationState.Dash ? 0f : (_speed2D / sprintSpeed));
+        }
+
+        #endregion
+
+        #region Root Motion
+
         private void OnAnimatorMove()
         {
-            if (animator == null)
+            if (_animator == null || !_animator.applyRootMotion) return;
+            var rootMotion = _animator.deltaPosition;
+            if (rootMotion.sqrMagnitude > 0.000001f && _controller != null && _controller.enabled &&
+                (_currentState == AnimationState.Dash || _currentState == AnimationState.Attack))
             {
-                return;
-            }
-            
-            if (!animator.applyRootMotion)
-            {
-                return;
-            }
-            
-            Vector3 rootMotion = animator.deltaPosition;
-            
-            // Only apply root motion during dash or attack animations
-            // During normal movement, we handle movement manually in HandleMovement()
-            if (!isDashing && !isAttacking)
-            {
-                // During normal movement, ignore root motion (we handle it manually)
-                // This prevents idle/walk/run animations from interfering with player-controlled movement
-                // DO NOT apply root motion here - just return
-                return;
-            }
-            
-            // Apply root motion from animations (only for dash/attack)
-            if (characterController != null && characterController.enabled)
-            {
-                if (rootMotion.magnitude > 0.001f)
-                {
-                    // Apply root motion
-                    characterController.Move(rootMotion);
-                    
-                    // Apply rotation from root motion if any
-                    if (animator.deltaRotation != Quaternion.identity)
-                    {
-                        transform.rotation = transform.rotation * animator.deltaRotation;
-                    }
-                }
-                else if (isDashing)
-                {
-                    // No root motion detected during dash - enable manual dash movement as fallback
-                    if (!useManualDashMovement)
-                    {
-                        useManualDashMovement = true;
-                    }
-                }
+                _controller.Move(rootMotion);
+                if (_animator.deltaRotation != Quaternion.identity)
+                    transform.rotation = transform.rotation * _animator.deltaRotation;
             }
         }
-        
-        // Animation event callbacks (called from animation events)
-        public void OnAttackStart()
+
+        #endregion
+
+        #region Helpers
+
+        private bool HasParameter(string name)
         {
-            // Called when attack animation starts
+            if (_animator == null || _animator.runtimeAnimatorController == null) return false;
+            foreach (var p in _animator.parameters)
+                if (p.name == name) return true;
+            return false;
         }
-        
-        public void OnAttackEnd()
-        {
-            // Called when action animation ends
-            ResetAttackState();
-        }
-        
-        public void OnDashStart()
-        {
-            // Called when dash animation started
-        }
-        
-        public void OnDashEnd()
-        {
-            // Called when dash animation ends
-            isDashing = false;
-        }
-        
-        // Public methods for external control
-        public void SetMoveInput(Vector2 input)
-        {
-            moveInput = input;
-        }
-        
-        public void SetDashInput(bool dash)
-        {
-            dashInput = dash;
-        }
-        
-        public void SetAttackInput(bool attack)
-        {
-            attackInput = attack;
-        }
-        
-        public void SetRunInput(bool run)
-        {
-            runInput = run;
-        }
-        
-        public bool IsAttacking => isAttacking;
-        public bool IsDashing => isDashing;
-        public bool IsGrounded => isGrounded;
+
+        private bool IsAnimatorValid() => _animator != null && _animator.runtimeAnimatorController != null;
+
+        #endregion
+
+        #region Public API
+
+        public bool IsAttacking => _currentState == AnimationState.Attack;
+        public bool IsDashing => _currentState == AnimationState.Dash;
+        public bool IsGrounded => _isGrounded;
+        public CombatAction[] AvailableActions => _availableActions ?? System.Array.Empty<CombatAction>();
+
+        #endregion
     }
 }
-
-

@@ -8,6 +8,17 @@ using RogueDeal.Combat.Core.Targeting;
 namespace RogueDeal.Combat.Core.Data
 {
     /// <summary>
+    /// Weapon/action type for animator routing (sword, bow, etc.).
+    /// </summary>
+    public enum WeaponType
+    {
+        Sword = 0,
+        Bow = 1,
+        Unarmed = 2,
+        Other = 3
+    }
+
+    /// <summary>
     /// Enhanced combat action. Replaces AbilityData with full support for:
     /// - Animation-driven timing
     /// - Composable effects
@@ -25,7 +36,9 @@ namespace RogueDeal.Combat.Core.Data
         public Sprite icon;
         
         [Header("Animation")]
-        [Tooltip("Animation trigger name to play (for simple animations)")]
+        [Tooltip("Weapon type for animator routing (Sword, Bow, Other). Maps to ActionType/ActionIndex.")]
+        public WeaponType weaponType = WeaponType.Sword;
+        [Tooltip("Animation trigger name to play (for simple animations). Overrides weaponType-based trigger when set.")]
         public string animationTrigger;
         
         [Tooltip("Animation clips for combo attacks (played sequentially) - deprecated, use timeline instead")]

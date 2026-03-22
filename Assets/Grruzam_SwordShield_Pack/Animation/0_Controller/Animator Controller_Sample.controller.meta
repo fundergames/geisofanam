@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 8a1e6acd51dd9fc4790b381791556848
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 9100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 335332
+  packageName: Blade and Shield:Combat Animation Pack (Sword & Shield Animations)
+  packageVersion: 1.0
+  assetPath: Assets/Grruzam_SwordShield_Pack/Animation/0_Controller/Animator Controller_Sample.controller
+  uploadId: 793464

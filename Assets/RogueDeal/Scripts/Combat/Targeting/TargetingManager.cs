@@ -36,6 +36,9 @@ namespace RogueDeal.Combat.Targeting
         // Lock-on state (for click-to-select)
         private CombatEntity lockedOnTarget = null;
         private bool isLockedOn = false;
+
+        // Synty-style trigger-based target candidates
+        private readonly System.Collections.Generic.List<GameObject> _targetCandidates = new System.Collections.Generic.List<GameObject>();
         
         private void Awake()
         {
@@ -86,6 +89,132 @@ namespace RogueDeal.Combat.Targeting
             
             // Update lock-on state
             UpdateLockOnState();
+
+            // Synty-style: update best target from candidates and highlight
+            UpdateBestTarget();
+        }
+
+        /// <summary>
+        /// Adds a GameObject as a lock-on candidate (called from LockOnTarget.OnTriggerEnter).
+        /// </summary>
+        public void AddTargetCandidate(GameObject candidate)
+        {
+            if (candidate != null && !_targetCandidates.Contains(candidate))
+            {
+                _targetCandidates.Add(candidate);
+            }
+        }
+
+        /// <summary>
+        /// Removes a GameObject from lock-on candidates (called from LockOnTarget.OnTriggerExit).
+        /// </summary>
+        public void RemoveTargetCandidate(GameObject candidate)
+        {
+            if (candidate != null)
+            {
+                _targetCandidates.Remove(candidate);
+            }
+        }
+
+        /// <summary>
+        /// Toggle lock-on. When enabling, locks to best candidate. When disabling, clears lock.
+        /// Call from controller when LockOnPressed.
+        /// </summary>
+        public void ToggleLockOn()
+        {
+            if (isLockedOn)
+            {
+                ClearLockOn();
+            }
+            else
+            {
+                GameObject best = GetBestTargetFromCandidates();
+                if (best != null)
+                {
+                    var entity = best.GetComponentInChildren<LockOnTarget>()?.GetCombatEntity()
+                        ?? best.GetComponent<CombatEntity>()
+                        ?? best.GetComponentInParent<CombatEntity>();
+                    if (entity != null)
+                    {
+                        SetLockOn(entity);
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Updates best target from candidates and highlights (Synty-style).
+        /// </summary>
+        private void UpdateBestTarget()
+        {
+            GameObject newBestTarget = GetBestTargetFromCandidates();
+
+            if (!isLockedOn)
+            {
+                // Update which target would be highlighted as "best" when not locked
+                foreach (var go in _targetCandidates)
+                {
+                    var lockOn = go.GetComponent<LockOnTarget>();
+                    lockOn?.Highlight(go == newBestTarget, false);
+                }
+            }
+            else
+            {
+                // When locked: highlight locked target, or clear lock if it left range
+                if (lockedOnTarget != null && _targetCandidates.Contains(lockedOnTarget.gameObject))
+                {
+                    lockedOnTarget.GetComponentInChildren<LockOnTarget>()?.Highlight(true, true);
+                }
+                else
+                {
+                    ClearLockOn();
+                }
+            }
+        }
+
+        private GameObject GetBestTargetFromCandidates()
+        {
+            if (_targetCandidates.Count == 0) return null;
+            if (_targetCandidates.Count == 1) return _targetCandidates[0];
+
+            GameObject best = null;
+            float bestScore = 0f;
+
+            Vector3 playerPos = transform.position;
+            Vector3 camPos = mainCamera != null ? mainCamera.transform.position : playerPos;
+            Vector3 camForward = mainCamera != null ? mainCamera.transform.forward : transform.forward;
+
+            foreach (var target in _targetCandidates)
+            {
+                if (target == null || !target.activeInHierarchy)
+                    continue;
+
+                var entity = target.GetComponentInChildren<LockOnTarget>()?.GetCombatEntity()
+                    ?? target.GetComponent<CombatEntity>()
+                    ?? target.GetComponentInParent<CombatEntity>();
+                if (entity != null)
+                {
+                    var data = entity.GetEntityData();
+                    if (data == null || !data.IsAlive)
+                        continue;
+                }
+
+                float distance = Vector3.Distance(playerPos, target.transform.position);
+                float distanceScore = distance > 0.001f ? (1f / distance) * 100f : 1000f;
+
+                Vector3 targetDir = (target.transform.position - camPos).normalized;
+                float angleInView = Vector3.Dot(targetDir, camForward);
+                float angleScore = angleInView * 40f;
+
+                float totalScore = distanceScore + angleScore;
+                if (totalScore > bestScore)
+                {
+                    bestScore = totalScore;
+                    best = target;
+                }
+            }
+
+            return best;
         }
         
         private void HandleDebugInput()
@@ -206,22 +335,19 @@ namespace RogueDeal.Combat.Targeting
                 ? action.targetingStrategy 
                 : currentTargetingStrategy;
             
+            // When locked on (Synty-style or click-to-select), return locked target first
+            if (isLockedOn && lockedOnTarget != null)
+            {
+                var targets = new List<CombatEntity> { lockedOnTarget };
+                var targetData = lockedOnTarget.GetEntityData();
+                Vector3 targetPos = targetData != null ? targetData.position : lockedOnTarget.transform.position;
+                return new TargetResult(targets, targetPos, true);
+            }
+
             if (strategyToUse == null)
             {
                 Debug.LogWarning("[TargetingManager] No targeting strategy available!");
                 return new TargetResult(null, transform.position, false);
-            }
-            
-            // For click-to-select, check if we have a locked-on target
-            if (strategyToUse is ClickToSelectTargetingStrategy)
-            {
-                if (isLockedOn && lockedOnTarget != null)
-                {
-                    var targets = new List<CombatEntity> { lockedOnTarget };
-                    var targetData = lockedOnTarget.GetEntityData();
-                    Vector3 targetPos = targetData != null ? targetData.position : lockedOnTarget.transform.position;
-                    return new TargetResult(targets, targetPos, true);
-                }
             }
             
             return strategyToUse.ResolveTargets(attackerData);
@@ -332,8 +458,20 @@ namespace RogueDeal.Combat.Targeting
         
         private void ClearLockOn()
         {
+            if (lockedOnTarget != null)
+            {
+                lockedOnTarget.GetComponentInChildren<LockOnTarget>()?.Highlight(false, false);
+            }
             lockedOnTarget = null;
             isLockedOn = false;
+        }
+
+        /// <summary>
+        /// Gets the transform to use for camera lock-on look-at (e.g. locked target's position).
+        /// </summary>
+        public Transform GetLockOnTargetTransform()
+        {
+            return lockedOnTarget != null ? lockedOnTarget.transform : null;
         }
         
         /// <summary>

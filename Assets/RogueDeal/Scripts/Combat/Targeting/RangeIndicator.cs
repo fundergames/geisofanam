@@ -193,21 +193,13 @@ namespace RogueDeal.Combat.Targeting
                     // If no executing action, check available actions (same as UpdateLockOnIndicator does)
                     if (strategyToUse == null && thirdPersonController != null)
                     {
-                        // Use reflection to get availableActions (it's private)
-                        var controllerType = thirdPersonController.GetType();
-                        var availableActionsField = controllerType.GetField("availableActions", 
-                            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
-                        if (availableActionsField != null)
+                        var availableActions = thirdPersonController.AvailableActions;
+                        if (availableActions != null && availableActions.Length > 0)
                         {
-                            var availableActions = availableActionsField.GetValue(thirdPersonController) as CombatAction[];
-                            if (availableActions != null && availableActions.Length > 0)
+                            actionToCheck = availableActions[0]; // Use first action (same as UpdateLockOnIndicator)
+                            if (actionToCheck != null && actionToCheck.targetingStrategy != null)
                             {
-                                actionToCheck = availableActions[0]; // Use first action (same as UpdateLockOnIndicator)
-                                if (actionToCheck != null && actionToCheck.targetingStrategy != null)
-                                {
-                                    strategyToUse = actionToCheck.targetingStrategy;
-                                    // Debug.Log($"[RangeIndicator] Using strategy from available action '{actionToCheck.actionName}': {strategyToUse.GetType().Name}");
-                                }
+                                strategyToUse = actionToCheck.targetingStrategy;
                             }
                         }
                     }
