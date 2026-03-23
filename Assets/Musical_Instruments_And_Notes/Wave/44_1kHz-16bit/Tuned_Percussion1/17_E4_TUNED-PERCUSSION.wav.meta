@@ -1,0 +1,30 @@
+fileFormatVersion: 2
+guid: 7d96c251c11c43f4687efa602118b966
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 7
+  defaultSettings:
+    serializedVersion: 2
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 1
+    conversionMode: 0
+    preloadAudioData: 0
+  platformSettingOverrides: {}
+  forceToMono: 0
+  normalize: 1
+  loadInBackground: 0
+  ambisonic: 0
+  3D: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301661
+  packageName: Musical Instruments & Notes
+  packageVersion: 1.0
+  assetPath: Assets/Musical_Instruments_And_Notes/Wave/44_1kHz-16bit/Tuned_Percussion1/17_E4_TUNED-PERCUSSION.wav
+  uploadId: 705916

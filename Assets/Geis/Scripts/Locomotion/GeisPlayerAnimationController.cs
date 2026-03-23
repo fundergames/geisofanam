@@ -5,6 +5,7 @@ using Synty.AnimationBaseLocomotion.Samples.InputSystem;
 using System.Collections.Generic;
 using UnityEngine;
 using Geis.Combat;
+using Geis.Combat.Music;
 
 namespace Geis.Locomotion
 {
@@ -350,6 +351,7 @@ namespace Geis.Locomotion
         // Data-driven combo
         private int _currentComboState;
         private GeisComboInputType? _comboInputBuffered;
+        private GeisComboInputType _firstAttackInputType;
         private bool _useDataDrivenCombo;
         private AnimatorOverrideController _comboOverrideController;
         private GeisComboData _lastAppliedComboData;
@@ -378,6 +380,13 @@ namespace Geis.Locomotion
         private void Start()
         {
             _targetLockOnPos = transform.Find("TargetLockOnPos");
+            if (_targetLockOnPos == null)
+            {
+                var go = new GameObject("TargetLockOnPos");
+                go.transform.SetParent(transform);
+                go.transform.localPosition = Vector3.zero;
+                _targetLockOnPos = go.transform;
+            }
 
             _inputReader.onLockOnToggled += ToggleLockOn;
             _inputReader.onWalkToggled += ToggleWalk;
@@ -476,11 +485,13 @@ namespace Geis.Locomotion
 
             _isStrafing = enable ? !_isSprinting : _alwaysStrafe || _isAiming;
 
-            _cameraController.LockOn(enable, _targetLockOnPos);
+            if (_targetLockOnPos != null)
+                _cameraController.LockOn(enable, _targetLockOnPos);
 
             if (enable && _currentLockOnTarget != null)
             {
-                _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>().Highlight(true, true);
+                var lockOn = _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>();
+                lockOn?.Highlight(true, true);
             }
         }
 
@@ -672,11 +683,13 @@ namespace Geis.Locomotion
             {
                 if (_useDataDrivenCombo && comboData != null)
                 {
+                    _firstAttackInputType = GeisComboInputType.Light;
                     _currentComboState = 0;
                     SwitchState(AnimationState.Attack);
                 }
                 else if (_animator != null && HasAnimatorParameter("Attack_1"))
                 {
+                    _firstAttackInputType = GeisComboInputType.Light;
                     SwitchState(AnimationState.Attack);
                 }
             }
@@ -692,6 +705,7 @@ namespace Geis.Locomotion
 
             if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
             {
+                _firstAttackInputType = GeisComboInputType.Heavy;
                 _currentComboState = 0;
                 SwitchState(AnimationState.Attack);
             }
@@ -718,12 +732,19 @@ namespace Geis.Locomotion
                 _animator.SetTrigger(_attackTriggerHash);
                 var comboData = GetCurrentComboData();
                 _attackStateTimeout = comboData != null ? 2f : 1.5f;
+                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, _currentComboState, GetWeaponIndexForMusic());
             }
             else if (_animator != null && HasAnimatorParameter("Attack_1"))
             {
                 _animator.SetTrigger(_attack1Hash);
                 _attackStateTimeout = 1.5f;
+                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, 0, GetWeaponIndexForMusic());
             }
+        }
+
+        private int GetWeaponIndexForMusic()
+        {
+            return _weaponSwitcher != null ? _weaponSwitcher.CurrentWeaponIndex : 0;
         }
 
         private void UpdateAttackState()
@@ -750,6 +771,7 @@ namespace Geis.Locomotion
                         _animator.SetTrigger(_attackTriggerHash);
                         var clip = comboData.GetClipForState(_currentComboState);
                         _attackStateTimeout = clip != null ? clip.length + 0.2f : 1.5f;
+                        CombatMusicController.Instance?.OnAttackPerformed(input, _currentComboState, GetWeaponIndexForMusic());
                     }
                 }
             }
@@ -1022,12 +1044,9 @@ namespace Geis.Locomotion
         {
             _controller.Move(_velocity * Time.deltaTime);
 
-            if (_isLockedOn)
+            if (_isLockedOn && _targetLockOnPos != null && _currentLockOnTarget != null)
             {
-                if (_currentLockOnTarget != null)
-                {
-                    _targetLockOnPos.position = _currentLockOnTarget.transform.position;
-                }
+                _targetLockOnPos.position = _currentLockOnTarget.transform.position;
             }
         }
 
@@ -1567,7 +1586,7 @@ namespace Geis.Locomotion
 
                 foreach (GameObject target in _currentTargetCandidates)
                 {
-                    target.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>().Highlight(false, false);
+                    target.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(false, false);
 
                     float distance = Vector3.Distance(transform.position, target.transform.position);
                     float distanceScore = 1 / distance * 100;
@@ -1592,14 +1611,14 @@ namespace Geis.Locomotion
 
                 if (_currentLockOnTarget != null)
                 {
-                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>().Highlight(true, false);
+                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(true, false);
                 }
             }
             else
             {
                 if (_currentTargetCandidates.Contains(_currentLockOnTarget))
                 {
-                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>().Highlight(true, true);
+                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(true, true);
                 }
                 else
                 {

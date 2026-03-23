@@ -1,0 +1,30 @@
+fileFormatVersion: 2
+guid: 8707ef3119d43d94c9063e3cce06a907
+AudioImporter:
+  externalObjects: {}
+  serializedVersion: 7
+  defaultSettings:
+    serializedVersion: 2
+    loadType: 0
+    sampleRateSetting: 0
+    sampleRateOverride: 44100
+    compressionFormat: 1
+    quality: 1
+    conversionMode: 0
+    preloadAudioData: 0
+  platformSettingOverrides: {}
+  forceToMono: 0
+  normalize: 1
+  loadInBackground: 0
+  ambisonic: 0
+  3D: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 301661
+  packageName: Musical Instruments & Notes
+  packageVersion: 1.0
+  assetPath: Assets/Musical_Instruments_And_Notes/Wave/96kHz-24bit/Guitar1/24_B4_Guitar1.wav
+  uploadId: 705916

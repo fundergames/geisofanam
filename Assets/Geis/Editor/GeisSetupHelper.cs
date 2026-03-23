@@ -100,7 +100,7 @@ namespace Geis.Editor
                 so.FindProperty("clips").GetArrayElementAtIndex(i).objectReferenceValue = clip;
             }
             so.FindProperty("fallbackClip").objectReferenceValue = attack1;
-            so.FindProperty("cancelWindowStart").floatValue = 0.2f;
+            so.FindProperty("cancelWindowStart").floatValue = 0.5f;
             so.FindProperty("cancelWindowEnd").floatValue = 0.7f;
             so.ApplyModifiedPropertiesWithoutUndo();
 

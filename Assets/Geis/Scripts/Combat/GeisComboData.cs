@@ -52,10 +52,10 @@ namespace Geis.Combat
         private AnimationClip fallbackClip;
 
         [Header("Timing")]
-        [Tooltip("Normalized time (0-1) when cancel window opens")]
+        [Tooltip("Normalized time (0-1) when cancel window opens. Higher = current attack plays longer before chaining (smoother feel).")]
         [Range(0f, 1f)]
         [SerializeField]
-        private float cancelWindowStart = 0.2f;
+        private float cancelWindowStart = 0.5f;
 
         [Tooltip("Normalized time (0-1) when cancel window closes")]
         [Range(0f, 1f)]

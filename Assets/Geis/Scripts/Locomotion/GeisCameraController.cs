@@ -29,7 +29,7 @@ namespace Geis.Locomotion
         [SerializeField]
         private bool _isLockedOn;
         [SerializeField]
-        private float _mouseSensitivity = 5f;
+        private float _mouseSensitivity = 2f;
         [SerializeField]
         private float _cameraDistance = 5f;
         [SerializeField]
@@ -43,7 +43,7 @@ namespace Geis.Locomotion
         [SerializeField]
         private float _positionalCameraLag = 1f;
         [SerializeField]
-        private float _rotationalCameraLag = 1f;
+        private float _rotationalCameraLag = 0.35f;
         private float _cameraInversion;
 
         private InputReader _inputReader;
@@ -52,12 +52,12 @@ namespace Geis.Locomotion
 
         private Vector3 _lastPosition;
 
-        private float _newAngleX;
-
-        private float _newAngleY;
+        private float _targetAngleX;
+        private float _targetAngleY;
+        private float _currentAngleX;
+        private float _currentAngleY;
         private Vector3 _newPosition;
-        private float _rotationX;
-        private float _rotationY;
+        private bool _wasLockedOn;
 
         private Transform _syntyCamera;
 
@@ -69,6 +69,13 @@ namespace Geis.Locomotion
             _inputReader = _syntyCharacter.GetComponent<InputReader>();
             _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
             _lockOnTarget = _syntyCharacter.transform.Find("TargetLockOnPos");
+            if (_lockOnTarget == null)
+            {
+                var go = new GameObject("TargetLockOnPos");
+                go.transform.SetParent(_syntyCharacter.transform);
+                go.transform.localPosition = Vector3.zero;
+                _lockOnTarget = go.transform;
+            }
 
             if (_hideCursor)
             {
@@ -83,49 +90,62 @@ namespace Geis.Locomotion
 
             _lastPosition = transform.position;
 
+            _targetAngleX = transform.eulerAngles.x;
+            _targetAngleY = transform.eulerAngles.y;
+            _currentAngleX = _targetAngleX;
+            _currentAngleY = _targetAngleY;
+            _lastAngleX = _currentAngleX;
+            _lastAngleY = _currentAngleY;
+
             _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
         }
 
-        /// <inheritdoc cref="Update" />
-        private void Update()
+        /// <inheritdoc cref="LateUpdate" />
+        private void LateUpdate()
         {
-            float positionalFollowSpeed = 1 / (_positionalCameraLag / _LAG_DELTA_TIME_ADJUSTMENT);
-            float rotationalFollowSpeed = 1 / (_rotationalCameraLag / _LAG_DELTA_TIME_ADJUSTMENT);
+            float positionalSharpness = 1f / Mathf.Max(_positionalCameraLag, 0.01f);
+            float rotationalSharpness = 1f / Mathf.Max(_rotationalCameraLag, 0.01f);
+            float posSmooth = 1f - Mathf.Exp(-positionalSharpness * Time.deltaTime);
+            float rotSmooth = 1f - Mathf.Exp(-rotationalSharpness * Time.deltaTime);
 
-            _rotationX = _inputReader._mouseDelta.y * _cameraInversion * _mouseSensitivity;
+            float rotationX = _inputReader._mouseDelta.y * _cameraInversion * _mouseSensitivity;
+            float rotationY = _inputReader._mouseDelta.x * _mouseSensitivity;
 
-            _rotationY = _inputReader._mouseDelta.x * _mouseSensitivity;
+            if (_wasLockedOn && !_isLockedOn)
+                _targetAngleY = _currentAngleY;
+            _wasLockedOn = _isLockedOn;
 
-            _newAngleX += _rotationX;
-            _newAngleX = Mathf.Clamp(_newAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
-            _newAngleX = Mathf.Lerp(_lastAngleX, _newAngleX, rotationalFollowSpeed * Time.deltaTime);
+            _targetAngleX += rotationX;
+            _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
 
-            if (_isLockedOn)
+            if (_isLockedOn && _lockOnTarget != null)
             {
                 Vector3 aimVector = _lockOnTarget.position - _playerTarget.position;
                 Quaternion targetRotation = Quaternion.LookRotation(aimVector);
-                targetRotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationalFollowSpeed * Time.deltaTime);
-                _newAngleY = targetRotation.eulerAngles.y;
+                _targetAngleY = targetRotation.eulerAngles.y;
+                _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
             }
             else
             {
-                _newAngleY += _rotationY;
-                _newAngleY = Mathf.Lerp(_lastAngleY, _newAngleY, rotationalFollowSpeed * Time.deltaTime);
+                _targetAngleY += rotationY;
+                _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
             }
 
+            _currentAngleX = Mathf.Lerp(_currentAngleX, _targetAngleX, rotSmooth);
+
             _newPosition = _playerTarget.position;
-            _newPosition = Vector3.Lerp(_lastPosition, _newPosition, positionalFollowSpeed * Time.deltaTime);
+            _newPosition = Vector3.Lerp(_lastPosition, _newPosition, posSmooth);
 
             transform.position = _newPosition;
-            transform.eulerAngles = new Vector3(_newAngleX, _newAngleY, 0);
+            transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0);
 
             _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
 
             _lastPosition = _newPosition;
-            _lastAngleX = _newAngleX;
-            _lastAngleY = _newAngleY;
+            _lastAngleX = _currentAngleX;
+            _lastAngleY = _currentAngleY;
         }
 
         /// <summary>

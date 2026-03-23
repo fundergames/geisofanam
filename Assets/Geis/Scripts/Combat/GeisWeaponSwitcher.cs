@@ -33,6 +33,10 @@ namespace Geis.Combat
         [SerializeField]
         private Transform manualAttachmentPoint;
 
+        [Tooltip("Optional: assign Animator manually if on different branch of hierarchy")]
+        [SerializeField]
+        private Animator manualAnimator;
+
         [Tooltip("Bone names to search for weapon attachment")]
         [SerializeField]
         private string[] attachmentBoneNames = { "weapon_r", "hand_r", "Hand_R", "Weapon" };
@@ -52,7 +56,7 @@ namespace Geis.Combat
 
         private void Awake()
         {
-            _animator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+            _animator = manualAnimator ?? GetComponent<Animator>() ?? GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
             FindAttachmentPoint();
         }
 

@@ -19,14 +19,14 @@ namespace RogueDeal.Combat
 
         [Header("Camera (SampleCameraController values)")]
         [SerializeField] private bool invertCamera;
-        [SerializeField] private float mouseSensitivity = 0.5f;
+        [SerializeField] private float mouseSensitivity = 0.2f;
         [SerializeField] private float cameraDistance = 2.5f;
         [SerializeField] private float cameraHeightOffset;
         [SerializeField] private float cameraHorizontalOffset;
         [SerializeField] private float cameraTiltOffset = 15f;
         [SerializeField] private Vector2 cameraTiltBounds = new Vector2(-70f, 70f);
         [SerializeField] private float positionalCameraLag = 0.2f;
-        [SerializeField] private float rotationalCameraLag = 0.2f;
+        [SerializeField] private float rotationalCameraLag = 0.35f;
         [SerializeField] private bool hideCursor;
 
         [Header("References")]
@@ -37,12 +37,14 @@ namespace RogueDeal.Combat
         private float _lastAngleX;
         private float _lastAngleY;
         private Vector3 _lastPosition;
-        private float _newAngleX;
-        private float _newAngleY;
+        private float _targetAngleX;
+        private float _targetAngleY;
+        private float _currentAngleX;
+        private float _currentAngleY;
         private Vector3 _newPosition;
         private bool _isLockedOn;
+        private bool _wasLockedOn;
         private Transform _lockOnTarget;
-        private bool _initialized;
         private Transform _cameraTransform;
 
         private void Awake()
@@ -70,12 +72,13 @@ namespace RogueDeal.Combat
                 transform.position = pivotPos;
                 transform.eulerAngles = new Vector3(cameraTiltOffset, transform.eulerAngles.y, 0f);
                 _lastPosition = transform.position;
-                _newAngleX = cameraTiltOffset;
-                _newAngleY = transform.eulerAngles.y;
-                _lastAngleX = _newAngleX;
-                _lastAngleY = _newAngleY;
+                _targetAngleX = cameraTiltOffset;
+                _targetAngleY = transform.eulerAngles.y;
+                _currentAngleX = _targetAngleX;
+                _currentAngleY = _targetAngleY;
+                _lastAngleX = _currentAngleX;
+                _lastAngleY = _currentAngleY;
             }
-            _initialized = true;
         }
 
         private void ResolveInput()
@@ -93,8 +96,10 @@ namespace RogueDeal.Combat
             ResolveInput();
             Vector3 focusPos = playerLookAt != null ? playerLookAt.position : target.position + Vector3.up * focusHeightOffset;
 
-            float positionalFollowSpeed = 1f / Mathf.Max(positionalCameraLag / LagDeltaTimeAdjustment, 0.001f);
-            float rotationalFollowSpeed = 1f / Mathf.Max(rotationalCameraLag / LagDeltaTimeAdjustment, 0.001f);
+            float positionalSharpness = 1f / Mathf.Max(positionalCameraLag, 0.01f);
+            float rotationalSharpness = 1f / Mathf.Max(rotationalCameraLag, 0.01f);
+            float posSmooth = 1f - Mathf.Exp(-positionalSharpness * Time.deltaTime);
+            float rotSmooth = 1f - Mathf.Exp(-rotationalSharpness * Time.deltaTime);
 
             float rotationX = 0f;
             float rotationY = 0f;
@@ -105,27 +110,32 @@ namespace RogueDeal.Combat
                 rotationY = state.Look.x * mouseSensitivity;
             }
 
-            _newAngleX += rotationX;
-            _newAngleX = Mathf.Clamp(_newAngleX, cameraTiltBounds.x, cameraTiltBounds.y);
-            _newAngleX = Mathf.Lerp(_lastAngleX, _newAngleX, rotationalFollowSpeed * Time.deltaTime);
+            if (_wasLockedOn && !_isLockedOn)
+                _targetAngleY = _currentAngleY;
+            _wasLockedOn = _isLockedOn;
+
+            _targetAngleX += rotationX;
+            _targetAngleX = Mathf.Clamp(_targetAngleX, cameraTiltBounds.x, cameraTiltBounds.y);
 
             if (_isLockedOn && _lockOnTarget != null)
             {
                 Vector3 aimVector = _lockOnTarget.position - focusPos;
                 Quaternion targetRotation = Quaternion.LookRotation(aimVector);
-                targetRotation = Quaternion.Lerp(transform.rotation, targetRotation, rotationalFollowSpeed * Time.deltaTime);
-                _newAngleY = targetRotation.eulerAngles.y;
+                _targetAngleY = targetRotation.eulerAngles.y;
+                _currentAngleY = Mathf.Lerp(_currentAngleY, _targetAngleY, rotSmooth);
             }
             else
             {
-                _newAngleY += rotationY;
-                _newAngleY = Mathf.Lerp(_lastAngleY, _newAngleY, rotationalFollowSpeed * Time.deltaTime);
+                _targetAngleY += rotationY;
+                _currentAngleY = Mathf.Lerp(_currentAngleY, _targetAngleY, rotSmooth);
             }
 
-            _newPosition = focusPos;
-            _newPosition = Vector3.Lerp(_lastPosition, _newPosition, positionalFollowSpeed * Time.deltaTime);
+            _currentAngleX = Mathf.Lerp(_currentAngleX, _targetAngleX, rotSmooth);
 
-            transform.eulerAngles = new Vector3(_newAngleX, _newAngleY, 0f);
+            _newPosition = focusPos;
+            _newPosition = Vector3.Lerp(_lastPosition, _newPosition, posSmooth);
+
+            transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
 
             // Apply camera offset: pivot+child (Sample style) vs single transform
             if (_cameraTransform != transform)
@@ -136,13 +146,13 @@ namespace RogueDeal.Combat
             }
             else
             {
-                Vector3 offset = Quaternion.Euler(_newAngleX, _newAngleY, 0f) * new Vector3(cameraHorizontalOffset, cameraHeightOffset, -cameraDistance);
+                Vector3 offset = Quaternion.Euler(_currentAngleX, _currentAngleY, 0f) * new Vector3(cameraHorizontalOffset, cameraHeightOffset, -cameraDistance);
                 transform.position = _newPosition + offset;
             }
 
             _lastPosition = transform.position;
-            _lastAngleX = _newAngleX;
-            _lastAngleY = _newAngleY;
+            _lastAngleX = _currentAngleX;
+            _lastAngleY = _currentAngleY;
         }
 
         /// <summary>
@@ -171,8 +181,8 @@ namespace RogueDeal.Combat
             if (target != null)
             {
                 Vector3 focusPos = playerLookAt != null ? playerLookAt.position : target.position + Vector3.up * focusHeightOffset;
-                transform.position = focusPos + Quaternion.Euler(_newAngleX, _newAngleY, 0f) * new Vector3(cameraHorizontalOffset, cameraHeightOffset, -cameraDistance);
-                transform.eulerAngles = new Vector3(_newAngleX, _newAngleY, 0f);
+                transform.position = focusPos + Quaternion.Euler(_currentAngleX, _currentAngleY, 0f) * new Vector3(cameraHorizontalOffset, cameraHeightOffset, -cameraDistance);
+                transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
                 _lastPosition = transform.position;
                 _newPosition = focusPos;
             }

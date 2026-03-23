@@ -46,5 +46,5 @@ MonoBehaviour:
   - {fileID: 7400000, guid: 194f9920044fa4e5b844e79ceeffc20a, type: 2}
   - {fileID: 7400000, guid: ab2718f420f09497dac146ddbad670d4, type: 2}
   fallbackClip: {fileID: 0}
-  cancelWindowStart: 0.2
+  cancelWindowStart: 0.5
   cancelWindowEnd: 0.7

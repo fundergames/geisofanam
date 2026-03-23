@@ -1,4 +1,5 @@
 {
+    "version": 1,
     "name": "Controls",
     "maps": [
         {
@@ -9,7 +10,7 @@
                     "name": "Jump",
                     "type": "Button",
                     "id": "9c4baf7e-dd4a-45cb-b8b5-518f23ef2f3f",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -42,19 +43,10 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "ToggleWalk",
-                    "type": "Button",
-                    "id": "81a5840a-1451-4af7-b390-f2f1e3099eb9",
-                    "expectedControlType": "Button",
-                    "processors": "",
-                    "interactions": "",
-                    "initialStateCheck": false
-                },
-                {
                     "name": "Aim",
                     "type": "Button",
                     "id": "e440026d-b50a-4df1-ba03-48302673e522",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -81,7 +73,7 @@
                     "name": "LightAttack",
                     "type": "Button",
                     "id": "b1a2c3d4-e5f6-7890-abcd-ef1234567890",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -285,33 +277,11 @@
                 {
                     "name": "",
                     "id": "13547036-1d58-45f2-a2d8-c9f0706a8fb9",
-                    "path": "<Gamepad>/rightShoulder",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad",
-                    "action": "Sprint",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "ab91ddfe-c482-4b55-aa59-bf1974a526b3",
-                    "path": "<Keyboard>/capsLock",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard and Mouse",
-                    "action": "ToggleWalk",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "b5d9ab6f-92ae-4d6a-85ce-20210c1efe16",
                     "path": "<Gamepad>/leftStickPress",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
-                    "action": "ToggleWalk",
+                    "action": "Sprint",
                     "isComposite": false,
                     "isPartOfComposite": false
                 },
@@ -351,7 +321,7 @@
                 {
                     "name": "",
                     "id": "78facee1-242d-43a5-b71f-75bfdb0ed6e1",
-                    "path": "<Gamepad>/buttonEast",
+                    "path": "<Gamepad>/dpad/down",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
@@ -405,6 +375,17 @@
                 },
                 {
                     "name": "",
+                    "id": "b2772679-0dea-4863-a59d-cd6f67a9c19a",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "LightAttack",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
                     "id": "a6f7b8c9-d0e1-2345-f012-456789012345",
                     "path": "<Keyboard>/r",
                     "interactions": "",
@@ -417,7 +398,7 @@
                 {
                     "name": "",
                     "id": "b7a8c9d0-e1f2-3456-0123-567890123456",
-                    "path": "<Gamepad>/buttonWest",
+                    "path": "<Gamepad>/rightTrigger",
                     "interactions": "",
                     "processors": "",
                     "groups": "Gamepad",
