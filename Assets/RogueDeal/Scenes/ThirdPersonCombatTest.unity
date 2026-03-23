@@ -32324,10 +32324,14 @@ PrefabInstance:
       propertyPath: m_Controller
       value: 
       objectReference: {fileID: 9100000, guid: 65f677d6aadd9e44abec4fb09c673dcc, type: 2}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 7200949068542202628, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2247419632123474542, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1644897884}
     - targetCorrespondingSourceObject: {fileID: 558922151035261992, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1976761594}
@@ -32338,6 +32342,42 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1355890375}
   m_SourcePrefab: {fileID: 100100000, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
+--- !u!1 &1644897882 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2247419632123474542, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
+  m_PrefabInstance: {fileID: 1644897881}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &1644897883 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1320528325126921331, guid: 3a4e760f1e4cdf847847eca54d9fe286, type: 3}
+  m_PrefabInstance: {fileID: 1644897881}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1644897884
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1644897882}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b5d0117434833446aa620e6c70eb752d, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponSwitcher
+  slots:
+  - weaponPrefab: {fileID: 0}
+    displayName: Hands
+  - weaponPrefab: {fileID: 5922506565528260654, guid: e845fdea15549ad44b152b8153a12962, type: 3}
+    displayName: Lute Sword
+  - weaponPrefab: {fileID: 7112688611888505701, guid: b1f95a385b019e84c8c2157de984b68c, type: 3}
+    displayName: Flute Dagger
+  - weaponPrefab: {fileID: 8877322722761236071, guid: 1568f62f264f446448004c04cebe2a3e, type: 3}
+    displayName: Harp Bow
+  manualAttachmentPoint: {fileID: 1644897883}
+  attachmentBoneNames:
+  - Prop_R
+  - Prop_L
+  useAnimatorRightHandFallback: 1
 --- !u!1 &1647537299
 GameObject:
   m_ObjectHideFlags: 0
@@ -38139,6 +38179,7 @@ MonoBehaviour:
     m_PreInfinity: 2
     m_PostInfinity: 2
     m_RotationOrder: 4
+  _headLookLimitDegrees: 60
   _enableBodyTurn: 1
   _bodyLookDelay: 0
   _bodyLookX: 0
@@ -38161,6 +38202,10 @@ MonoBehaviour:
   _leansHeadLooksDelay: 0
   _animationClipEnd: 0
   _applyRootRotationDuringAttack: 1
+  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
+  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
+  _weaponSwitcher: {fileID: 1644897884}
+  _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
 --- !u!1001 &1979666699
 PrefabInstance:
   m_ObjectHideFlags: 0

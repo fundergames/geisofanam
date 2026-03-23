@@ -4,6 +4,7 @@
 using Synty.AnimationBaseLocomotion.Samples.InputSystem;
 using System.Collections.Generic;
 using UnityEngine;
+using Geis.Combat;
 
 namespace Geis.Locomotion
 {
@@ -73,6 +74,10 @@ namespace Geis.Locomotion
         private readonly int _locomotionStartDirectionHash = Animator.StringToHash("LocomotionStartDirection");
 
         private readonly int _attack1Hash = Animator.StringToHash("Attack_1");
+        private readonly int _attackTriggerHash = Animator.StringToHash("Attack");
+        private readonly int _comboStateHash = Animator.StringToHash("ComboState");
+        private readonly int _comboStateBlendHash = Animator.StringToHash("ComboStateBlend");
+        private const int COMBO_BLEND_SLOTS = 32;
 
         #endregion
 
@@ -284,6 +289,20 @@ namespace Geis.Locomotion
         [SerializeField]
         private bool _applyRootRotationDuringAttack;
 
+        [Header("Data-Driven Combo")]
+        [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
+        [SerializeField]
+        private GeisComboData _comboData;
+        [Tooltip("Optional: resolves combo by weapon index when set. Takes precedence over _comboData when both assigned.")]
+        [SerializeField]
+        private GeisWeaponComboData _weaponComboData;
+        [Tooltip("Optional: provides current weapon index for _weaponComboData lookup.")]
+        [SerializeField]
+        private GeisWeaponSwitcher _weaponSwitcher;
+        [Tooltip("Optional: placeholders for runtime override. Loaded from Resources/GeisComboPlaceholders if null.")]
+        [SerializeField]
+        private GeisComboPlaceholders _comboPlaceholders;
+
         #endregion
 
         #endregion
@@ -328,6 +347,13 @@ namespace Geis.Locomotion
 
         private float _attackStateTimeout;
 
+        // Data-driven combo
+        private int _currentComboState;
+        private GeisComboInputType? _comboInputBuffered;
+        private bool _useDataDrivenCombo;
+        private AnimatorOverrideController _comboOverrideController;
+        private GeisComboData _lastAppliedComboData;
+
         #endregion
 
         #region Base State Variables
@@ -362,11 +388,26 @@ namespace Geis.Locomotion
             _inputReader.onAimActivated += ActivateAim;
             _inputReader.onAimDeactivated += DeactivateAim;
             _inputReader.onLightAttackPerformed += OnLightAttackRequested;
+            _inputReader.onHeavyAttackPerformed += OnHeavyAttackRequested;
             _inputReader.onDashPerformed += OnDashRequested;
 
             _isStrafing = _alwaysStrafe;
 
+            _useDataDrivenCombo = _comboData != null && _animator != null && HasAnimatorParameter("Attack")
+                && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState"));
+
+            ApplyComboOverridesIfReady();
+
             SwitchState(AnimationState.Locomotion);
+        }
+
+        private void OnDestroy()
+        {
+            if (_comboOverrideController != null)
+            {
+                Destroy(_comboOverrideController);
+                _comboOverrideController = null;
+            }
         }
 
         #endregion
@@ -563,13 +604,100 @@ namespace Geis.Locomotion
 
         #endregion
 
-        #region Attack (Phase 1 - Single Light Attack)
+        #region Attack (Data-Driven Combo)
+
+        private GeisComboData GetCurrentComboData()
+        {
+            if (_weaponComboData != null && _weaponSwitcher != null)
+            {
+                int idx = _weaponSwitcher.CurrentWeaponIndex;
+                var data = _weaponComboData.GetComboForWeapon(idx);
+                if (data != null) return data;
+            }
+            return _comboData;
+        }
+
+        /// <summary>
+        /// Applies combo clips from GeisComboData to the animator via AnimatorOverrideController.
+        /// Uses placeholders in the blend tree; no Sync step needed. Call on Start and when combo data changes.
+        /// </summary>
+        private void ApplyComboOverridesIfReady()
+        {
+            if (!_useDataDrivenCombo || _animator == null) return;
+
+            var comboData = GetCurrentComboData();
+            if (comboData == null) return;
+            if (comboData == _lastAppliedComboData) return;
+
+            var placeholders = _comboPlaceholders != null
+                ? _comboPlaceholders
+                : Resources.Load<GeisComboPlaceholders>("GeisComboPlaceholders");
+            if (placeholders == null) return;
+
+            var current = _animator.runtimeAnimatorController;
+            RuntimeAnimatorController baseController = null;
+            if (current is AnimatorOverrideController aoc)
+                baseController = aoc.runtimeAnimatorController;
+            else if (current != null)
+                baseController = current;
+
+            if (baseController == null) return;
+
+            if (_comboOverrideController == null || _comboOverrideController.runtimeAnimatorController != baseController)
+                _comboOverrideController = new AnimatorOverrideController(baseController);
+
+            var overrides = new List<KeyValuePair<AnimationClip, AnimationClip>>();
+            for (int i = 0; i < 32; i++)
+            {
+                var placeholder = placeholders.GetPlaceholder(i);
+                var clip = comboData.GetClipForState(i);
+                if (placeholder != null && clip != null)
+                    overrides.Add(new KeyValuePair<AnimationClip, AnimationClip>(placeholder, clip));
+            }
+
+            if (overrides.Count > 0)
+                _comboOverrideController.ApplyOverrides(overrides);
+
+            _animator.runtimeAnimatorController = _comboOverrideController;
+            _lastAppliedComboData = comboData;
+        }
 
         private void OnLightAttackRequested()
         {
-            if (_currentState == AnimationState.Locomotion && _isGrounded && !_isCrouching)
+            if (!_isGrounded || _isCrouching) return;
+
+            var comboData = GetCurrentComboData();
+
+            if (_currentState == AnimationState.Locomotion)
             {
+                if (_useDataDrivenCombo && comboData != null)
+                {
+                    _currentComboState = 0;
+                    SwitchState(AnimationState.Attack);
+                }
+                else if (_animator != null && HasAnimatorParameter("Attack_1"))
+                {
+                    SwitchState(AnimationState.Attack);
+                }
+            }
+            else if (_currentState == AnimationState.Attack && _useDataDrivenCombo && comboData != null)
+            {
+                _comboInputBuffered = GeisComboInputType.Light;
+            }
+        }
+
+        private void OnHeavyAttackRequested()
+        {
+            if (!_isGrounded || _isCrouching) return;
+
+            if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
+            {
+                _currentComboState = 0;
                 SwitchState(AnimationState.Attack);
+            }
+            else if (_currentState == AnimationState.Attack && _useDataDrivenCombo)
+            {
+                _comboInputBuffered = GeisComboInputType.Heavy;
             }
         }
 
@@ -580,15 +708,22 @@ namespace Geis.Locomotion
 
         private void EnterAttackState()
         {
-            // Stop horizontal momentum to prevent sliding during attack
             _velocity.x = 0f;
             _velocity.z = 0f;
 
-            if (_animator != null && HasAnimatorParameter("Attack_1"))
+            if (_useDataDrivenCombo && _animator != null && HasAnimatorParameter("Attack")
+                && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState")))
+            {
+                SetComboStateBlend(_currentComboState);
+                _animator.SetTrigger(_attackTriggerHash);
+                var comboData = GetCurrentComboData();
+                _attackStateTimeout = comboData != null ? 2f : 1.5f;
+            }
+            else if (_animator != null && HasAnimatorParameter("Attack_1"))
             {
                 _animator.SetTrigger(_attack1Hash);
+                _attackStateTimeout = 1.5f;
             }
-            _attackStateTimeout = 1.5f;
         }
 
         private void UpdateAttackState()
@@ -596,21 +731,57 @@ namespace Geis.Locomotion
             ApplyGravity();
             _attackStateTimeout -= Time.deltaTime;
 
+            var comboData = GetCurrentComboData();
+
+            if (_useDataDrivenCombo && comboData != null && _animator != null)
+            {
+                AnimatorStateInfo info = _animator.GetCurrentAnimatorStateInfo(0);
+                float normalizedTime = info.normalizedTime % 1f;
+                bool inCancelWindow = normalizedTime >= comboData.CancelWindowStart && normalizedTime <= comboData.CancelWindowEnd;
+
+                if (inCancelWindow && _comboInputBuffered.HasValue)
+                {
+                    var input = _comboInputBuffered.Value;
+                    _comboInputBuffered = null;
+                    if (comboData.TryGetNextState(_currentComboState, input, out int nextState))
+                    {
+                        _currentComboState = nextState;
+                        SetComboStateBlend(_currentComboState);
+                        _animator.SetTrigger(_attackTriggerHash);
+                        var clip = comboData.GetClipForState(_currentComboState);
+                        _attackStateTimeout = clip != null ? clip.length + 0.2f : 1.5f;
+                    }
+                }
+            }
+
             if (_attackStateTimeout <= 0f)
             {
+                _currentComboState = 0;
+                _comboInputBuffered = null;
                 SwitchState(AnimationState.Locomotion);
                 return;
             }
-
-            // Movement during attack is handled by OnAnimatorMove (root motion + gravity)
-            // Do not call controller.Move here - root motion applies in OnAnimatorMove
 
             UpdateAnimatorController();
         }
 
         private void ExitAttackState()
         {
-            // No special cleanup
+            _currentComboState = 0;
+            _comboInputBuffered = null;
+        }
+
+        /// <summary>
+        /// Sets the blend tree parameter so the correct clip is selected. Unity's Simple1D uses
+        /// thresholds 0..1 over 32 slots, so we pass state/31. Use ComboStateBlend (Float) if present,
+        /// else fall back to ComboState (Int) - which only works if blend tree has thresholds 0,1,2,...
+        /// </summary>
+        private void SetComboStateBlend(int state)
+        {
+            if (HasAnimatorParameter("ComboStateBlend"))
+                _animator.SetFloat(_comboStateBlendHash, (float)state / (COMBO_BLEND_SLOTS - 1));
+            else
+                _animator.SetInteger(_comboStateHash, state);
         }
 
         private bool HasAnimatorParameter(string name)
@@ -723,6 +894,8 @@ namespace Geis.Locomotion
         /// <inheritdoc cref="Update" />
         private void Update()
         {
+            ApplyComboOverridesIfReady();
+
             switch (_currentState)
             {
                 case AnimationState.Locomotion:
