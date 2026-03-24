@@ -6,10 +6,7 @@ EditorBuildSettings:
   serializedVersion: 2
   m_Scenes:
   - enabled: 1
-    path: Assets/RogueDeal/Scenes/Entry.unity
-    guid: 549e369be242b9840ae093b686a86f04
-  - enabled: 1
-    path: Assets/RogueDeal/Scenes/ThirdPersonCombatTest.unity
+    path: Assets/Geis/Scenes/ThirdPersonCombatTest.unity
     guid: 6c8af219a5f90ac49b850dd7b7bf404b
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

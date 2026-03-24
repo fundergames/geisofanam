@@ -1,0 +1,50 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bc5e46f16b65d474c9e77b7e8ccbf883, type: 3}
+  m_Name: Emberblade_Combo_Data
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisComboData
+  transitions:
+  - fromState: 0
+    inputType: 0
+    toState: 1
+  - fromState: 1
+    inputType: 0
+    toState: 2
+  - fromState: 2
+    inputType: 0
+    toState: 0
+  - fromState: 1
+    inputType: 1
+    toState: 3
+  - fromState: 2
+    inputType: 1
+    toState: 4
+  - fromState: 3
+    inputType: 0
+    toState: 0
+  - fromState: 3
+    inputType: 1
+    toState: 0
+  - fromState: 4
+    inputType: 0
+    toState: 0
+  - fromState: 4
+    inputType: 1
+    toState: 0
+  clips:
+  - {fileID: 7400000, guid: 5136180a1c1e44d17869ea1ff0a0c59e, type: 2}
+  - {fileID: 7400000, guid: 8f79d91617a6344f5bdb7f763594f1e2, type: 2}
+  - {fileID: 7400000, guid: 20ec379b470d32a4cb3d238cb66afeb4, type: 2}
+  - {fileID: 7400000, guid: 70efe019647ee9b4cb0d000560fa942c, type: 2}
+  fallbackClip: {fileID: 0}
+  cancelWindowStart: 0.5
+  cancelWindowEnd: 0.7

@@ -11,7 +11,7 @@ This editor tool creates a minimal test scene for 3rd person combat testing.
    - Add a 3rd person camera that follows the player
    - Place 3 training dummies for target practice
    - Create basic combat actions for testing
-   - Save the scene to `Assets/RogueDeal/Scenes/ThirdPersonCombatTest.unity`
+   - Save the scene to `Assets/Geis/Scenes/ThirdPersonCombatTest.unity`
 
 ## What Gets Created
 
@@ -37,7 +37,7 @@ This editor tool creates a minimal test scene for 3rd person combat testing.
 ### Combat Actions
 - **Basic Attack** - 50 damage melee attack
 - **Combo Attack** - 60 damage follow-up attack
-- Saved to `Assets/RogueDeal/Resources/Combat/TestActions/`
+- Saved to `Assets/Geis/Resources/Combat/TestActions/`
 
 ## Controls
 

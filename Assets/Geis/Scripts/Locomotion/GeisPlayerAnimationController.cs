@@ -1,6 +1,7 @@
 // Geis of Anam - Copy of Synty SamplePlayerAnimationController as starting point.
 // Original: Synty.AnimationBaseLocomotion.Samples.SamplePlayerAnimationController
 
+using System;
 using Synty.AnimationBaseLocomotion.Samples.InputSystem;
 using System.Collections.Generic;
 using UnityEngine;
@@ -284,6 +285,12 @@ namespace Geis.Locomotion
         #endregion
 
         #region Attack Settings
+
+        /// <summary>
+        /// Fired when an attack is triggered (first hit or combo continuation).
+        /// Subscribe from GeisCombatBridge to apply RogueDeal damage/hit detection.
+        /// </summary>
+        public event Action<int> OnAttackPerformed;
 
         [Header("Attack Root Motion")]
         [Tooltip("Apply animation root rotation during attacks. Disable if attacks drift left/right (baked rotation mismatch).")]
@@ -619,6 +626,8 @@ namespace Geis.Locomotion
 
         private GeisComboData GetCurrentComboData()
         {
+            if (_weaponSwitcher != null && _weaponSwitcher.TryGetComboForWeapon(_weaponSwitcher.CurrentWeaponIndex, out var unifiedCombo))
+                return unifiedCombo;
             if (_weaponComboData != null && _weaponSwitcher != null)
             {
                 int idx = _weaponSwitcher.CurrentWeaponIndex;
@@ -732,13 +741,17 @@ namespace Geis.Locomotion
                 _animator.SetTrigger(_attackTriggerHash);
                 var comboData = GetCurrentComboData();
                 _attackStateTimeout = comboData != null ? 2f : 1.5f;
-                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, _currentComboState, GetWeaponIndexForMusic());
+                int weaponIdx = GetWeaponIndexForMusic();
+                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, _currentComboState, weaponIdx);
+                OnAttackPerformed?.Invoke(weaponIdx);
             }
             else if (_animator != null && HasAnimatorParameter("Attack_1"))
             {
                 _animator.SetTrigger(_attack1Hash);
                 _attackStateTimeout = 1.5f;
-                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, 0, GetWeaponIndexForMusic());
+                int weaponIdx = GetWeaponIndexForMusic();
+                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, 0, weaponIdx);
+                OnAttackPerformed?.Invoke(weaponIdx);
             }
         }
 
@@ -771,7 +784,9 @@ namespace Geis.Locomotion
                         _animator.SetTrigger(_attackTriggerHash);
                         var clip = comboData.GetClipForState(_currentComboState);
                         _attackStateTimeout = clip != null ? clip.length + 0.2f : 1.5f;
-                        CombatMusicController.Instance?.OnAttackPerformed(input, _currentComboState, GetWeaponIndexForMusic());
+                        int weaponIdx = GetWeaponIndexForMusic();
+                        CombatMusicController.Instance?.OnAttackPerformed(input, _currentComboState, weaponIdx);
+                        OnAttackPerformed?.Invoke(weaponIdx);
                     }
                 }
             }

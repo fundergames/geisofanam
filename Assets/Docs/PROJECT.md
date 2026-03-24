@@ -73,7 +73,7 @@ Assets/
 
 | Path | Purpose |
 |------|---------|
-| `Assets/RogueDeal/` | RogueDeal framework and game systems |
+| `Assets/Geis/` | Geis combat system and migrated RogueDeal scripts |
 | `Assets/Documentation/` | Combat, character, and setup documentation |
 | `Assets/Docs/` | Agent coordination, project specs, feature files |
 | `Assets/Docs/Agents/` | Role agent definitions (Design, Modeler3D, Rigger, etc.) |

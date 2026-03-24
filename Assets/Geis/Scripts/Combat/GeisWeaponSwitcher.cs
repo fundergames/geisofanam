@@ -1,12 +1,15 @@
 // Geis of Anam - Weapon equipping via keys 1-4 (Unarmed, Knife, Sword, Bow).
-// No CombatEntity dependency; works with GeisPlayerAnimationController.
+// Supports unified GeisWeaponDefinition (single source) or legacy GeisWeaponSlot.
 
 using UnityEngine;
+using RogueDeal.Combat;
+using RogueDeal.Combat.Core.Data;
 
 namespace Geis.Combat
 {
     /// <summary>
     /// Defines a weapon slot: prefab to instantiate (null for unarmed) and display name.
+    /// Legacy: use GeisWeaponDefinition for unified mode.
     /// </summary>
     [System.Serializable]
     public class GeisWeaponSlot
@@ -19,12 +22,21 @@ namespace Geis.Combat
 
     /// <summary>
     /// Switches between weapons using keys 1-4. Slot 0=Unarmed, 1=Knife, 2=Sword, 3=Bow.
-    /// Sets EquippedWeaponIndex on Animator for combo data lookup.
+    /// Unified mode: use GeisWeaponDefinition[] - single source for prefab, combo, damage.
+    /// Legacy: use GeisWeaponSlot[] for visuals only.
     /// </summary>
     public class GeisWeaponSwitcher : MonoBehaviour
     {
-        [Header("Weapon Slots")]
-        [Tooltip("Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow")]
+        [Header("Mode")]
+        [Tooltip("When true, use unified weapon definitions (prefab + combo + damage). When false, use legacy slots.")]
+        [SerializeField] private bool useUnifiedWeapons = false;
+
+        [Header("Unified Weapons (single source of truth)")]
+        [Tooltip("Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow. Replaces separate slot/combo/action arrays.")]
+        [SerializeField] private GeisWeaponDefinition[] unifiedSlots = new GeisWeaponDefinition[4];
+
+        [Header("Legacy Slots (visuals only)")]
+        [Tooltip("When useUnifiedWeapons=false. Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow")]
         [SerializeField]
         private GeisWeaponSlot[] slots = new GeisWeaponSlot[4];
 
@@ -54,9 +66,40 @@ namespace Geis.Combat
         /// </summary>
         public int CurrentWeaponIndex => _currentWeaponIndex;
 
+        private CombatEntity _combatEntity;
+
+        /// <summary>
+        /// Get combo data for the given weapon index. When using unified mode, returns definition.comboData.
+        /// </summary>
+        public bool TryGetComboForWeapon(int weaponIndex, out GeisComboData combo)
+        {
+            combo = null;
+            if (useUnifiedWeapons && unifiedSlots != null && weaponIndex >= 0 && weaponIndex < unifiedSlots.Length)
+            {
+                var def = unifiedSlots[weaponIndex];
+                if (def != null)
+                {
+                    combo = def.comboData;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Get the unified weapon definition at index. Null if legacy mode or out of range.
+        /// </summary>
+        public GeisWeaponDefinition GetWeaponDefinition(int weaponIndex)
+        {
+            if (!useUnifiedWeapons || unifiedSlots == null || weaponIndex < 0 || weaponIndex >= unifiedSlots.Length)
+                return null;
+            return unifiedSlots[weaponIndex];
+        }
+
         private void Awake()
         {
             _animator = manualAnimator ?? GetComponent<Animator>() ?? GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
+            _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
             FindAttachmentPoint();
         }
 
@@ -65,15 +108,19 @@ namespace Geis.Combat
             if (_attachmentPoint == null && _animator != null)
                 FindAttachmentPoint();
 
-            if (_currentWeaponIndex < 0 && slots != null && slots.Length > 0)
+            var slotCount = useUnifiedWeapons && unifiedSlots != null ? unifiedSlots.Length : (slots?.Length ?? 0);
+            if (_currentWeaponIndex < 0 && slotCount > 0)
                 EquipWeapon(0);
         }
 
         private void Update()
         {
-            if (slots == null) return;
+            int slotCount = useUnifiedWeapons && unifiedSlots != null
+                ? Mathf.Min(4, unifiedSlots.Length)
+                : (slots != null ? Mathf.Min(4, slots.Length) : 0);
+            if (slotCount == 0) return;
 
-            for (int i = 0; i < Mathf.Min(4, slots.Length); i++)
+            for (int i = 0; i < slotCount; i++)
             {
                 if (GetKeyDownForSlot(i))
                 {
@@ -150,9 +197,32 @@ namespace Geis.Combat
         /// </summary>
         public void EquipWeapon(int slotIndex)
         {
-            if (slots == null || slotIndex < 0 || slotIndex >= slots.Length) return;
-
             Transform parent = _attachmentPoint != null ? _attachmentPoint : transform;
+            GameObject prefab = null;
+
+            if (useUnifiedWeapons && unifiedSlots != null && slotIndex >= 0 && slotIndex < unifiedSlots.Length)
+            {
+                var def = unifiedSlots[slotIndex];
+                if (def != null)
+                    prefab = def.weaponPrefab;
+
+                if (_combatEntity != null)
+                {
+                    var data = _combatEntity.GetEntityData();
+                    if (data != null && def != null)
+                        data.equippedWeapon = def.GetWeaponForDamage();
+                }
+            }
+            else if (slots != null && slotIndex >= 0 && slotIndex < slots.Length)
+            {
+                var slot = slots[slotIndex];
+                if (slot != null)
+                    prefab = slot.weaponPrefab;
+            }
+            else
+            {
+                return;
+            }
 
             if (_currentWeaponInstance != null)
             {
@@ -160,10 +230,9 @@ namespace Geis.Combat
                 _currentWeaponInstance = null;
             }
 
-            var slot = slots[slotIndex];
-            if (slot != null && slot.weaponPrefab != null)
+            if (prefab != null)
             {
-                _currentWeaponInstance = Instantiate(slot.weaponPrefab, parent);
+                _currentWeaponInstance = Instantiate(prefab, parent);
                 _currentWeaponInstance.transform.localPosition = Vector3.zero;
                 _currentWeaponInstance.transform.localRotation = Quaternion.identity;
                 _currentWeaponInstance.transform.localScale = Vector3.one;

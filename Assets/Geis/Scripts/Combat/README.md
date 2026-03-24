@@ -15,6 +15,26 @@ Data-driven combo system with weapon equipping (keys 1-4).
 5. **Assign in Inspector**: On the player with GeisPlayerAnimationController, assign:
    - `Combo Data`: The ComboData_Unarmed asset (or your custom one).
 
+## RogueDeal Combat (Damage, Health Bars, Hit Detection)
+
+To enable damage on Geis attacks (without replacing GeisPlayerAnimationController):
+
+### Unified mode (recommended)
+
+Single source of truth per weapon—no duplicate arrays.
+
+1. **Create GeisWeaponDefinition** per weapon: Right‑click → Create → Geis > Combat > Weapon Definition.
+   - Assign: weaponPrefab, comboData (GeisComboData), weaponStats (Weapon SO), combatAction (CombatAction).
+2. **GeisWeaponSwitcher**: Enable `Use Unified Weapons`, assign `Unified Slots` with your GeisWeaponDefinition assets.
+3. **Add bridge**: Select player → `Tools > Geis > Add Combat Bridge to Selected Player`.
+4. **Create UI** (if needed): `Tools > Combat > Create Combat UI Prefabs`.
+
+### Legacy mode
+
+Keep existing GeisWeaponSlot[] for visuals. On GeisCombatBridge, assign `Combat Actions By Weapon` and `Weapons By Slot` arrays.
+
+Uses SimpleAttackHitDetector (OverlapSphere after delay)—no animation events or weapon colliders required.
+
 ## Keys
 
 - **1**: Unarmed
