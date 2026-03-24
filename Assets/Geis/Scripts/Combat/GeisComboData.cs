@@ -2,6 +2,7 @@
 // Defines combo graph (transition table + clips) per weapon. Add branches by editing data only.
 
 using UnityEngine;
+using RogueDeal.Combat.Core.Data;
 
 namespace Geis.Combat
 {
@@ -31,6 +32,19 @@ namespace Geis.Combat
     }
 
     /// <summary>
+    /// Per combo state (same index as animation clips array): optional RogueDeal action override and multi-hit timing on that clip.
+    /// </summary>
+    [System.Serializable]
+    public class GeisComboStateCombatBinding
+    {
+        [Tooltip("If set, used instead of GeisWeaponDefinition.combatAction for this combo step.")]
+        public CombatAction combatActionOverride;
+
+        [Tooltip("Multi-hit in this clip: contact times as normalized clip time (0-1). One entry = one hit. Empty = SimpleAttackHitDetector uses action/inspector timing.")]
+        public float[] multiHitNormalizedTimes;
+    }
+
+    /// <summary>
     /// Data-driven combo definition per weapon. Transition table + clip assignments.
     /// Add new branches by adding transitions and clips; no animator changes.
     /// </summary>
@@ -50,6 +64,11 @@ namespace Geis.Combat
         [Tooltip("Fallback clip when clips[state] is null")]
         [SerializeField]
         private AnimationClip fallbackClip;
+
+        [Header("Combat (RogueDeal)")]
+        [Tooltip("Parallel to clips[]: index = combo state. Optional per-step CombatAction override and normalized multi-hit times for that clip.")]
+        [SerializeField]
+        private GeisComboStateCombatBinding[] stateCombatBindings = new GeisComboStateCombatBinding[0];
 
         [Header("Timing")]
         [Tooltip("Normalized time (0-1) when cancel window opens. Higher = current attack plays longer before chaining (smoother feel).")]
@@ -95,5 +114,43 @@ namespace Geis.Combat
         public float CancelWindowStart => cancelWindowStart;
         public float CancelWindowEnd => cancelWindowEnd;
         public int ClipCount => clips != null ? clips.Length : 0;
+
+        /// <summary>
+        /// Combat action for this combo step: binding override if set, otherwise <paramref name="weaponDefault"/>.
+        /// </summary>
+        public CombatAction ResolveCombatAction(int state, CombatAction weaponDefault)
+        {
+            var binding = GetBinding(state);
+            if (binding != null && binding.combatActionOverride != null)
+                return binding.combatActionOverride;
+            return weaponDefault;
+        }
+
+        /// <summary>
+        /// If this state has multi-hit normalized times, converts them to seconds from attack start using the resolved clip length.
+        /// </summary>
+        public bool TryGetMultiHitTimesSeconds(int state, out float[] secondsFromAttackStart)
+        {
+            secondsFromAttackStart = null;
+            var binding = GetBinding(state);
+            if (binding == null || binding.multiHitNormalizedTimes == null || binding.multiHitNormalizedTimes.Length == 0)
+                return false;
+
+            AnimationClip clip = GetClipForState(state);
+            float len = clip != null ? clip.length : (fallbackClip != null ? fallbackClip.length : 1f);
+
+            int n = binding.multiHitNormalizedTimes.Length;
+            secondsFromAttackStart = new float[n];
+            for (int i = 0; i < n; i++)
+                secondsFromAttackStart[i] = Mathf.Clamp01(binding.multiHitNormalizedTimes[i]) * len;
+            return true;
+        }
+
+        private GeisComboStateCombatBinding GetBinding(int state)
+        {
+            if (stateCombatBindings == null || state < 0 || state >= stateCombatBindings.Length)
+                return null;
+            return stateCombatBindings[state];
+        }
     }
 }

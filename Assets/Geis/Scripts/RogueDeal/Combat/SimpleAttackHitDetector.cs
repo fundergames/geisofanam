@@ -7,8 +7,9 @@ using RogueDeal.Combat.Presentation;
 namespace RogueDeal.Combat
 {
     /// <summary>
-    /// Simple hit detection using OverlapSphere at a delay after attack.
+    /// Simple hit detection using OverlapSphere at delay(s) after attack.
     /// No animation events or weapon colliders needed.
+    /// For <see cref="CombatAction.isCombo"/> with <see cref="CombatAction.comboHitCount"/> &gt; 1, runs multiple checks at configured times.
     /// Add to the player and set useWeaponColliders=false on the combat controller.
     /// </summary>
     [RequireComponent(typeof(CombatExecutor))]
@@ -16,8 +17,14 @@ namespace RogueDeal.Combat
     public class SimpleAttackHitDetector : MonoBehaviour
     {
         [Header("Timing")]
-        [Tooltip("Seconds after attack starts before the hit check (tune to match swing animation)")]
+        [Tooltip("Seconds after attack starts before the first hit check (tune to match swing animation)")]
         [SerializeField] private float hitDelay = 0.25f;
+
+        [Tooltip("When the action has multiple hits and Hit Timings From Attack Start is empty: spacing between checks after the first (seconds).")]
+        [SerializeField] private float spacingBetweenHits = 0.15f;
+
+        [Tooltip("Optional: absolute times from attack start for each hit (seconds). First element = first check. If empty, uses Hit Delay + Spacing Between Hits.")]
+        [SerializeField] private float[] hitTimingsFromAttackStart;
 
         [Header("Detection")]
         [Tooltip("Center offset in front of character (meters)")]
@@ -35,6 +42,7 @@ namespace RogueDeal.Combat
 
         private CombatExecutor _executor;
         private CombatEntity _combatEntity;
+        private int _hitSequenceId;
 
         private void Awake()
         {
@@ -43,31 +51,103 @@ namespace RogueDeal.Combat
         }
 
         /// <summary>
-        /// Call this when an attack starts. Performs hit check after hitDelay.
+        /// Call this when an attack starts. Performs one or more hit checks based on action combo data and timing fields.
         /// </summary>
         public void PerformHitCheck(CombatAction action)
         {
-            if (action == null || action.effects == null || action.effects.Length == 0)
-                return;
-
-            if (debugLog)
-                Debug.Log($"[SimpleAttackHitDetector] PerformHitCheck called for {action.actionName}");
-
-            StartCoroutine(HitCheckCoroutine(action));
+            PerformHitCheck(action, null);
         }
 
-        private IEnumerator HitCheckCoroutine(CombatAction action)
+        /// <summary>
+        /// Hit windows use <paramref name="hitTimingsSecondsFromAttackStart"/> (seconds from attack start).
+        /// Use when timings come from animation (e.g. GeisComboData normalized × clip length). Array length = hit count.
+        /// </summary>
+        public void PerformHitCheck(CombatAction action, float[] hitTimingsSecondsFromAttackStart)
         {
-            yield return new WaitForSeconds(hitDelay);
+            if (action == null)
+                return;
 
-            var targets = FindTargetsInRange();
+            bool hasMainEffects = action.effects != null && action.effects.Length > 0;
+            bool hasPerHit = action.perHitEffects != null && action.perHitEffects.Length > 0;
+            if (!hasMainEffects && !hasPerHit)
+                return;
+
+            _hitSequenceId++;
+            int sequenceId = _hitSequenceId;
+
             if (debugLog)
-                Debug.Log($"[SimpleAttackHitDetector] Hit check found {targets.Count} target(s)");
+                Debug.Log($"[SimpleAttackHitDetector] PerformHitCheck called for {action.actionName} (seq {sequenceId})");
 
-            if (targets.Count > 0)
+            StartCoroutine(HitCheckCoroutine(action, sequenceId, hitTimingsSecondsFromAttackStart));
+        }
+
+        private IEnumerator HitCheckCoroutine(CombatAction action, int sequenceId, float[] timesOverride)
+        {
+            int hitCount;
+            float[] times;
+
+            if (timesOverride != null && timesOverride.Length > 0)
             {
-                _executor.ApplyActionToTargets(action, targets);
+                hitCount = timesOverride.Length;
+                times = new float[hitCount];
+                for (int i = 0; i < hitCount; i++)
+                    times[i] = Mathf.Max(0f, timesOverride[i]);
             }
+            else
+            {
+                hitCount = (action.isCombo && action.comboHitCount > 1) ? action.comboHitCount : 1;
+                times = ResolveHitTimes(hitCount);
+            }
+
+            float elapsed = 0f;
+            for (int i = 0; i < hitCount; i++)
+            {
+                if (sequenceId != _hitSequenceId)
+                    yield break;
+
+                float targetTime = times[i];
+                float wait = Mathf.Max(0f, targetTime - elapsed);
+                if (wait > 0f)
+                    yield return new WaitForSeconds(wait);
+                elapsed = Mathf.Max(elapsed, targetTime);
+
+                if (sequenceId != _hitSequenceId)
+                    yield break;
+
+                var targets = FindTargetsInRange();
+                if (debugLog)
+                    Debug.Log($"[SimpleAttackHitDetector] Hit {i + 1}/{hitCount} found {targets.Count} target(s)");
+
+                if (targets.Count > 0)
+                {
+                    if (hitCount > 1)
+                        _executor.ApplyActionToTargets(action, targets, i + 1);
+                    else
+                        _executor.ApplyActionToTargets(action, targets);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Absolute times (seconds) from attack start for each hit window, length <paramref name="hitCount"/>.
+        /// </summary>
+        private float[] ResolveHitTimes(int hitCount)
+        {
+            if (hitCount <= 1)
+                return new[] { hitDelay };
+
+            if (hitTimingsFromAttackStart != null && hitTimingsFromAttackStart.Length >= hitCount)
+            {
+                var t = new float[hitCount];
+                for (int i = 0; i < hitCount; i++)
+                    t[i] = Mathf.Max(0f, hitTimingsFromAttackStart[i]);
+                return t;
+            }
+
+            var fallback = new float[hitCount];
+            for (int i = 0; i < hitCount; i++)
+                fallback[i] = hitDelay + i * spacingBetweenHits;
+            return fallback;
         }
 
         private List<CombatEntity> FindTargetsInRange()

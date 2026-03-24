@@ -1,6 +1,7 @@
 // Geis of Anam - Bridges GeisPlayerAnimationController to RogueDeal combat (damage, hit detection).
 // Add alongside GeisPlayerAnimationController to enable damage on attacks.
-// Uses GeisWeaponDefinition (unified) when available; falls back to legacy arrays.
+// Uses GeisWeaponDefinition from GeisWeaponSwitcher when assigned; falls back to legacy arrays on the bridge.
+// Per combo state: GeisComboData.stateCombatBindings (optional CombatAction override + normalized multi-hit times).
 
 using UnityEngine;
 using Geis.Locomotion;
@@ -10,16 +11,16 @@ using RogueDeal.Combat.Core.Data;
 namespace Geis.Combat
 {
     /// <summary>
-    /// Connects Geis player to RogueDeal combat. When GeisWeaponSwitcher uses unified mode,
-    /// reads everything from GeisWeaponDefinition. Otherwise uses legacy combatActionsByWeapon/weaponsBySlot.
+    /// Connects Geis player to RogueDeal combat. When GeisWeaponSwitcher has a definition for the slot,
+    /// reads combat action and weapon from it. Otherwise uses legacy combatActionsByWeapon/weaponsBySlot on this component.
     /// </summary>
     [RequireComponent(typeof(CombatEntity))]
     [RequireComponent(typeof(RogueDeal.Combat.Presentation.CombatExecutor))]
     [RequireComponent(typeof(SimpleAttackHitDetector))]
     public class GeisCombatBridge : MonoBehaviour
     {
-        [Header("Unified Mode (preferred)")]
-        [Tooltip("When GeisWeaponSwitcher uses unified weapons, this is ignored. Set useUnifiedWeapons on switcher.")]
+        [Header("Weapon definitions (preferred)")]
+        [Tooltip("Optional. When set, combat action and weapon stats come from GeisWeaponDefinition on the switcher for each slot.")]
         [SerializeField] private GeisWeaponSwitcher _weaponSwitcher;
 
         [Header("Legacy Overrides (when switcher not unified)")]
@@ -67,11 +68,16 @@ namespace Geis.Combat
 
             CombatAction action = null;
             Weapon weapon = null;
+            GeisComboData comboData = null;
+            int comboState = _geisController != null ? _geisController.CurrentComboState : 0;
 
             var def = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(weaponIndex) : null;
             if (def != null)
             {
+                comboData = def.comboData;
                 action = def.GetCombatAction();
+                if (comboData != null)
+                    action = comboData.ResolveCombatAction(comboState, action);
                 weapon = def.GetWeaponForDamage();
             }
 
@@ -89,13 +95,21 @@ namespace Geis.Combat
             }
 
             if (_debugLog)
-                Debug.Log($"[GeisCombatBridge] HandleAttackPerformed weaponIndex={weaponIndex} action={action.actionName}");
+                Debug.Log($"[GeisCombatBridge] HandleAttackPerformed weaponIndex={weaponIndex} comboState={comboState} action={action.actionName}");
 
             var entityData = _combatEntity.GetEntityData();
             if (entityData != null)
                 entityData.equippedWeapon = weapon;
 
-            _hitDetector.PerformHitCheck(action);
+            if (comboData != null && comboData.TryGetMultiHitTimesSeconds(comboState, out float[] geisTimes) &&
+                geisTimes != null && geisTimes.Length > 0)
+            {
+                _hitDetector.PerformHitCheck(action, geisTimes);
+            }
+            else
+            {
+                _hitDetector.PerformHitCheck(action);
+            }
         }
 
         private CombatAction GetLegacyCombatAction(int weaponIndex)

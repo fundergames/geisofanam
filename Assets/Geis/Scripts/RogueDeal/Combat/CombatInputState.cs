@@ -18,7 +18,7 @@ namespace RogueDeal.Combat
         public bool CrouchPressed;
         /// <summary>Lock-on toggle pressed this frame (Q or right stick click).</summary>
         public bool LockOnPressed;
-        public bool DashPressed;
+        public bool DodgePressed;
         /// <summary>Jump (e.g. space) - used by Polygon-style controller.</summary>
         public bool JumpPressed;
         public bool AttackPressed;

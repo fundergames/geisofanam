@@ -46,5 +46,16 @@ MonoBehaviour:
   - {fileID: 7400000, guid: 20ec379b470d32a4cb3d238cb66afeb4, type: 2}
   - {fileID: 7400000, guid: 70efe019647ee9b4cb0d000560fa942c, type: 2}
   fallbackClip: {fileID: 0}
+  stateCombatBindings:
+  - combatActionOverride: {fileID: 0}
+    multiHitNormalizedTimes: []
+  - combatActionOverride: {fileID: 0}
+    multiHitNormalizedTimes: []
+  - combatActionOverride: {fileID: 0}
+    multiHitNormalizedTimes: []
+  - combatActionOverride: {fileID: 11400000, guid: bcded832c6b551548af4435287adbced, type: 2}
+    multiHitNormalizedTimes:
+    - 0.08
+    - 0.21
   cancelWindowStart: 0.5
   cancelWindowEnd: 0.7

@@ -9,5 +9,5 @@ EditorBuildSettings:
     path: Assets/Geis/Scenes/ThirdPersonCombatTest.unity
     guid: 6c8af219a5f90ac49b850dd7b7bf404b
   m_configObjects:
-    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+    com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 86b6199e25822e24397b95dc2a0bbff1, type: 3}
   m_UseUCBPForAssetBundles: 0

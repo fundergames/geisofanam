@@ -62,25 +62,51 @@ namespace RogueDeal.Combat
                 animator = GetComponentInChildren<Animator>();
             
             CacheOriginalMaterials();
+            ResolveEnemyHealthBarReference();
         }
 
         private void Start()
         {
-            if (enemyHealthBar != null && enemyHealthBar.transform.parent == transform)
-            {
-                enemyHealthBar.SetFollowTarget(transform);
-            }
-            
+            WireEnemyHealthBar();
+
             // Support CombatEntity-only enemies (real-time combat without EnemyInstance)
             if (enemyInstance == null)
             {
                 combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>() ?? GetComponentInChildren<CombatEntity>();
                 if (combatEntity != null)
-                {
-                    enemyHealthBar?.SetCombatEntity(combatEntity);
                     UpdateHealthBar(false);
+            }
+        }
+
+        /// <summary>
+        /// Prefer the world-space bar on a child object; a duplicate on the enemy root breaks follow/billboard.
+        /// </summary>
+        private void ResolveEnemyHealthBarReference()
+        {
+            if (enemyHealthBar != null)
+                return;
+
+            var bars = GetComponentsInChildren<EnemyHealthBar>(true);
+            foreach (var bar in bars)
+            {
+                if (bar.transform != transform)
+                {
+                    enemyHealthBar = bar;
+                    return;
                 }
             }
+
+            if (bars.Length > 0)
+                enemyHealthBar = bars[0];
+        }
+
+        private void WireEnemyHealthBar()
+        {
+            ResolveEnemyHealthBarReference();
+            if (enemyHealthBar == null)
+                return;
+
+            enemyHealthBar.SetFollowTarget(transform);
         }
         
         private void CacheOriginalMaterials()
@@ -119,19 +145,15 @@ namespace RogueDeal.Combat
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
             
-            if (enemyHealthBar == null)
-                enemyHealthBar = GetComponentInChildren<EnemyHealthBar>();
-            
+            ResolveEnemyHealthBarReference();
+
             CacheOriginalMaterials();
-            
+
             enemyInstance = enemy;
             combatEntity = null;
             enemyInstance.visualInstance = gameObject;
-            
-            if (enemyHealthBar != null)
-            {
-                enemyHealthBar.SetFollowTarget(transform);
-            }
+
+            WireEnemyHealthBar();
             
             UpdateVisuals();
         }

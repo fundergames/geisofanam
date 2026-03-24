@@ -7,7 +7,7 @@ namespace RogueDeal.Editor
 {
     /// <summary>
     /// Creates an Animator Controller for TestPlayer1 and combat prefabs using KayKit Rig_Medium animations.
-    /// Compatible with ThirdPersonCombatController, CombatExecutor, and CombatAnimationController.
+    /// Compatible with PolygonCombatController / CombatExecutor, CombatAnimationController, and GeisPlayerAnimationController.
     /// </summary>
     public static class KayKitRigMediumControllerBuilder
     {
@@ -42,7 +42,6 @@ namespace RogueDeal.Editor
             AddParamIfMissing(controller, "IsGrounded", AnimatorControllerParameterType.Bool);
             AddParamIfMissing(controller, "IsRunning", AnimatorControllerParameterType.Bool);
             AddParamIfMissing(controller, "Run", AnimatorControllerParameterType.Bool);
-            AddParamIfMissing(controller, "Dash", AnimatorControllerParameterType.Trigger);
             AddParamIfMissing(controller, "TakeAction", AnimatorControllerParameterType.Trigger);
             AddParamIfMissing(controller, "ActionIndex", AnimatorControllerParameterType.Int);
             AddParamIfMissing(controller, "IsAction", AnimatorControllerParameterType.Bool);
@@ -90,19 +89,19 @@ namespace RogueDeal.Editor
             locomotionToIdle.hasExitTime = false;
             locomotionToIdle.duration = 0.1f;
 
-            // Dash
+            // Dodge (forward)
             if (dodge != null)
             {
-                var dashState = root.AddState("Dash", new Vector3(50, 40, 0));
-                dashState.motion = dodge;
-                var dashTrans = dashState.AddTransition(idleState);
-                dashTrans.hasExitTime = true;
-                dashTrans.exitTime = 0.9f;
-                dashTrans.duration = 0.1f;
+                var dodgeState = root.AddState("Dodge", new Vector3(50, 40, 0));
+                dodgeState.motion = dodge;
+                var dodgeTrans = dodgeState.AddTransition(idleState);
+                dodgeTrans.hasExitTime = true;
+                dodgeTrans.exitTime = 0.9f;
+                dodgeTrans.duration = 0.1f;
 
-                var anyToDash = root.AddAnyStateTransition(dashState);
-                anyToDash.AddCondition(AnimatorConditionMode.If, 0, "Dash");
-                anyToDash.duration = 0.05f;
+                var anyToDodge = root.AddAnyStateTransition(dodgeState);
+                anyToDodge.AddCondition(AnimatorConditionMode.If, 0, "Dodge");
+                anyToDodge.duration = 0.05f;
             }
 
             // Attack states (Attack_1, Attack_2, Attack_3)

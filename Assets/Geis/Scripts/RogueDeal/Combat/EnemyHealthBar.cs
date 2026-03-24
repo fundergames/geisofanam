@@ -27,7 +27,7 @@ namespace RogueDeal.Combat
         {
             mainCamera = Camera.main;
             rectTransform = GetComponent<RectTransform>();
-            
+
             EnsureCorrectScale();
         }
 
@@ -46,30 +46,37 @@ namespace RogueDeal.Combat
 
         private void LateUpdate()
         {
-            if (followTarget != null)
+            if (mainCamera == null)
+                mainCamera = Camera.main;
+
+            if (followTarget == null)
             {
+                if (alwaysFaceCamera && mainCamera != null)
+                    ApplyBillboardRotation();
+                return;
+            }
+
+            // Moving the same transform as followTarget would drag the whole enemy — only offset a child canvas.
+            if (transform != followTarget)
                 transform.position = followTarget.position + offset;
 
-                if (alwaysFaceCamera && mainCamera != null)
-                {
-                    transform.forward = mainCamera.transform.forward;
-                }
-            }
+            if (alwaysFaceCamera)
+                ApplyBillboardRotation();
         }
 
-        private CombatEntity combatEntitySource;
+        /// <summary>
+        /// Aligns world-space UI with the camera view plane (stable billboard, no inside-out quirk from forward-copy).
+        /// </summary>
+        private void ApplyBillboardRotation()
+        {
+            if (mainCamera == null)
+                return;
+            transform.rotation = mainCamera.transform.rotation;
+        }
 
         public void SetFollowTarget(Transform target)
         {
             followTarget = target;
-        }
-
-        /// <summary>
-        /// When set, health is read from CombatEntityData each frame (for real-time combat enemies).
-        /// </summary>
-        public void SetCombatEntity(CombatEntity entity)
-        {
-            combatEntitySource = entity;
         }
 
         public void UpdateHealthBar(int currentHealth, int maxHealth, bool animate = true)

@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using RogueDeal.Enemies;
 
@@ -8,6 +9,8 @@ namespace RogueDeal.Combat.Training
         [Header("Dummy Stats")]
         [SerializeField] private float maxHealth = 1000f;
         [SerializeField] private bool infiniteHealth = true;
+        [Tooltip("When infinite health is on, HP refills to max this many seconds after the last hit.")]
+        [SerializeField] private float healthResetDelaySeconds = 2f;
         
         [Header("Behavior")]
         [SerializeField] private DummyBehavior behavior = DummyBehavior.Idle;
@@ -30,6 +33,8 @@ namespace RogueDeal.Combat.Training
         private Renderer[] renderers;
         private int hitCounter = 0;
         private float lastHitTime;
+        private Coroutine pendingHealthResetCoroutine;
+        private Coroutine flashColorCoroutine;
         
         public int HitCount => hitCounter;
         public float CurrentHealth => currentHealth;
@@ -74,6 +79,16 @@ namespace RogueDeal.Combat.Training
         private void OnDisable()
         {
             CombatEvents.OnDamageApplied -= OnDamageReceived;
+            if (pendingHealthResetCoroutine != null)
+            {
+                StopCoroutine(pendingHealthResetCoroutine);
+                pendingHealthResetCoroutine = null;
+            }
+            if (flashColorCoroutine != null)
+            {
+                StopCoroutine(flashColorCoroutine);
+                flashColorCoroutine = null;
+            }
         }
         
         private void OnDamageReceived(CombatEventData data)
@@ -90,11 +105,12 @@ namespace RogueDeal.Combat.Training
             }
             else
             {
-                // Infinite health: restore entityData so hit detection still finds us alive
+                // Infinite health: keep damaged HP on the bar until idle, then refill (see ScheduleDelayedHealthReset).
                 var entityData = combatEntity.GetEntityData();
-                if (entityData != null)
-                    entityData.currentHealth = entityData.maxHealth;
-                currentHealth = maxHealth;
+                if (entityData != null && entityData.currentHealth <= 0f)
+                    entityData.currentHealth = 1f;
+                currentHealth = entityData != null ? entityData.currentHealth : maxHealth;
+                ScheduleDelayedHealthReset();
             }
             
             ReactToDamage(data);
@@ -149,13 +165,53 @@ namespace RogueDeal.Combat.Training
             }
         }
         
+        private void ScheduleDelayedHealthReset()
+        {
+            if (!infiniteHealth)
+                return;
+
+            if (healthResetDelaySeconds <= 0f)
+            {
+                ApplyFullHealToEntityAndBar();
+                return;
+            }
+
+            if (pendingHealthResetCoroutine != null)
+                StopCoroutine(pendingHealthResetCoroutine);
+            pendingHealthResetCoroutine = StartCoroutine(DelayedFullHealRoutine());
+        }
+
+        private void ApplyFullHealToEntityAndBar()
+        {
+            var entityData = combatEntity != null ? combatEntity.GetEntityData() : null;
+            if (entityData != null)
+                entityData.currentHealth = entityData.maxHealth;
+            currentHealth = maxHealth;
+            RefreshHealthBarVisual();
+        }
+
+        private IEnumerator DelayedFullHealRoutine()
+        {
+            yield return new WaitForSeconds(healthResetDelaySeconds);
+
+            pendingHealthResetCoroutine = null;
+            ApplyFullHealToEntityAndBar();
+        }
+
+        private void RefreshHealthBarVisual()
+        {
+            var visual = GetComponent<EnemyVisual>() ?? GetComponentInChildren<EnemyVisual>();
+            visual?.UpdateHealthBar(false);
+        }
+
         private void FlashColor(Color color, float duration)
         {
-            StopAllCoroutines();
-            StartCoroutine(FlashColorCoroutine(color, duration));
+            if (flashColorCoroutine != null)
+                StopCoroutine(flashColorCoroutine);
+            flashColorCoroutine = StartCoroutine(FlashColorCoroutine(color, duration));
         }
         
-        private System.Collections.IEnumerator FlashColorCoroutine(Color color, float duration)
+        private IEnumerator FlashColorCoroutine(Color color, float duration)
         {
             foreach (Renderer renderer in renderers)
             {
@@ -166,7 +222,7 @@ namespace RogueDeal.Combat.Training
             }
             
             yield return new WaitForSeconds(duration);
-            
+
             foreach (Renderer renderer in renderers)
             {
                 MaterialPropertyBlock block = new MaterialPropertyBlock();
@@ -174,6 +230,8 @@ namespace RogueDeal.Combat.Training
                 block.SetColor("_BaseColor", GetBehaviorColor());
                 renderer.SetPropertyBlock(block);
             }
+
+            flashColorCoroutine = null;
         }
         
         private Color GetBehaviorColor()
@@ -189,10 +247,17 @@ namespace RogueDeal.Combat.Training
         
         public void Reset()
         {
+            if (pendingHealthResetCoroutine != null)
+            {
+                StopCoroutine(pendingHealthResetCoroutine);
+                pendingHealthResetCoroutine = null;
+            }
+
             transform.position = startPosition;
             transform.rotation = startRotation;
-            currentHealth = maxHealth;
             hitCounter = 0;
+
+            ApplyFullHealToEntityAndBar();
             
             if (animator != null)
             {

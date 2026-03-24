@@ -1,5 +1,5 @@
 // Geis of Anam - Unified weapon definition. Single source of truth for visuals, combos, and damage.
-// Replaces parallel GeisWeaponSlot + Weapon + GeisComboData + CombatAction arrays.
+// Single asset for prefab + GeisComboData + RogueDeal Weapon/CombatAction.
 
 using UnityEngine;
 using RogueDeal.Combat.Core.Data;
@@ -8,7 +8,7 @@ namespace Geis.Combat
 {
     /// <summary>
     /// Unified weapon data: prefab, combo animations, and damage config.
-    /// Use with GeisWeaponSwitcher (unified mode) to replace GeisWeaponSlot + separate Weapon/ComboData arrays.
+    /// Assign per slot on GeisWeaponSwitcher (replaces separate Weapon/ComboData arrays on other components).
     /// </summary>
     [CreateAssetMenu(fileName = "Weapon_", menuName = "Geis/Combat/Weapon Definition")]
     public class GeisWeaponDefinition : ScriptableObject
@@ -20,7 +20,7 @@ namespace Geis.Combat
         public string displayName;
 
         [Header("Combo Animations")]
-        [Tooltip("Combo graph and clips for this weapon")]
+        [Tooltip("Combo graph and clips. Per-state CombatAction / multi-hit times live on this asset (State Combat Bindings).")]
         public GeisComboData comboData;
 
         [Header("Damage (RogueDeal)")]

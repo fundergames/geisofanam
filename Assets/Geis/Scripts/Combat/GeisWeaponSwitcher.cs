@@ -1,44 +1,26 @@
 // Geis of Anam - Weapon equipping via keys 1-4 (Unarmed, Knife, Sword, Bow).
-// Supports unified GeisWeaponDefinition (single source) or legacy GeisWeaponSlot.
+// Gamepad: Y (north face) cycles to the next weapon.
+// Uses GeisWeaponDefinition[] as the single source for prefab, combo, and damage.
 
 using UnityEngine;
+using UnityEngine.Serialization;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 
 namespace Geis.Combat
 {
     /// <summary>
-    /// Defines a weapon slot: prefab to instantiate (null for unarmed) and display name.
-    /// Legacy: use GeisWeaponDefinition for unified mode.
-    /// </summary>
-    [System.Serializable]
-    public class GeisWeaponSlot
-    {
-        [Tooltip("Prefab to attach to hand (null = unarmed)")]
-        public GameObject weaponPrefab;
-        [Tooltip("Display name for debug")]
-        public string displayName;
-    }
-
-    /// <summary>
     /// Switches between weapons using keys 1-4. Slot 0=Unarmed, 1=Knife, 2=Sword, 3=Bow.
-    /// Unified mode: use GeisWeaponDefinition[] - single source for prefab, combo, damage.
-    /// Legacy: use GeisWeaponSlot[] for visuals only.
+    /// Controller Y cycles forward through equipped slots.
+    /// Assign GeisWeaponDefinition per slot (prefab + combo + damage).
     /// </summary>
     public class GeisWeaponSwitcher : MonoBehaviour
     {
-        [Header("Mode")]
-        [Tooltip("When true, use unified weapon definitions (prefab + combo + damage). When false, use legacy slots.")]
-        [SerializeField] private bool useUnifiedWeapons = false;
-
-        [Header("Unified Weapons (single source of truth)")]
-        [Tooltip("Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow. Replaces separate slot/combo/action arrays.")]
-        [SerializeField] private GeisWeaponDefinition[] unifiedSlots = new GeisWeaponDefinition[4];
-
-        [Header("Legacy Slots (visuals only)")]
-        [Tooltip("When useUnifiedWeapons=false. Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow")]
+        [Header("Weapons")]
+        [Tooltip("Slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow. Prefab + combo + damage per weapon.")]
+        [FormerlySerializedAs("unifiedSlots")]
         [SerializeField]
-        private GeisWeaponSlot[] slots = new GeisWeaponSlot[4];
+        private GeisWeaponDefinition[] weaponSlots = new GeisWeaponDefinition[4];
 
         [Header("Attachment")]
         [Tooltip("Optional: assign manually if auto-detect fails")]
@@ -69,14 +51,14 @@ namespace Geis.Combat
         private CombatEntity _combatEntity;
 
         /// <summary>
-        /// Get combo data for the given weapon index. When using unified mode, returns definition.comboData.
+        /// Get combo data for the given weapon index. Returns definition.comboData when assigned.
         /// </summary>
         public bool TryGetComboForWeapon(int weaponIndex, out GeisComboData combo)
         {
             combo = null;
-            if (useUnifiedWeapons && unifiedSlots != null && weaponIndex >= 0 && weaponIndex < unifiedSlots.Length)
+            if (weaponSlots != null && weaponIndex >= 0 && weaponIndex < weaponSlots.Length)
             {
-                var def = unifiedSlots[weaponIndex];
+                var def = weaponSlots[weaponIndex];
                 if (def != null)
                 {
                     combo = def.comboData;
@@ -87,13 +69,13 @@ namespace Geis.Combat
         }
 
         /// <summary>
-        /// Get the unified weapon definition at index. Null if legacy mode or out of range.
+        /// Get the weapon definition at index, or null if out of range / unassigned.
         /// </summary>
         public GeisWeaponDefinition GetWeaponDefinition(int weaponIndex)
         {
-            if (!useUnifiedWeapons || unifiedSlots == null || weaponIndex < 0 || weaponIndex >= unifiedSlots.Length)
+            if (weaponSlots == null || weaponIndex < 0 || weaponIndex >= weaponSlots.Length)
                 return null;
-            return unifiedSlots[weaponIndex];
+            return weaponSlots[weaponIndex];
         }
 
         private void Awake()
@@ -108,16 +90,14 @@ namespace Geis.Combat
             if (_attachmentPoint == null && _animator != null)
                 FindAttachmentPoint();
 
-            var slotCount = useUnifiedWeapons && unifiedSlots != null ? unifiedSlots.Length : (slots?.Length ?? 0);
+            var slotCount = weaponSlots != null ? weaponSlots.Length : 0;
             if (_currentWeaponIndex < 0 && slotCount > 0)
                 EquipWeapon(0);
         }
 
         private void Update()
         {
-            int slotCount = useUnifiedWeapons && unifiedSlots != null
-                ? Mathf.Min(4, unifiedSlots.Length)
-                : (slots != null ? Mathf.Min(4, slots.Length) : 0);
+            int slotCount = weaponSlots != null ? Mathf.Min(4, weaponSlots.Length) : 0;
             if (slotCount == 0) return;
 
             for (int i = 0; i < slotCount; i++)
@@ -125,8 +105,15 @@ namespace Geis.Combat
                 if (GetKeyDownForSlot(i))
                 {
                     EquipWeapon(i);
-                    break;
+                    return;
                 }
+            }
+
+            if (WasCycleWeaponPressed())
+            {
+                int cur = _currentWeaponIndex < 0 ? 0 : _currentWeaponIndex;
+                int next = (cur + 1) % slotCount;
+                EquipWeapon(next);
             }
         }
 
@@ -142,6 +129,24 @@ namespace Geis.Combat
             }
 #endif
             return Input.GetKeyDown((KeyCode)((int)KeyCode.Alpha1 + index));
+        }
+
+        /// <summary>
+        /// Y on Xbox / Triangle on PlayStation (north face). Uses same gamepad fallback as <see cref="RogueDeal.Combat.CombatInputReader"/>.
+        /// </summary>
+        private bool WasCycleWeaponPressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var gamepad = UnityEngine.InputSystem.Gamepad.current;
+            if (gamepad == null && UnityEngine.InputSystem.Gamepad.all.Count > 0)
+                gamepad = UnityEngine.InputSystem.Gamepad.all[0];
+            if (gamepad != null && gamepad.buttonNorth.wasPressedThisFrame)
+                return true;
+#else
+            if (Input.GetKeyDown(KeyCode.JoystickButton3))
+                return true;
+#endif
+            return false;
         }
 
         private void FindAttachmentPoint()
@@ -200,28 +205,18 @@ namespace Geis.Combat
             Transform parent = _attachmentPoint != null ? _attachmentPoint : transform;
             GameObject prefab = null;
 
-            if (useUnifiedWeapons && unifiedSlots != null && slotIndex >= 0 && slotIndex < unifiedSlots.Length)
-            {
-                var def = unifiedSlots[slotIndex];
-                if (def != null)
-                    prefab = def.weaponPrefab;
-
-                if (_combatEntity != null)
-                {
-                    var data = _combatEntity.GetEntityData();
-                    if (data != null && def != null)
-                        data.equippedWeapon = def.GetWeaponForDamage();
-                }
-            }
-            else if (slots != null && slotIndex >= 0 && slotIndex < slots.Length)
-            {
-                var slot = slots[slotIndex];
-                if (slot != null)
-                    prefab = slot.weaponPrefab;
-            }
-            else
-            {
+            if (weaponSlots == null || slotIndex < 0 || slotIndex >= weaponSlots.Length)
                 return;
+
+            var def = weaponSlots[slotIndex];
+            if (def != null)
+                prefab = def.weaponPrefab;
+
+            if (_combatEntity != null)
+            {
+                var data = _combatEntity.GetEntityData();
+                if (data != null && def != null)
+                    data.equippedWeapon = def.GetWeaponForDamage();
             }
 
             if (_currentWeaponInstance != null)

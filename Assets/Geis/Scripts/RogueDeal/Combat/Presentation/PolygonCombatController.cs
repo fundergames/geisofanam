@@ -10,7 +10,7 @@ namespace RogueDeal.Combat.Presentation
 {
     /// <summary>
     /// Polygon-style character controller combining Synty locomotion (walk/run/sprint, crouch, strafing, jump)
-    /// with combat (dash, attacks, lock-on targeting).
+    /// with combat (dodge, attacks, lock-on targeting).
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     [RequireComponent(typeof(CombatExecutor))]
@@ -37,8 +37,8 @@ namespace RogueDeal.Combat.Presentation
         [SerializeField] private LayerMask groundLayerMask = ~0;
 
         [Header("Combat")]
-        [SerializeField] private float dashDuration = 0.3f;
-        [SerializeField] private float manualDashSpeed = 15f;
+        [SerializeField] private float dodgeDuration = 0.3f;
+        [SerializeField] private float manualDodgeSpeed = 15f;
         [SerializeField] private bool useWeaponColliders = true;
         [SerializeField] private CombatAction[] combatActions;
         [SerializeField] private int actionStateCount = 2;
@@ -65,11 +65,11 @@ namespace RogueDeal.Combat.Presentation
         private bool _isSprinting;
         private bool _isStrafing;
         private bool _isLockedOn;
-        private bool _isDashing;
+        private bool _isDodging;
         private bool _isAttacking;
-        private float _dashTimer;
+        private float _dodgeTimer;
         private float _attackStateTimeout;
-        private Vector3 _dashDirection;
+        private Vector3 _dodgeDirection;
         private float _speed2D;
         private int _currentGait; // 0=Idle, 1=Walk, 2=Run, 3=Sprint
         private float _strafeDirectionX;
@@ -87,7 +87,7 @@ namespace RogueDeal.Combat.Presentation
         private readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
         private readonly int _isJumpingHash = Animator.StringToHash("IsJumping");
         private readonly int _speedHash = Animator.StringToHash("Speed");
-        private readonly int _dashTriggerHash = Animator.StringToHash("Dash");
+        private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
         private readonly int _takeActionHash = Animator.StringToHash("TakeAction");
         private readonly int _actionIndexHash = Animator.StringToHash("ActionIndex");
         private readonly int _actionTypeHash = Animator.StringToHash("ActionType");
@@ -200,16 +200,16 @@ namespace RogueDeal.Combat.Presentation
                 _velocity.y = -2f;
             _velocity.y += gravity * Time.deltaTime;
 
-            if (_isDashing)
+            if (_isDodging)
             {
-                _dashTimer -= Time.deltaTime;
-                if (_dashTimer <= 0)
+                _dodgeTimer -= Time.deltaTime;
+                if (_dodgeTimer <= 0)
                 {
-                    _isDashing = false;
+                    _isDodging = false;
                 }
                 else if (_controller != null && _controller.enabled)
                 {
-                    _controller.Move((_dashDirection * manualDashSpeed + _velocity) * Time.deltaTime);
+                    _controller.Move((_dodgeDirection * manualDodgeSpeed + _velocity) * Time.deltaTime);
                 }
                 return;
             }
@@ -290,7 +290,7 @@ namespace RogueDeal.Combat.Presentation
             }
             transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotationSmoothing * Time.deltaTime);
 
-            if (state.JumpPressed && _isGrounded && !_isAttacking && !_isDashing)
+            if (state.JumpPressed && _isGrounded && !_isAttacking && !_isDodging)
             {
                 _velocity.y = jumpForce;
                 if (_animator != null && HasParameter("IsJumping"))
@@ -299,13 +299,13 @@ namespace RogueDeal.Combat.Presentation
             if (HasParameter("IsJumping") && _animator != null && _isGrounded)
                 _animator.SetBool(_isJumpingHash, false);
 
-            if (state.DashPressed && _isGrounded && !_isAttacking)
+            if (state.DodgePressed && _isGrounded && !_isAttacking)
             {
-                StartDash();
+                StartDodge();
                 return;
             }
 
-            if (state.AttackPressed && !_isAttacking && !_isDashing)
+            if (state.AttackPressed && !_isAttacking && !_isDodging)
             {
                 StartAttack();
                 return;
@@ -318,25 +318,25 @@ namespace RogueDeal.Combat.Presentation
                 _controller.Move(_velocity * Time.deltaTime);
         }
 
-        private void StartDash()
+        private void StartDodge()
         {
-            _isDashing = true;
-            _dashTimer = dashDuration;
+            _isDodging = true;
+            _dodgeTimer = dodgeDuration;
             var state = _inputProvider?.GetState() ?? default;
             Vector2 moveInput = state.Move;
             if (moveInput.sqrMagnitude > 0.01f && _mainCamera != null)
             {
                 Vector3 camFwd = new Vector3(_mainCamera.transform.forward.x, 0, _mainCamera.transform.forward.z).normalized;
                 Vector3 camRight = new Vector3(_mainCamera.transform.right.x, 0, _mainCamera.transform.right.z).normalized;
-                _dashDirection = (camFwd * moveInput.y + camRight * moveInput.x).normalized;
+                _dodgeDirection = (camFwd * moveInput.y + camRight * moveInput.x).normalized;
             }
             else
             {
-                _dashDirection = transform.forward;
+                _dodgeDirection = transform.forward;
             }
-            transform.rotation = Quaternion.LookRotation(_dashDirection);
-            if (_animator != null && HasParameter("Dash"))
-                _animator.SetTrigger(_dashTriggerHash);
+            transform.rotation = Quaternion.LookRotation(_dodgeDirection);
+            if (_animator != null && HasParameter("Dodge"))
+                _animator.SetTrigger(_dodgeTriggerHash);
         }
 
         private void StartAttack()
@@ -466,7 +466,7 @@ namespace RogueDeal.Combat.Presentation
                 if (HasParameter("IsCrouching")) _animator.SetBool(_isCrouchingHash, _isCrouching);
             }
             if (HasParameter("IsGrounded")) _animator.SetBool(_isGroundedHash, _isGrounded);
-            if (HasParameter("Speed")) _animator.SetFloat(_speedHash, _isAttacking || _isDashing ? 0f : (_speed2D / sprintSpeed));
+            if (HasParameter("Speed")) _animator.SetFloat(_speedHash, _isAttacking || _isDodging ? 0f : (_speed2D / sprintSpeed));
         }
 
         private void UpdateLockOnIndicator()
@@ -483,7 +483,7 @@ namespace RogueDeal.Combat.Presentation
         {
             if (_animator == null || !_animator.applyRootMotion) return;
             var rootMotion = _animator.deltaPosition;
-            if (rootMotion.sqrMagnitude > 0.000001f && _controller != null && _controller.enabled && (_isDashing || _isAttacking))
+            if (rootMotion.sqrMagnitude > 0.000001f && _controller != null && _controller.enabled && (_isDodging || _isAttacking))
             {
                 _controller.Move(rootMotion);
                 if (_animator.deltaRotation != Quaternion.identity)
@@ -492,7 +492,7 @@ namespace RogueDeal.Combat.Presentation
         }
 
         public void OnAttackEnd() => ResetAttackState();
-        public void OnDashEnd() => _isDashing = false;
+        public void OnDodgeEnd() => _isDodging = false;
 
         private bool HasParameter(string name)
         {
@@ -505,7 +505,7 @@ namespace RogueDeal.Combat.Presentation
         private bool IsAnimatorValid() => _animator != null && _animator.runtimeAnimatorController != null;
 
         public bool IsAttacking => _isAttacking;
-        public bool IsDashing => _isDashing;
+        public bool IsDodging => _isDodging;
         public bool IsGrounded => _isGrounded;
     }
 }

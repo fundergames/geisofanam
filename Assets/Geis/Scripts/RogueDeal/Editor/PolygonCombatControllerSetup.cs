@@ -32,7 +32,7 @@ namespace RogueDeal.Editor
             AddParamIfMissing(controller, "Attack_1", AnimatorControllerParameterType.Trigger);
             AddParamIfMissing(controller, "Attack_2", AnimatorControllerParameterType.Trigger);
             AddParamIfMissing(controller, "Attack_3", AnimatorControllerParameterType.Trigger);
-            AddParamIfMissing(controller, "Dash", AnimatorControllerParameterType.Trigger);
+            AddParamIfMissing(controller, "Dodge", AnimatorControllerParameterType.Trigger);
             AddParamIfMissing(controller, "Speed", AnimatorControllerParameterType.Float);
 
             var root = controller.layers[0].stateMachine;
@@ -45,14 +45,14 @@ namespace RogueDeal.Editor
                 ?? LoadClip($"{THIRDPERSON_ANIM}/Melee_1H_Attack_Slice_Horizontal.anim");
             AnimationClip attack3 = LoadClip($"{THIRDPERSON_ANIM}/Attack_3.anim")
                 ?? LoadClip($"{THIRDPERSON_ANIM}/Melee_2H_Attack_Chop.anim");
-            AnimationClip dash = LoadClip($"{THIRDPERSON_ANIM}/Dash_Forward.anim")
+            AnimationClip dodgeClip = LoadClip($"{THIRDPERSON_ANIM}/Dash_Forward.anim")
                 ?? LoadClipByGuid("68531d144e80fec44b79f9a9279c7cbc")
                 ?? LoadClip($"{POLYGON_ANIM_BASE}/Samples/Animations/Polygon/Masculine/Movement/Dash/AC_Dash_Forward.anim");
 
             if (attack1 == null) attack1 = GetDefaultClip();
             if (attack2 == null) attack2 = attack1;
             if (attack3 == null) attack3 = attack1;
-            if (dash == null) dash = GetDefaultClip();
+            if (dodgeClip == null) dodgeClip = GetDefaultClip();
 
             AnimatorState idleState = FindState(root, "Idle_Standing") ?? FindState(root, "Idle") ?? root.defaultState;
             if (idleState == null) idleState = GetFirstState(root);
@@ -102,24 +102,24 @@ namespace RogueDeal.Editor
                 any3.duration = 0.05f;
             }
 
-            AnimatorState dashState = FindState(root, "Dash");
-            if (dashState == null && dash != null)
+            AnimatorState dodgeState = FindState(root, "Dodge");
+            if (dodgeState == null && dodgeClip != null)
             {
-                dashState = root.AddState("Dash", new Vector3(400, 90, 0));
-                dashState.motion = dash;
-                var td = dashState.AddTransition(idleState);
+                dodgeState = root.AddState("Dodge", new Vector3(400, 90, 0));
+                dodgeState.motion = dodgeClip;
+                var td = dodgeState.AddTransition(idleState);
                 td.hasExitTime = true;
                 td.exitTime = 0.9f;
                 td.duration = 0.1f;
 
-                var anyDash = root.AddAnyStateTransition(dashState);
-                anyDash.AddCondition(AnimatorConditionMode.If, 0, "Dash");
-                anyDash.duration = 0.05f;
+                var anyDodge = root.AddAnyStateTransition(dodgeState);
+                anyDodge.AddCondition(AnimatorConditionMode.If, 0, "Dodge");
+                anyDodge.duration = 0.05f;
             }
 
             EditorUtility.SetDirty(controller);
             AssetDatabase.SaveAssets();
-            Debug.Log("[PolygonCombatControllerSetup] Added action parameters and states to AC_Polygon_Combat. Assign Attack_1/2/3 and Dash animations in the Animator if needed.");
+            Debug.Log("[PolygonCombatControllerSetup] Added action parameters and states to AC_Polygon_Combat. Assign Attack_1/2/3 and Dodge animations in the Animator if needed.");
         }
 
         private static void AddParamIfMissing(AnimatorController ctrl, string name, AnimatorControllerParameterType type)

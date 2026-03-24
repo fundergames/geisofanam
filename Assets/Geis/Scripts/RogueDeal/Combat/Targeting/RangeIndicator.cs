@@ -56,7 +56,6 @@ namespace RogueDeal.Combat.Targeting
         private CombatEntity combatEntity;
         private TargetingManager targetingManager;
         private CombatExecutor combatExecutor;
-        private ThirdPersonCombatController thirdPersonController;
         private float currentRange = 0f;
         private bool isActive = false;
         
@@ -91,13 +90,6 @@ namespace RogueDeal.Combat.Targeting
             if (combatExecutor == null)
             {
                 combatExecutor = GetComponentInParent<CombatExecutor>();
-            }
-            
-            // Get ThirdPersonCombatController to check available actions
-            thirdPersonController = GetComponent<ThirdPersonCombatController>();
-            if (thirdPersonController == null)
-            {
-                thirdPersonController = GetComponentInParent<ThirdPersonCombatController>();
             }
             
             // Create circle renderer if needed
@@ -191,19 +183,6 @@ namespace RogueDeal.Combat.Targeting
                     }
                     
                     // If no executing action, check available actions (same as UpdateLockOnIndicator does)
-                    if (strategyToUse == null && thirdPersonController != null)
-                    {
-                        var availableActions = thirdPersonController.AvailableActions;
-                        if (availableActions != null && availableActions.Length > 0)
-                        {
-                            actionToCheck = availableActions[0]; // Use first action (same as UpdateLockOnIndicator)
-                            if (actionToCheck != null && actionToCheck.targetingStrategy != null)
-                            {
-                                strategyToUse = actionToCheck.targetingStrategy;
-                            }
-                        }
-                    }
-                    
                     // If no action strategy, use TargetingManager's current strategy
                     if (strategyToUse == null && targetingManager != null)
                     {

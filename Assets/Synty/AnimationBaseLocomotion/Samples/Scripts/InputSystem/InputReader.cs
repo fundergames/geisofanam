@@ -39,7 +39,7 @@ namespace Synty.AnimationBaseLocomotion.Samples.InputSystem
 
         public Action onLightAttackPerformed;
         public Action onHeavyAttackPerformed;
-        public Action onDashPerformed;
+        public Action onDodgePerformed;
 
         /// <inheritdoc cref="OnEnable" />
         private void OnEnable()
@@ -207,12 +207,12 @@ namespace Synty.AnimationBaseLocomotion.Samples.InputSystem
         }
 
         /// <summary>
-        ///     Defines the action to perform when the OnDash callback is called.
+        ///     Defines the action to perform when the OnDodge callback is called.
         /// </summary>
-        public void OnDash(InputAction.CallbackContext context)
+        public void OnDodge(InputAction.CallbackContext context)
         {
             if (!context.performed) return;
-            onDashPerformed?.Invoke();
+            onDodgePerformed?.Invoke();
         }
     }
 }

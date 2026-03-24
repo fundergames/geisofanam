@@ -774,6 +774,28 @@ namespace RogueDeal.Combat.Presentation
         }
 
         /// <summary>
+        /// Applies effects for one strike of a multi-hit action (matches per-hit / main effects rules used by <see cref="OnTimelineComboHit"/>).
+        /// </summary>
+        /// <param name="hitNumber">1-based hit index.</param>
+        public void ApplyActionToTargets(CombatAction action, List<CombatEntity> targets, int hitNumber)
+        {
+            if (action == null || targets == null) return;
+
+            if (action.perHitEffects != null && hitNumber > 0 && hitNumber <= action.perHitEffects.Length)
+            {
+                var effect = action.perHitEffects[hitNumber - 1];
+                if (effect != null)
+                {
+                    ApplyEffectsToTargetList(new[] { effect }, targets);
+                    return;
+                }
+            }
+
+            if (action.effects == null || action.effects.Length == 0) return;
+            ApplyEffectsToTargetList(action.effects, targets);
+        }
+
+        /// <summary>
         /// Applies effects to all current targets
         /// </summary>
         public void ApplyEffectsToTargets(BaseEffect[] effects)

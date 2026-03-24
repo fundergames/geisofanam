@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using Geis.Combat;
 using Geis.Combat.Music;
+using Geis.InputSystem;
+using Geis.Attributes;
 
 namespace Geis.Locomotion
 {
@@ -21,7 +23,8 @@ namespace Geis.Locomotion
             Jump,
             Fall,
             Crouch,
-            Attack
+            Attack,
+            Dodge
         }
 
         private enum GaitState
@@ -81,22 +84,34 @@ namespace Geis.Locomotion
         private readonly int _comboStateBlendHash = Animator.StringToHash("ComboStateBlend");
         private const int COMBO_BLEND_SLOTS = 32;
 
+        private readonly int _dodgeDirectionHash = Animator.StringToHash("DodgeDirection");
+        private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
+
+        /// <summary>Layer 0 leaf state shortNameHashes for <c>Dodge</c> sub-state machine (must match Animator).</summary>
+        private static readonly int _dodgeLeafFrontHash = Animator.StringToHash("Dodge_Front");
+        private static readonly int _dodgeLeafBackHash = Animator.StringToHash("Dodge_Back");
+        private static readonly int _dodgeLeafLeftHash = Animator.StringToHash("Dodge_Left");
+        private static readonly int _dodgeLeafRightHash = Animator.StringToHash("Dodge_Right");
+
         #endregion
 
         #region Player Settings Variables
 
         #region Scripts/Objects
 
-        [Header("External Components")]
+        [FoldoutGroup("External Components")]
         [Tooltip("Script controlling camera behavior")]
         [SerializeField]
         private GeisCameraController _cameraController;
+        [FoldoutGroup("External Components")]
         [Tooltip("InputReader handles player input")]
         [SerializeField]
-        private InputReader _inputReader;
+        private GeisInputReader _inputReader;
+        [FoldoutGroup("External Components")]
         [Tooltip("Animator component for controlling player animations")]
         [SerializeField]
         private Animator _animator;
+        [FoldoutGroup("External Components")]
         [Tooltip("Character Controller component for controlling player movement")]
         [SerializeField]
         private CharacterController _controller;
@@ -105,26 +120,31 @@ namespace Geis.Locomotion
 
         #region Locomotion Settings
 
-        [Header("Player Locomotion")]
-        [Header("Main Settings")]
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Whether the character always faces the camera facing direction")]
         [SerializeField]
         private bool _alwaysStrafe = true;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Slowest movement speed of the player when set to a walk state or half press tick")]
         [SerializeField]
         private float _walkSpeed = 1.4f;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Default movement speed of the player")]
         [SerializeField]
         private float _runSpeed = 2.5f;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Top movement speed of the player")]
         [SerializeField]
         private float _sprintSpeed = 7f;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Damping factor for changing speed")]
         [SerializeField]
         private float _speedChangeDamping = 10f;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Rotation smoothing factor.")]
         [SerializeField]
         private float _rotationSmoothing = 10f;
+        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Offset for camera rotation.")]
         [SerializeField]
         private float _cameraRotationOffset;
@@ -133,13 +153,15 @@ namespace Geis.Locomotion
 
         #region Shuffle Settings
 
-        [Header("Shuffles")]
+        [FoldoutGroup("Shuffles")]
         [Tooltip("Threshold for button hold duration.")]
         [SerializeField]
         private float _buttonHoldThreshold = 0.15f;
+        [FoldoutGroup("Shuffles")]
         [Tooltip("Direction of shuffling on the X-axis.")]
         [SerializeField]
         private float _shuffleDirectionX;
+        [FoldoutGroup("Shuffles")]
         [Tooltip("Direction of shuffling on the Z-axis.")]
         [SerializeField]
         private float _shuffleDirectionZ;
@@ -148,16 +170,19 @@ namespace Geis.Locomotion
 
         #region Capsule Settings
 
-        [Header("Capsule Values")]
+        [FoldoutGroup("Capsule Values")]
         [Tooltip("Standing height of the player capsule.")]
         [SerializeField]
         private float _capsuleStandingHeight = 1.8f;
+        [FoldoutGroup("Capsule Values")]
         [Tooltip("Standing center of the player capsule.")]
         [SerializeField]
         private float _capsuleStandingCentre = 0.93f;
+        [FoldoutGroup("Capsule Values")]
         [Tooltip("Crouching height of the player capsule.")]
         [SerializeField]
         private float _capsuleCrouchingHeight = 1.2f;
+        [FoldoutGroup("Capsule Values")]
         [Tooltip("Crouching center of the player capsule.")]
         [SerializeField]
         private float _capsuleCrouchingCentre = 0.6f;
@@ -166,13 +191,15 @@ namespace Geis.Locomotion
 
         #region Strafing
 
-        [Header("Player Strafing")]
+        [FoldoutGroup("Player Strafing")]
         [Tooltip("Minimum threshold for forward strafing angle.")]
         [SerializeField]
         private float _forwardStrafeMinThreshold = -55.0f;
+        [FoldoutGroup("Player Strafing")]
         [Tooltip("Maximum threshold for forward strafing angle.")]
         [SerializeField]
         private float _forwardStrafeMaxThreshold = 125.0f;
+        [FoldoutGroup("Player Strafing")]
         [Tooltip("Current forward strafing value.")]
         [SerializeField]
         private float _forwardStrafe = 1f;
@@ -181,19 +208,23 @@ namespace Geis.Locomotion
 
         #region Grounded Settings
 
-        [Header("Grounded Angle")]
+        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Position of the rear ray for grounded angle check.")]
         [SerializeField]
         private Transform _rearRayPos;
+        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Position of the front ray for grounded angle check.")]
         [SerializeField]
         private Transform _frontRayPos;
+        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Layer mask for checking ground. Default: all layers. If ground isn't detected, ensure your ground has a collider and is on a layer included here.")]
         [SerializeField]
         private LayerMask _groundLayerMask = ~0;
+        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Current incline angle.")]
         [SerializeField]
         private float _inclineAngle;
+        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Offset below character center for ground check sphere. Positive = below feet for detection.")]
         [SerializeField]
         private float _groundedOffset = 0.14f;
@@ -202,13 +233,15 @@ namespace Geis.Locomotion
 
         #region In-Air Settings
 
-        [Header("Player In-Air")]
+        [FoldoutGroup("Player In-Air")]
         [Tooltip("Force applied when the player jumps.")]
         [SerializeField]
         private float _jumpForce = 10f;
+        [FoldoutGroup("Player In-Air")]
         [Tooltip("Multiplier for gravity when in the air.")]
         [SerializeField]
         private float _gravityMultiplier = 2f;
+        [FoldoutGroup("Player In-Air")]
         [Tooltip("Duration of falling.")]
         [SerializeField]
         private float _fallingDuration;
@@ -217,22 +250,27 @@ namespace Geis.Locomotion
 
         #region Head Look Settings
 
-        [Header("Player Head Look")]
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("Flag indicating if head turning is enabled.")]
         [SerializeField]
         private bool _enableHeadTurn = true;
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("Delay for head turning.")]
         [SerializeField]
         private float _headLookDelay;
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("X-axis value for head turning.")]
         [SerializeField]
         private float _headLookX;
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("Y-axis value for head turning.")]
         [SerializeField]
         private float _headLookY;
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("Curve for X-axis head turning.")]
         [SerializeField]
         private AnimationCurve _headLookXCurve;
+        [FoldoutGroup("Player Head Look")]
         [Tooltip("Degrees beyond which head/body look can't follow; character rotates in place instead. Tune to match animator head look limit.")]
         [SerializeField]
         private float _headLookLimitDegrees = 60f;
@@ -241,19 +279,23 @@ namespace Geis.Locomotion
 
         #region Body Look Settings
 
-        [Header("Player Body Look")]
+        [FoldoutGroup("Player Body Look")]
         [Tooltip("Flag indicating if body turning is enabled.")]
         [SerializeField]
         private bool _enableBodyTurn = true;
+        [FoldoutGroup("Player Body Look")]
         [Tooltip("Delay for body turning.")]
         [SerializeField]
         private float _bodyLookDelay;
+        [FoldoutGroup("Player Body Look")]
         [Tooltip("X-axis value for body turning.")]
         [SerializeField]
         private float _bodyLookX;
+        [FoldoutGroup("Player Body Look")]
         [Tooltip("Y-axis value for body turning.")]
         [SerializeField]
         private float _bodyLookY;
+        [FoldoutGroup("Player Body Look")]
         [Tooltip("Curve for X-axis body turning.")]
         [SerializeField]
         private AnimationCurve _bodyLookXCurve;
@@ -262,22 +304,27 @@ namespace Geis.Locomotion
 
         #region Lean Settings
 
-        [Header("Player Lean")]
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Flag indicating if leaning is enabled.")]
         [SerializeField]
         private bool _enableLean = true;
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Delay for leaning.")]
         [SerializeField]
         private float _leanDelay;
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Current value for leaning.")]
         [SerializeField]
         private float _leanValue;
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Curve for leaning.")]
         [SerializeField]
         private AnimationCurve _leanCurve;
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Delay for head leaning looks.")]
         [SerializeField]
         private float _leansHeadLooksDelay;
+        [FoldoutGroup("Player Lean")]
         [Tooltip("Flag indicating if an animation clip has ended.")]
         [SerializeField]
         private bool _animationClipEnd;
@@ -292,24 +339,49 @@ namespace Geis.Locomotion
         /// </summary>
         public event Action<int> OnAttackPerformed;
 
-        [Header("Attack Root Motion")]
+        /// <summary>
+        /// Current data-driven combo step (0 = first hit). Aligns with GeisComboData clip index for combat/hit timing.
+        /// </summary>
+        public int CurrentComboState => _currentComboState;
+
+        [FoldoutGroup("Attack Root Motion")]
         [Tooltip("Apply animation root rotation during attacks. Disable if attacks drift left/right (baked rotation mismatch).")]
         [SerializeField]
         private bool _applyRootRotationDuringAttack;
 
-        [Header("Data-Driven Combo")]
+        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
         [SerializeField]
         private GeisComboData _comboData;
+        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: resolves combo by weapon index when set. Takes precedence over _comboData when both assigned.")]
         [SerializeField]
         private GeisWeaponComboData _weaponComboData;
+        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: provides current weapon index for _weaponComboData lookup.")]
         [SerializeField]
         private GeisWeaponSwitcher _weaponSwitcher;
+        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: placeholders for runtime override. Loaded from Resources/GeisComboPlaceholders if null.")]
         [SerializeField]
         private GeisComboPlaceholders _comboPlaceholders;
+
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("Apply animation root rotation during dodge clips.")]
+        [SerializeField]
+        private bool _applyRootRotationDuringDodge;
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("Stick magnitude below this counts as neutral (forward dodge).")]
+        [SerializeField]
+        private float _dodgeInputDeadzone = 0.05f;
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("Fallback seconds if clip length cannot be read.")]
+        [SerializeField]
+        private float _dodgeFallbackDuration = 1.2f;
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
+        [SerializeField]
+        private bool _requireMovementInputForDodge;
 
         #endregion
 
@@ -354,6 +426,12 @@ namespace Geis.Locomotion
         private Vector3 _velocity;
 
         private float _attackStateTimeout;
+        private float _dodgeStateTimeout;
+        private bool _loggedDodgeAnimatorMissing;
+        /// <summary>True if dodge started while strafing — keep camera-relative facing instead of snapping to dodge axis.</summary>
+        private bool _dodgePreserveStrafeFacing;
+        /// <summary>Set once layer 0 actually enters a Dodge_* clip (avoids exiting before Any-State transition fires).</summary>
+        private bool _dodgeAnimatorEnteredLeaf;
 
         // Data-driven combo
         private int _currentComboState;
@@ -405,7 +483,7 @@ namespace Geis.Locomotion
             _inputReader.onAimDeactivated += DeactivateAim;
             _inputReader.onLightAttackPerformed += OnLightAttackRequested;
             _inputReader.onHeavyAttackPerformed += OnHeavyAttackRequested;
-            _inputReader.onDashPerformed += OnDashRequested;
+            _inputReader.onDodgePerformed += OnDodgeRequested;
 
             _isStrafing = _alwaysStrafe;
 
@@ -419,6 +497,9 @@ namespace Geis.Locomotion
 
         private void OnDestroy()
         {
+            if (_inputReader != null)
+                _inputReader.onDodgePerformed -= OnDodgeRequested;
+
             if (_comboOverrideController != null)
             {
                 Destroy(_comboOverrideController);
@@ -724,9 +805,144 @@ namespace Geis.Locomotion
             }
         }
 
-        private void OnDashRequested()
+        private void OnDodgeRequested()
         {
-            // Phase 3: Dash - stub for now
+            if (_currentState != AnimationState.Locomotion || !_isGrounded || _isCrouching)
+                return;
+            if (_animator == null || !HasAnimatorParameter("Dodge") || !HasAnimatorParameter("DodgeDirection"))
+            {
+                if (!_loggedDodgeAnimatorMissing)
+                {
+                    _loggedDodgeAnimatorMissing = true;
+                    Debug.LogWarning(
+                        "[GeisPlayerAnimationController] Animator is missing Dodge (Trigger) and/or DodgeDirection (Int), or dodge states. " +
+                        "Run menu: Geis → Animator → Setup Dodge Rolls (AC_Polygon_Masculine_Geis).");
+                }
+
+                return;
+            }
+            if (_requireMovementInputForDodge &&
+                _inputReader._moveComposite.sqrMagnitude < _dodgeInputDeadzone * _dodgeInputDeadzone)
+                return;
+
+            SwitchState(AnimationState.Dodge);
+        }
+
+        private int ComputeDodgeDirectionIndex()
+        {
+            Vector2 m = _inputReader._moveComposite;
+            if (m.sqrMagnitude < _dodgeInputDeadzone * _dodgeInputDeadzone)
+                return 0;
+
+            Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
+            Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
+            Vector3 world = (camFwd * m.y + camRight * m.x).normalized;
+            Vector3 local = transform.InverseTransformDirection(world);
+            float lx = local.x;
+            float lz = local.z;
+            if (Mathf.Abs(lz) >= Mathf.Abs(lx))
+                return lz >= 0f ? 0 : 1;
+            return lx >= 0f ? 3 : 2;
+        }
+
+        private Vector3 GetDodgeFacingWorld(int dirIndex)
+        {
+            Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
+            Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
+            switch (dirIndex)
+            {
+                case 0: return camFwd;
+                case 1: return -camFwd;
+                case 2: return -camRight;
+                case 3: return camRight;
+                default: return camFwd;
+            }
+        }
+
+        private void EnterDodgeState()
+        {
+            _velocity.x = 0f;
+            _velocity.z = 0f;
+
+            _dodgePreserveStrafeFacing = _isStrafing;
+
+            int dir = ComputeDodgeDirectionIndex();
+            if (_animator != null && HasAnimatorParameter("DodgeDirection"))
+                _animator.SetInteger(_dodgeDirectionHash, dir);
+
+            // Strafing keeps the body facing camera forward; only snap yaw to dodge axis when not strafing (e.g. sprint).
+            if (!_dodgePreserveStrafeFacing)
+            {
+                Vector3 face = GetDodgeFacingWorld(dir);
+                if (face.sqrMagnitude > 0.0001f)
+                    transform.rotation = Quaternion.LookRotation(face);
+            }
+
+            if (_animator != null && HasAnimatorParameter("Dodge"))
+                _animator.SetTrigger(_dodgeTriggerHash);
+
+            _dodgeAnimatorEnteredLeaf = false;
+            _dodgeStateTimeout = _dodgeFallbackDuration;
+        }
+
+        private static bool IsDodgeLeafShortNameHash(int shortNameHash)
+        {
+            return shortNameHash == _dodgeLeafFrontHash || shortNameHash == _dodgeLeafBackHash
+                || shortNameHash == _dodgeLeafLeftHash || shortNameHash == _dodgeLeafRightHash;
+        }
+
+        private void UpdateDodgeState()
+        {
+            ApplyGravity();
+            _dodgeStateTimeout -= Time.deltaTime;
+
+            GroundedCheck();
+            if (!_isGrounded)
+            {
+                SwitchState(AnimationState.Fall);
+                return;
+            }
+
+            if (_animator != null)
+            {
+                AnimatorStateInfo info = _animator.GetCurrentAnimatorStateInfo(0);
+                if (_animator.IsInTransition(0))
+                {
+                    AnimatorStateInfo next = _animator.GetNextAnimatorStateInfo(0);
+                    if (IsDodgeLeafShortNameHash(next.shortNameHash))
+                        _dodgeAnimatorEnteredLeaf = true;
+                }
+                else if (IsDodgeLeafShortNameHash(info.shortNameHash))
+                {
+                    _dodgeAnimatorEnteredLeaf = true;
+                }
+
+                // Do not rely on normalizedTime alone: after the dodge clip the Animator transitions to Idle_Standing
+                // (exit ~0.92). Layer 0 then reports Idle's normalizedTime, so the old >= 0.99 check never passes and
+                // gameplay stayed in Dodge until _dodgeFallbackDuration (~1.2s) with zero scripted locomotion.
+                if (_dodgeAnimatorEnteredLeaf && !_animator.IsInTransition(0)
+                    && !IsDodgeLeafShortNameHash(info.shortNameHash))
+                {
+                    SwitchState(AnimationState.Locomotion);
+                    return;
+                }
+
+                if (info.length > 0.01f && info.normalizedTime >= 0.99f && !_animator.IsInTransition(0)
+                    && IsDodgeLeafShortNameHash(info.shortNameHash))
+                {
+                    SwitchState(AnimationState.Locomotion);
+                    return;
+                }
+            }
+
+            if (_dodgeStateTimeout <= 0f)
+                SwitchState(AnimationState.Locomotion);
+            else
+                UpdateAnimatorController();
+        }
+
+        private void ExitDodgeState()
+        {
         }
 
         private void EnterAttackState()
@@ -830,20 +1046,17 @@ namespace Geis.Locomotion
         }
 
         /// <summary>
-        ///     Applies root motion during Attack (and Dash when added).
+        ///     Applies root motion during Attack and Dodge.
         ///     Locomotion, Jump, Fall, Crouch use script-driven movement via Move() - no root motion here.
-        ///     Combo attacks (Phase 2) all run in Attack state, so root motion applies to all combo steps.
         /// </summary>
         private void OnAnimatorMove()
         {
             if (_animator == null || !_animator.applyRootMotion || _controller == null || !_controller.enabled)
                 return;
 
-            // Only apply root motion during Attack (and Dash when Phase 3 is implemented)
             if (_currentState == AnimationState.Attack)
             {
                 var deltaPosition = _animator.deltaPosition;
-                // Add gravity so grounded attacks stick, jump/dive clips override via their baked root Y
                 deltaPosition.y += _velocity.y * Time.deltaTime;
 
                 _controller.Move(deltaPosition);
@@ -851,7 +1064,17 @@ namespace Geis.Locomotion
                 if (_applyRootRotationDuringAttack && _animator.deltaRotation != Quaternion.identity)
                     transform.rotation = transform.rotation * _animator.deltaRotation;
             }
-            // Future: add Dash state here when Phase 3 is implemented
+            else if (_currentState == AnimationState.Dodge)
+            {
+                var deltaPosition = _animator.deltaPosition;
+                deltaPosition.y += _velocity.y * Time.deltaTime;
+
+                _controller.Move(deltaPosition);
+
+                if (_applyRootRotationDuringDodge && !_dodgePreserveStrafeFacing
+                    && _animator.deltaRotation != Quaternion.identity)
+                    transform.rotation = transform.rotation * _animator.deltaRotation;
+            }
         }
 
         #endregion
@@ -899,6 +1122,9 @@ namespace Geis.Locomotion
                 case AnimationState.Attack:
                     EnterAttackState();
                     break;
+                case AnimationState.Dodge:
+                    EnterDodgeState();
+                    break;
             }
         }
 
@@ -920,6 +1146,9 @@ namespace Geis.Locomotion
                     break;
                 case AnimationState.Attack:
                     ExitAttackState();
+                    break;
+                case AnimationState.Dodge:
+                    ExitDodgeState();
                     break;
             }
         }
@@ -949,6 +1178,9 @@ namespace Geis.Locomotion
                     break;
                 case AnimationState.Attack:
                     UpdateAttackState();
+                    break;
+                case AnimationState.Dodge:
+                    UpdateDodgeState();
                     break;
             }
         }

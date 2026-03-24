@@ -1,7 +1,7 @@
 // Geis of Anam - Copy of Synty SampleCameraController as starting point.
 // Original: Synty.AnimationBaseLocomotion.Samples.SampleCameraController
 
-using Synty.AnimationBaseLocomotion.Samples.InputSystem;
+using Geis.InputSystem;
 using UnityEngine;
 
 namespace Geis.Locomotion
@@ -46,7 +46,7 @@ namespace Geis.Locomotion
         private float _rotationalCameraLag = 0.35f;
         private float _cameraInversion;
 
-        private InputReader _inputReader;
+        private GeisInputReader _inputReader;
         private float _lastAngleX;
         private float _lastAngleY;
 
@@ -66,7 +66,7 @@ namespace Geis.Locomotion
         {
             _syntyCamera = gameObject.transform.GetChild(0);
 
-            _inputReader = _syntyCharacter.GetComponent<InputReader>();
+            _inputReader = _syntyCharacter.GetComponent<GeisInputReader>();
             _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
             _lockOnTarget = _syntyCharacter.transform.Find("TargetLockOnPos");
             if (_lockOnTarget == null)
