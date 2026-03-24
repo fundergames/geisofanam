@@ -12,7 +12,7 @@ using UnityEngine.Serialization;
 
 namespace Geis.InputSystem
 {
-    public class GeisInputReader : MonoBehaviour, Controls.IPlayerActions
+    public class GeisInputReader : MonoBehaviour, GeisControls.IPlayerActions
     {
         public Vector2 _mouseDelta;
         public Vector2 _moveComposite;
@@ -20,7 +20,10 @@ namespace Geis.InputSystem
         public float _movementInputDuration;
         public bool _movementInputDetected;
 
-        private Controls _controls;
+        private GeisControls _controls;
+
+        /// <summary>Player/SoulRealm (Tab, gamepad LB).</summary>
+        public InputAction SoulRealm => _controls != null ? _controls.Player.SoulRealm : null;
 
         public Action onAimActivated;
         public Action onAimDeactivated;
@@ -55,7 +58,7 @@ namespace Geis.InputSystem
 
         [Header("Gamepad dodge")]
         [Tooltip(
-            "If the Xbox/PS east face button registers in hardware but Player/Dodge does not (broken binding cache), fire dodge from raw <Gamepad>/buttonEast. Left-bumper dodge still uses the action.")]
+            "If the Xbox/PS east face button registers in hardware but Player/Dodge does not (broken binding cache), fire dodge from raw <Gamepad>/buttonEast.")]
         [SerializeField] private bool _gamepadEastDodgeFallback = true;
 
         /// <inheritdoc cref="OnEnable" />
@@ -63,7 +66,7 @@ namespace Geis.InputSystem
         {
             if (_controls == null)
             {
-                _controls = new Controls();
+                _controls = new GeisControls();
                 _controls.Player.SetCallbacks(this);
             }
 
@@ -140,6 +143,15 @@ namespace Geis.InputSystem
             _lastDodgeFrame = Time.frameCount;
             onDodgePerformed?.Invoke();
         }
+
+        /// <summary>True on the frame SoulRealm was pressed (enter detection).</summary>
+        public bool SoulRealmWasPressedThisFrame()
+        {
+            return _controls != null && _controls.Player.SoulRealm.WasPressedThisFrame();
+        }
+
+        /// <summary>Shift sprint held or L3 sprint toggled on (matches player sprint).</summary>
+        public bool IsSprintHeldOrToggled => _shiftSprintHeld || _l3SprintToggledOn;
 
         /// <summary>
         ///     Defines the action to perform when the OnLook callback is called.
@@ -314,6 +326,16 @@ namespace Geis.InputSystem
             // Accept started or performed (devices vary); dedupe when both fire same frame.
             if (!context.started && !context.performed) return;
             TryInvokeDodgeOnce();
+        }
+
+        /// <inheritdoc />
+        public void OnPause(InputAction.CallbackContext context)
+        {
+        }
+
+        /// <inheritdoc />
+        public void OnSoulRealm(InputAction.CallbackContext context)
+        {
         }
     }
 }

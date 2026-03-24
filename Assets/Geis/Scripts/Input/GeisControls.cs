@@ -190,6 +190,15 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""SoulRealm"",
+                    ""type"": ""Button"",
+                    ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef012345678a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -514,17 +523,6 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef0123456789"",
-                    ""path"": ""<Gamepad>/leftShoulder"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": ""Gamepad"",
-                    ""action"": ""Dodge"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""6b9d34ee-85fa-463b-a1b2-75a81a76586a"",
                     ""path"": ""<Gamepad>/buttonEast"",
                     ""interactions"": """",
@@ -553,6 +551,28 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Keyboard and Mouse"",
                     ""action"": ""Pause"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1a2b3c4d-5e6f-7890-abcd-ef1234567891"",
+                    ""path"": ""<Keyboard>/tab"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard and Mouse"",
+                    ""action"": ""SoulRealm"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""1a2b3c4d-5e6f-7890-abcd-ef1234567892"",
+                    ""path"": ""<Gamepad>/leftShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""SoulRealm"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -607,6 +627,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         m_Player_HeavyAttack = m_Player.FindAction("HeavyAttack", throwIfNotFound: true);
         m_Player_Dodge = m_Player.FindAction("Dodge", throwIfNotFound: true);
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
+        m_Player_SoulRealm = m_Player.FindAction("SoulRealm", throwIfNotFound: true);
     }
 
     ~@GeisControls()
@@ -698,6 +719,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_HeavyAttack;
     private readonly InputAction m_Player_Dodge;
     private readonly InputAction m_Player_Pause;
+    private readonly InputAction m_Player_SoulRealm;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -753,6 +775,10 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Pause".
         /// </summary>
         public InputAction @Pause => m_Wrapper.m_Player_Pause;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/SoulRealm".
+        /// </summary>
+        public InputAction @SoulRealm => m_Wrapper.m_Player_SoulRealm;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -812,6 +838,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @Pause.started += instance.OnPause;
             @Pause.performed += instance.OnPause;
             @Pause.canceled += instance.OnPause;
+            @SoulRealm.started += instance.OnSoulRealm;
+            @SoulRealm.performed += instance.OnSoulRealm;
+            @SoulRealm.canceled += instance.OnSoulRealm;
         }
 
         /// <summary>
@@ -856,6 +885,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @Pause.started -= instance.OnPause;
             @Pause.performed -= instance.OnPause;
             @Pause.canceled -= instance.OnPause;
+            @SoulRealm.started -= instance.OnSoulRealm;
+            @SoulRealm.performed -= instance.OnSoulRealm;
+            @SoulRealm.canceled -= instance.OnSoulRealm;
         }
 
         /// <summary>
@@ -999,5 +1031,12 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "SoulRealm" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnSoulRealm(InputAction.CallbackContext context);
     }
 }

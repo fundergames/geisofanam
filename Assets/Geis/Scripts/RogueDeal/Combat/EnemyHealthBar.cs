@@ -60,7 +60,8 @@ namespace RogueDeal.Combat
             if (transform != followTarget)
                 transform.position = followTarget.position + offset;
 
-            if (alwaysFaceCamera)
+            // Never rotate the follow target's transform — only the child canvas should billboard, or the whole enemy spins toward the camera.
+            if (alwaysFaceCamera && transform != followTarget)
                 ApplyBillboardRotation();
         }
 

@@ -6,6 +6,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
+using Geis.SoulRealm;
 
 namespace Geis.Combat
 {
@@ -97,6 +98,9 @@ namespace Geis.Combat
 
         private void Update()
         {
+            if (SoulRealmInteractable.BlockPhysicalInteractions)
+                return;
+
             int slotCount = weaponSlots != null ? Mathf.Min(4, weaponSlots.Length) : 0;
             if (slotCount == 0) return;
 

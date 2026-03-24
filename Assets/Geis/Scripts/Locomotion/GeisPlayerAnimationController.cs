@@ -9,6 +9,7 @@ using Geis.Combat;
 using Geis.Combat.Music;
 using Geis.InputSystem;
 using Geis.Attributes;
+using Geis.SoulRealm;
 
 namespace Geis.Locomotion
 {
@@ -443,6 +444,55 @@ namespace Geis.Locomotion
 
         #endregion
 
+        #region Soul realm (spectral mesh mirror)
+
+        public GeisCameraController CameraControllerRef => _cameraController;
+        public float LocomotionWalkSpeed => _walkSpeed;
+        public float LocomotionRunSpeed => _runSpeed;
+        public float LocomotionSprintSpeed => _sprintSpeed;
+        public bool LocomotionAlwaysStrafe => _alwaysStrafe;
+        public float LocomotionSpeedChangeDamping => _speedChangeDamping;
+        public float LocomotionRotationSmoothing => _rotationSmoothing;
+        public float LocomotionForwardStrafeMinThreshold => _forwardStrafeMinThreshold;
+        public float LocomotionForwardStrafeMaxThreshold => _forwardStrafeMaxThreshold;
+        public float LocomotionButtonHoldThreshold => _buttonHoldThreshold;
+
+        /// <summary>Max-speed blend rate; must stay in sync with <c>_ANIMATION_DAMP_TIME</c> (soul ghost motor).</summary>
+        public float LocomotionMaxSpeedLerpRate => 5f;
+
+        public bool LocomotionIsWalking => _isWalking;
+        public bool LocomotionIsSprinting => _isSprinting;
+        public bool LocomotionIsCrouching => _isCrouching;
+        public bool LocomotionIsStrafing => _isStrafing;
+
+        public float LocomotionJumpForce => _jumpForce;
+        public float LocomotionGravityMultiplier => _gravityMultiplier;
+        public float LocomotionGroundedOffset => _groundedOffset;
+        public LayerMask LocomotionGroundLayerMask => _groundLayerMask;
+
+        public float LocomotionCapsuleStandingHeight => _capsuleStandingHeight;
+        public float LocomotionCapsuleStandingCentre => _capsuleStandingCentre;
+        public float LocomotionCapsuleCrouchingHeight => _capsuleCrouchingHeight;
+        public float LocomotionCapsuleCrouchingCentre => _capsuleCrouchingCentre;
+
+        /// <summary>Standing capsule radius (from CharacterController).</summary>
+        public float LocomotionCapsuleRadius => _controller != null ? _controller.radius : 0.28f;
+
+        /// <summary>
+        /// Jump/Fall never simulate while soul realm suppresses <see cref="Update"/> — reset state and vertical velocity so
+        /// exiting does not leave stuck air velocity or an animator jump state that only resolves on attack.
+        /// </summary>
+        public void PrepareBodyAfterSoulRealmExit()
+        {
+            if (_currentState == AnimationState.Jump || _currentState == AnimationState.Fall)
+                SwitchState(AnimationState.Locomotion);
+
+            GroundedCheck();
+            _velocity.y = _isGrounded ? -2f : 0f;
+        }
+
+        #endregion
+
         #region Base State Variables
 
         private const float _ANIMATION_DAMP_TIME = 5f;
@@ -765,6 +815,8 @@ namespace Geis.Locomotion
 
         private void OnLightAttackRequested()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                return;
             if (!_isGrounded || _isCrouching) return;
 
             var comboData = GetCurrentComboData();
@@ -791,6 +843,8 @@ namespace Geis.Locomotion
 
         private void OnHeavyAttackRequested()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                return;
             if (!_isGrounded || _isCrouching) return;
 
             if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
@@ -1160,6 +1214,9 @@ namespace Geis.Locomotion
         /// <inheritdoc cref="Update" />
         private void Update()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
+                return;
+
             ApplyComboOverridesIfReady();
 
             switch (_currentState)
@@ -1932,6 +1989,8 @@ namespace Geis.Locomotion
         /// </summary>
         private void LocomotionToJumpState()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
+                return;
             SwitchState(AnimationState.Jump);
         }
 
@@ -2095,6 +2154,8 @@ namespace Geis.Locomotion
         /// </summary>
         private void CrouchToJumpState()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
+                return;
             if (!_cannotStandUp)
             {
                 DeactivateCrouch();

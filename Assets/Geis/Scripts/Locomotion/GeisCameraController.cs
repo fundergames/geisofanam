@@ -61,13 +61,91 @@ namespace Geis.Locomotion
 
         private Transform _syntyCamera;
 
+        // Soul realm: baseline captured at entry; rotation lerps during hold-to-exit; snap pivot/angles on exit complete.
+        private bool _soulRealmBaselineCaptured;
+        private bool _soulRealmExitHoldActive;
+        private float _soulRealmExitHoldProgress;
+
+        private Vector3 _soulRealmBaselinePivotPosition;
+        private float _soulRealmBaselineTargetAngleX;
+        private float _soulRealmBaselineTargetAngleY;
+        private float _soulRealmBaselineCurrentAngleX;
+        private float _soulRealmBaselineCurrentAngleY;
+        private Vector3 _soulRealmBaselineLastPosition;
+
+        private float _soulRealmHoldStartTargetAngleX;
+        private float _soulRealmHoldStartTargetAngleY;
+        private float _soulRealmHoldStartCurrentAngleX;
+        private float _soulRealmHoldStartCurrentAngleY;
+
+        /// <summary>
+        /// Call while still following the physical body, immediately before switching follow target to the soul ghost.
+        /// </summary>
+        public void CaptureSoulRealmEntryState()
+        {
+            _soulRealmBaselinePivotPosition = transform.position;
+            _soulRealmBaselineTargetAngleX = _targetAngleX;
+            _soulRealmBaselineTargetAngleY = _targetAngleY;
+            _soulRealmBaselineCurrentAngleX = _currentAngleX;
+            _soulRealmBaselineCurrentAngleY = _currentAngleY;
+            _soulRealmBaselineLastPosition = _lastPosition;
+            _soulRealmBaselineCaptured = true;
+        }
+
+        /// <summary>First frame the player starts holding SoulRealm to exit — captures rotation to lerp from during the hold.</summary>
+        public void BeginSoulRealmExitHoldRotationLerp()
+        {
+            if (!_soulRealmBaselineCaptured)
+                return;
+
+            _soulRealmHoldStartTargetAngleX = _targetAngleX;
+            _soulRealmHoldStartTargetAngleY = _targetAngleY;
+            _soulRealmHoldStartCurrentAngleX = _currentAngleX;
+            _soulRealmHoldStartCurrentAngleY = _currentAngleY;
+            _soulRealmExitHoldActive = true;
+            _soulRealmExitHoldProgress = 0f;
+        }
+
+        /// <summary>0–1 progress parallel to SoulRealmManager exit hold (ghost → body).</summary>
+        public void SetSoulRealmExitHoldProgress(float holdProgress01)
+        {
+            _soulRealmExitHoldProgress = Mathf.Clamp01(holdProgress01);
+        }
+
+        /// <summary>Released hold before completion — resume normal mouse look from current angles.</summary>
+        public void EndSoulRealmExitHoldRotationLerp()
+        {
+            _soulRealmExitHoldActive = false;
+        }
+
+        /// <summary>
+        /// Snap orbit pivot and look state to <see cref="CaptureSoulRealmEntryState"/> (call when exit hold completes).
+        /// </summary>
+        public void ApplySoulRealmBaselineSnapshot()
+        {
+            if (!_soulRealmBaselineCaptured)
+                return;
+
+            _soulRealmExitHoldActive = false;
+            transform.position = _soulRealmBaselinePivotPosition;
+            _targetAngleX = _soulRealmBaselineTargetAngleX;
+            _targetAngleY = _soulRealmBaselineTargetAngleY;
+            _currentAngleX = _soulRealmBaselineCurrentAngleX;
+            _currentAngleY = _soulRealmBaselineCurrentAngleY;
+            transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
+            _lastPosition = _soulRealmBaselineLastPosition;
+            _lastAngleX = _currentAngleX;
+            _lastAngleY = _currentAngleY;
+        }
+
         /// <inheritdoc cref="Start" />
         private void Start()
         {
             _syntyCamera = gameObject.transform.GetChild(0);
 
             _inputReader = _syntyCharacter.GetComponent<GeisInputReader>();
-            _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
+            if (_playerTarget == null)
+                _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
             _lockOnTarget = _syntyCharacter.transform.Find("TargetLockOnPos");
             if (_lockOnTarget == null)
             {
@@ -101,38 +179,65 @@ namespace Geis.Locomotion
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
         }
 
+        /// <summary>
+        /// Switches the camera orbit pivot (e.g. body vs soul ghost vs exit lerp pivot).
+        /// </summary>
+        public void SetFollowTarget(Transform newPlayerTarget)
+        {
+            if (newPlayerTarget != null)
+                _playerTarget = newPlayerTarget;
+        }
+
         /// <inheritdoc cref="LateUpdate" />
         private void LateUpdate()
         {
+            if (_playerTarget == null)
+                return;
+
             float positionalSharpness = 1f / Mathf.Max(_positionalCameraLag, 0.01f);
             float rotationalSharpness = 1f / Mathf.Max(_rotationalCameraLag, 0.01f);
             float posSmooth = 1f - Mathf.Exp(-positionalSharpness * Time.deltaTime);
             float rotSmooth = 1f - Mathf.Exp(-rotationalSharpness * Time.deltaTime);
 
-            float rotationX = _inputReader._mouseDelta.y * _cameraInversion * _mouseSensitivity;
-            float rotationY = _inputReader._mouseDelta.x * _mouseSensitivity;
+            bool lockLook = _soulRealmExitHoldActive;
 
-            if (_wasLockedOn && !_isLockedOn)
-                _targetAngleY = _currentAngleY;
-            _wasLockedOn = _isLockedOn;
-
-            _targetAngleX += rotationX;
-            _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
-
-            if (_isLockedOn && _lockOnTarget != null)
+            if (!lockLook && _inputReader != null)
             {
-                Vector3 aimVector = _lockOnTarget.position - _playerTarget.position;
-                Quaternion targetRotation = Quaternion.LookRotation(aimVector);
-                _targetAngleY = targetRotation.eulerAngles.y;
-                _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
-            }
-            else
-            {
-                _targetAngleY += rotationY;
-                _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
-            }
+                float rotationX = _inputReader._mouseDelta.y * _cameraInversion * _mouseSensitivity;
+                float rotationY = _inputReader._mouseDelta.x * _mouseSensitivity;
 
-            _currentAngleX = Mathf.Lerp(_currentAngleX, _targetAngleX, rotSmooth);
+                if (_wasLockedOn && !_isLockedOn)
+                    _targetAngleY = _currentAngleY;
+                _wasLockedOn = _isLockedOn;
+
+                _targetAngleX += rotationX;
+                _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+
+                if (_isLockedOn && _lockOnTarget != null)
+                {
+                    Vector3 aimVector = _lockOnTarget.position - _playerTarget.position;
+                    Quaternion targetRotation = Quaternion.LookRotation(aimVector);
+                    _targetAngleY = targetRotation.eulerAngles.y;
+                    _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
+                }
+                else
+                {
+                    _targetAngleY += rotationY;
+                    _currentAngleY = Mathf.LerpAngle(_currentAngleY, _targetAngleY, rotSmooth);
+                }
+
+                _currentAngleX = Mathf.Lerp(_currentAngleX, _targetAngleX, rotSmooth);
+            }
+            else if (lockLook && _soulRealmBaselineCaptured)
+            {
+                float t = Mathf.SmoothStep(0f, 1f, _soulRealmExitHoldProgress);
+                _targetAngleX = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleX, _soulRealmBaselineTargetAngleX, t);
+                _targetAngleY = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleY, _soulRealmBaselineTargetAngleY, t);
+                _currentAngleX = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleX, _soulRealmBaselineCurrentAngleX, t);
+                _currentAngleY = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleY, _soulRealmBaselineCurrentAngleY, t);
+                _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+                _currentAngleX = Mathf.Clamp(_currentAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+            }
 
             _newPosition = _playerTarget.position;
             _newPosition = Vector3.Lerp(_lastPosition, _newPosition, posSmooth);

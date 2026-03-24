@@ -372,28 +372,6 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5007725720867496839, guid: 79104fe403d5844d1a09efec6b91f2c1, type: 3}
   m_PrefabInstance: {fileID: 82078005}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &82078007 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9151927434093859597, guid: 79104fe403d5844d1a09efec6b91f2c1, type: 3}
-  m_PrefabInstance: {fileID: 82078005}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
---- !u!114 &82078008 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 6507089151669293768, guid: 79104fe403d5844d1a09efec6b91f2c1, type: 3}
-  m_PrefabInstance: {fileID: 82078005}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 67db9e8f0e2ae9c40bc1e2b64352a6b4, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.Slider
 --- !u!1001 &94480272
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -915,7 +893,6 @@ GameObject:
   m_Component:
   - component: {fileID: 403941208}
   - component: {fileID: 403941209}
-  - component: {fileID: 403941210}
   m_Layer: 0
   m_Name: DamagePopupManager
   m_TagString: Untagged
@@ -955,21 +932,6 @@ MonoBehaviour:
   usePooling: 1
   poolInitialSize: 20
   poolMaxSize: 100
---- !u!114 &403941210
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 403941207}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f45a0e3292f5f03498e0131a0af9345f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.UI.DamageNumberSpawner
-  damageNumberPrefab: {fileID: 6322377733760740466, guid: 2b385da7567e04757a110f1365f1cd54, type: 3}
-  damageNumberParent: {fileID: 1293242330}
-  mainCamera: {fileID: 292745821288882364}
 --- !u!1001 &412706958
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4111,7 +4073,6 @@ GameObject:
   m_Component:
   - component: {fileID: 4154736362486504}
   - component: {fileID: 64765913296569321}
-  - component: {fileID: 64765913296569323}
   - component: {fileID: 64765913296569322}
   - component: {fileID: 2107885955}
   - component: {fileID: 33652725128074794}
@@ -4268,25 +4229,6 @@ MonoBehaviour:
   damagePopupOffset: {x: 0, y: 2, z: 0}
   spawnDuration: 0.5
   spawnScale: {x: 0.5, y: 0.5, z: 0.5}
---- !u!114 &64765913296569323
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1435150986122364}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0e954b2d43862784b96286a8355d5a16, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.EnemyHealthBar
-  healthBarSlider: {fileID: 82078008}
-  healthText: {fileID: 82078007}
-  followTarget: {fileID: 0}
-  offset: {x: 0, y: 2, z: 0}
-  alwaysFaceCamera: 1
-  healthAnimationDuration: 0.3
-  healthAnimationEase: 6
 --- !u!114 &64765913296569324
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4379,6 +4321,7 @@ GameObject:
   - component: {fileID: 1976761596}
   - component: {fileID: 9022905960281365609}
   - component: {fileID: 8663971696254839474}
+  - component: {fileID: 9022905960281365611}
   m_Layer: 3
   m_Name: PolygonSyntyCharacter
   m_TagString: Untagged
@@ -4467,6 +4410,8 @@ GameObject:
   - component: {fileID: 1644897884}
   - component: {fileID: 1644897888}
   - component: {fileID: 1644897887}
+  - component: {fileID: 8289670511951592496}
+  - component: {fileID: 8289670511951592497}
   m_Layer: 3
   m_Name: PF_PolygonPlayer
   m_TagString: Untagged
@@ -7426,6 +7371,48 @@ Transform:
   - {fileID: 1127523209969722715}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8289670511951592496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2247419633768223799}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8d7384f3cb60e01409d87fc56824ce79, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.SoulRealmManager
+  inputReader: {fileID: 9022905960281365610}
+  bodyLocomotion: {fileID: 1976761594}
+  cameraController: {fileID: 1623670306}
+  bodyAnimator: {fileID: 9022905960281365609}
+  bodyCharacterController: {fileID: 8663971696254839474}
+  bodyLookAtTransform: {fileID: 0}
+  ghostRoot: {fileID: 0}
+  ghostMotor: {fileID: 0}
+  exitHoldDuration: 2
+  enterGraceSeconds: 0.35
+  visuals: {fileID: 0}
+  spectralCharacterVisualRoot: {fileID: 628766041215005040}
+  spectralMaterial: {fileID: 0}
+--- !u!114 &8289670511951592497
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2247419633768223799}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c9f506571e22b034dbd6efc08901d5ca, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.SoulRealmVisuals
+  volume: {fileID: 0}
+  soulSaturation: -55
+  soulPostExposure: -0.15
+  soulColorFilter: {r: 0.75, g: 0.95, b: 0.82, a: 1}
+  autoEnablePostProcessingOnCameras: 1
 --- !u!4 &8363208176126680943
 Transform:
   m_ObjectHideFlags: 0
@@ -7507,6 +7494,21 @@ MonoBehaviour:
   _movementInputDetected: 0
   _debugDodgeInput: 1
   _gamepadEastDodgeFallback: 1
+--- !u!114 &9022905960281365611
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 558922151605236337}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4d627b8399850140a9ca6330d0d80bc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.SoulRealmFreezeTarget
+  animator: {fileID: 9022905960281365609}
+  rigidBody: {fileID: 0}
+  kinematicWhenFrozen: 1
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
