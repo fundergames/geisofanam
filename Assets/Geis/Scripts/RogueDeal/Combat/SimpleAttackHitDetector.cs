@@ -11,9 +11,9 @@ namespace RogueDeal.Combat
     /// No animation events or weapon colliders needed.
     /// For <see cref="CombatAction.isCombo"/> with <see cref="CombatAction.comboHitCount"/> &gt; 1, runs multiple checks at configured times.
     /// Add to the player and set useWeaponColliders=false on the combat controller.
+    /// <see cref="CombatExecutor"/> and <see cref="CombatEntity"/> are optional on the same GameObject;
+    /// assign them or add those components for hit application and self-filtering. Without them, hit checks no-op.
     /// </summary>
-    [RequireComponent(typeof(CombatExecutor))]
-    [RequireComponent(typeof(CombatEntity))]
     public class SimpleAttackHitDetector : MonoBehaviour
     {
         [Header("Timing")]
@@ -46,8 +46,8 @@ namespace RogueDeal.Combat
 
         private void Awake()
         {
-            _executor = GetComponent<CombatExecutor>();
-            _combatEntity = GetComponent<CombatEntity>();
+            _executor = GetComponent<CombatExecutor>() ?? GetComponentInParent<CombatExecutor>();
+            _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
         }
 
         /// <summary>
@@ -66,6 +66,14 @@ namespace RogueDeal.Combat
         {
             if (action == null)
                 return;
+
+            if (_executor == null)
+            {
+                Debug.LogWarning(
+                    "[SimpleAttackHitDetector] No CombatExecutor on this object — cannot apply hits. Add CombatExecutor or remove SimpleAttackHitDetector.",
+                    this);
+                return;
+            }
 
             bool hasMainEffects = action.effects != null && action.effects.Length > 0;
             bool hasPerHit = action.perHitEffects != null && action.perHitEffects.Length > 0;
@@ -176,13 +184,16 @@ namespace RogueDeal.Combat
 
             foreach (var col in colliders)
             {
-                if (col.GetComponent<CombatEntity>() == _combatEntity)
+                if (col.transform == transform || col.transform.IsChildOf(transform))
+                    continue;
+
+                if (_combatEntity != null && col.GetComponent<CombatEntity>() == _combatEntity)
                     continue;
 
                 var entity = col.GetComponent<CombatEntity>() ?? col.GetComponentInParent<CombatEntity>();
                 if (entity == null)
                 {
-                    if (debugLog && col.gameObject != _combatEntity.gameObject)
+                    if (debugLog && (_combatEntity == null || col.gameObject != _combatEntity.gameObject))
                         Debug.Log($"[SimpleAttackHitDetector] Skipped {col.gameObject.name}: no CombatEntity");
                     continue;
                 }
