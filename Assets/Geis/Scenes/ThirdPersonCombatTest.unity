@@ -3467,6 +3467,10 @@ MonoBehaviour:
   _cameraTiltBounds: {x: -10, y: 45}
   _positionalCameraLag: 0.1
   _rotationalCameraLag: 0.1
+  _aimCameraDistance: 2.5
+  _aimCameraHorizontalOffset: 0.55
+  _aimCameraHeightOffset: 0.15
+  _aimTransitionSpeed: 10
 --- !u!1001 &1636234017
 PrefabInstance:
   m_ObjectHideFlags: 0
