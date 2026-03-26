@@ -27,6 +27,7 @@ namespace RogueDeal.Combat.Presentation
         private float lifetime = 0f;
         private bool hasArrived = false;
         private Rigidbody rb;
+        private GameObject _aimMarker;
         
         private void Awake()
         {
@@ -61,6 +62,17 @@ namespace RogueDeal.Combat.Presentation
             }
         }
         
+        /// <summary>
+        /// Fires the arrow toward a fixed world-space aim point (camera-forward raycast hit).
+        /// The arrow travels in a straight line to that point and despawns on arrival.
+        /// </summary>
+        public void InitializeAimPoint(Vector3 aimWorldPoint, float speed, BaseEffect[] effects, CombatEntityData attackerData)
+        {
+            _aimMarker = new GameObject("_ArrowAimMarker");
+            _aimMarker.transform.position = aimWorldPoint;
+            Initialize(_aimMarker.transform, speed, effects, attackerData);
+        }
+
         private void Update()
         {
             if (hasArrived) return;
@@ -139,6 +151,11 @@ namespace RogueDeal.Combat.Presentation
         
         private void Despawn()
         {
+            if (_aimMarker != null)
+            {
+                Destroy(_aimMarker);
+                _aimMarker = null;
+            }
             Destroy(gameObject);
         }
         
