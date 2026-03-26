@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rogue Deal – HUD Mockup</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: #0a0a0a;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    font-family: 'Segoe UI', sans-serif;
+  }
+
+  /* ── Game Viewport ─────────────────────────────────────────── */
+  .viewport {
+    position: relative;
+    width: 960px;
+    height: 540px;
+    overflow: hidden;
+    border: 2px solid #333;
+    border-radius: 4px;
+    background:
+      radial-gradient(ellipse at 50% 60%, #1a2a1a 0%, #0d1a10 60%, #060e08 100%);
+  }
+
+  /* Fake 3D world suggestion */
+  .world-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(180deg, #0d1a10 0%, #1c2e1c 40%, #263a26 70%, #1a2a1a 100%);
+  }
+  .world-grid {
+    position: absolute;
+    inset: 0;
+    opacity: 0.07;
+    background-image:
+      linear-gradient(#4a8 1px, transparent 1px),
+      linear-gradient(90deg, #4a8 1px, transparent 1px);
+    background-size: 40px 40px;
+    transform: perspective(400px) rotateX(40deg) translateY(30%);
+  }
+
+  /* Fake enemy silhouettes */
+  .enemy {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .enemy-body {
+    width: 48px;
+    height: 80px;
+    background: #1a1a1a;
+    border-radius: 6px 6px 2px 2px;
+    border: 1px solid #333;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    padding-bottom: 4px;
+  }
+  .enemy-head {
+    width: 30px;
+    height: 30px;
+    background: #222;
+    border-radius: 50%;
+    border: 1px solid #333;
+    margin-bottom: -4px;
+    position: relative;
+    top: -4px;
+  }
+  .enemy-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  /* floating enemy health bar */
+  .enemy-hp-bar {
+    width: 80px;
+    height: 8px;
+    background: #1a1a1a;
+    border-radius: 4px;
+    border: 1px solid #555;
+    overflow: hidden;
+    margin-bottom: 2px;
+  }
+  .enemy-hp-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #c0392b, #e74c3c);
+    border-radius: 4px;
+  }
+  .enemy-hp-text {
+    font-size: 9px;
+    color: #ccc;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── HUD LAYER ────────────────────────────────────────────── */
+  .hud {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* ── TOP BAR ──────────────────────────────────────────────── */
+  .top-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    padding: 10px 14px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  /* Turn Counter */
+  .turn-counter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    align-self: center;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 20px;
+    padding: 4px 14px;
+    backdrop-filter: blur(4px);
+  }
+  .turn-label {
+    font-size: 12px;
+    color: #aaa;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .turn-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+  }
+  .turn-divider { color: #555; font-size: 12px; }
+  .stars { display: flex; gap: 4px; margin-left: 4px; }
+  .star {
+    font-size: 16px;
+    filter: drop-shadow(0 0 4px rgba(255,200,0,0.6));
+  }
+  .star.dim { filter: none; opacity: 0.3; }
+
+  /* Level Progress */
+  .level-progress {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    align-self: center;
+    position: relative;
+    padding: 4px 0;
+  }
+  .progress-line {
+    position: absolute;
+    top: 50%; left: 12px; right: 12px;
+    height: 2px;
+    background: #333;
+    transform: translateY(-50%);
+    z-index: 0;
+  }
+  .progress-line-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #4CAF50, #8BC34A);
+    width: 40%;
+    border-radius: 2px;
+  }
+  .prog-dot {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 2px solid #555;
+    background: #111;
+    position: relative;
+    z-index: 1;
+    margin: 0 18px;
+    transition: background 0.3s;
+  }
+  .prog-dot.start { background: #4CAF50; border-color: #4CAF50; box-shadow: 0 0 6px #4CAF50; }
+  .prog-dot.done  { background: #4CAF50; border-color: #4CAF50; }
+  .prog-dot.active { background: #fff; border-color: #fff; box-shadow: 0 0 8px #fff; }
+  .prog-dot.boss  { background: #c0392b; border-color: #e74c3c; width: 18px; height: 18px; }
+  .prog-dot.boss.done  { background: #8e0000; }
+
+  /* ── QUEST PANEL (right) ─────────────────────────────────── */
+  .quest-panel {
+    position: absolute;
+    top: 70px; right: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .quest-icon {
+    width: 38px; height: 38px;
+    border-radius: 8px;
+    background: rgba(0,0,0,0.6);
+    border: 1px solid rgba(255,200,50,0.5);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    box-shadow: 0 0 8px rgba(255,200,50,0.2);
+  }
+
+  /* ── COMBO DISPLAY (center) ──────────────────────────────── */
+  .combo-display {
+    position: absolute;
+    top: 38%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    pointer-events: none;
+  }
+  .combo-text {
+    font-size: 28px;
+    font-weight: 900;
+    color: #FFD700;
+    text-shadow:
+      0 0 10px rgba(255,215,0,0.8),
+      2px 2px 0 #8B0000,
+      -1px -1px 0 #000;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    opacity: 0.9;
+  }
+
+  /* Damage number */
+  .damage-number {
+    position: absolute;
+    font-size: 22px;
+    font-weight: 900;
+    color: #FF4444;
+    text-shadow: 1px 1px 0 #000, -1px -1px 0 #000;
+    opacity: 0.85;
+  }
+
+  /* ── BOTTOM LEFT: Player health + status ─────────────────── */
+  .bottom-left {
+    position: absolute;
+    bottom: 56px; left: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 220px;
+  }
+
+  /* Status effects row */
+  .status-effects {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 2px;
+  }
+  .effect-badge {
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    background: rgba(0,0,0,0.7);
+    border: 1px solid rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    font-size: 14px;
+  }
+  .effect-stack {
+    position: absolute;
+    bottom: -3px; right: -3px;
+    background: #e74c3c;
+    color: #fff;
+    font-size: 8px;
+    font-weight: 700;
+    border-radius: 50%;
+    width: 13px; height: 13px;
+    display: flex; align-items: center; justify-content: center;
+    border: 1px solid #000;
+  }
+  .effect-badge.fire   { border-color: rgba(255,100,0,0.6); box-shadow: 0 0 6px rgba(255,80,0,0.3); }
+  .effect-badge.water  { border-color: rgba(50,150,255,0.6); box-shadow: 0 0 6px rgba(50,150,255,0.3); }
+  .effect-badge.poison { border-color: rgba(100,220,50,0.6); box-shadow: 0 0 6px rgba(100,220,50,0.3); }
+
+  /* Player name + level */
+  .player-label {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+  .player-name {
+    font-size: 12px;
+    font-weight: 700;
+    color: #ddd;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+  .player-level {
+    font-size: 10px;
+    color: #888;
+  }
+
+  /* Health bar */
+  .health-bar-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .bar-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .bar-label {
+    font-size: 10px;
+    color: #aaa;
+    width: 16px;
+    text-align: right;
+    letter-spacing: 0.5px;
+    flex-shrink: 0;
+  }
+  .bar-track {
+    flex: 1;
+    height: 14px;
+    background: rgba(0,0,0,0.6);
+    border-radius: 7px;
+    border: 1px solid rgba(255,255,255,0.12);
+    overflow: hidden;
+    position: relative;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 7px;
+    position: relative;
+  }
+  .bar-fill.hp {
+    width: 72%;
+    background: linear-gradient(90deg, #1a7a1a, #2ecc71);
+    box-shadow: 0 0 8px rgba(46,204,113,0.4);
+  }
+  .bar-fill.hp.low {
+    width: 22%;
+    background: linear-gradient(90deg, #7a1a1a, #e74c3c);
+    box-shadow: 0 0 8px rgba(231,76,60,0.5);
+  }
+  .bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 40%;
+    background: rgba(255,255,255,0.15);
+    border-radius: 7px 7px 0 0;
+  }
+  .bar-text {
+    font-size: 10px;
+    color: #ccc;
+    width: 55px;
+    text-align: right;
+    flex-shrink: 0;
+    letter-spacing: 0.3px;
+  }
+
+  /* ── BOTTOM: Ability Bar ────────────────────────────────── */
+  .ability-bar {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 12px;
+    padding: 6px 10px;
+    backdrop-filter: blur(4px);
+  }
+  .ability-slot {
+    width: 48px; height: 48px;
+    border-radius: 8px;
+    background: rgba(20,20,30,0.9);
+    border: 1px solid rgba(255,255,255,0.2);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    overflow: hidden;
+  }
+  .ability-slot.ready {
+    border-color: rgba(100,180,255,0.5);
+    box-shadow: 0 0 8px rgba(100,180,255,0.2), inset 0 0 8px rgba(100,180,255,0.05);
+  }
+  .ability-slot.active-slot {
+    border-color: rgba(255,215,0,0.8);
+    box-shadow: 0 0 12px rgba(255,215,0,0.4), inset 0 0 8px rgba(255,215,0,0.1);
+  }
+  /* cooldown overlay */
+  .cooldown-overlay {
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    background: rgba(0,0,0,0.65);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .cooldown-text {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    text-shadow: 0 1px 3px #000;
+  }
+  /* radial cooldown fill */
+  .cooldown-radial {
+    position: absolute;
+    inset: 0;
+    border-radius: 7px;
+    background: conic-gradient(
+      transparent 0deg,
+      transparent 108deg,
+      rgba(0,0,0,0.6) 108deg,
+      rgba(0,0,0,0.6) 360deg
+    );
+  }
+  .key-hint {
+    position: absolute;
+    bottom: 2px; right: 4px;
+    font-size: 8px;
+    color: rgba(255,255,255,0.4);
+    font-weight: 700;
+  }
+  .slot-divider {
+    width: 1px;
+    background: rgba(255,255,255,0.1);
+    margin: 4px 2px;
+    align-self: stretch;
+  }
+
+  /* ── LABELS (annotation mode) ──────────────────────────── */
+  .label {
+    position: absolute;
+    background: rgba(255,220,50,0.15);
+    border: 1px dashed rgba(255,220,50,0.4);
+    border-radius: 4px;
+    color: rgba(255,220,50,0.9);
+    font-size: 9px;
+    padding: 2px 5px;
+    pointer-events: none;
+    white-space: nowrap;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+  }
+
+  /* ── LEGEND ─────────────────────────────────────────────── */
+  .legend {
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    background: rgba(0,0,0,0.75);
+    border-top: 1px solid #333;
+    padding: 6px 14px;
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: #888;
+  }
+  .legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+  }
+  .new { background: #4CAF50; }
+  .existing { background: #3498db; }
+
+  /* Toggle button */
+  .controls {
+    position: absolute;
+    top: 8px; right: 8px;
+    display: flex; gap: 6px;
+    z-index: 10;
+    pointer-events: all;
+  }
+  .btn {
+    font-size: 10px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    border: 1px solid #555;
+    background: rgba(0,0,0,0.7);
+    color: #ccc;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+  }
+  .btn:hover { background: rgba(60,60,60,0.8); color: #fff; }
+  .btn.active { border-color: rgba(255,220,50,0.6); color: rgba(255,220,50,0.9); }
+</style>
+</head>
+<body>
+
+<div class="viewport">
+
+  <!-- World background -->
+  <div class="world-bg"></div>
+  <div class="world-grid"></div>
+
+  <!-- Fake enemy 1 -->
+  <div class="enemy" style="left:280px; top:140px;">
+    <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:65%"></div></div>
+    <div class="enemy-hp-text">65 / 100</div>
+    <div class="enemy-wrap">
+      <div class="enemy-head"></div>
+      <div class="enemy-body"></div>
+    </div>
+  </div>
+
+  <!-- Fake enemy 2 -->
+  <div class="enemy" style="left:460px; top:120px;">
+    <div class="enemy-hp-bar"><div class="enemy-hp-fill" style="width:100%"></div></div>
+    <div class="enemy-hp-text">100 / 100</div>
+    <div class="enemy-wrap">
+      <div class="enemy-head"></div>
+      <div class="enemy-body" style="height:95px; width:54px;"></div>
+    </div>
+  </div>
+
+  <!-- Fake enemy 3 (boss, bigger) -->
+  <div class="enemy" style="left:580px; top:95px;">
+    <div class="enemy-hp-bar" style="width:110px;"><div class="enemy-hp-fill" style="width:88%"></div></div>
+    <div class="enemy-hp-text">176 / 200 — BOSS</div>
+    <div class="enemy-wrap">
+      <div class="enemy-head" style="width:40px;height:40px;"></div>
+      <div class="enemy-body" style="width:64px;height:110px;"></div>
+    </div>
+  </div>
+
+  <!-- Damage number floating -->
+  <div class="damage-number" style="left:310px; top:100px;">-38</div>
+
+  <!-- HUD Layer -->
+  <div class="hud">
+
+    <!-- TOP BAR -->
+    <div class="top-bar">
+      <!-- Turn counter -->
+      <div class="turn-counter">
+        <span class="turn-label">Turn</span>
+        <span class="turn-value">3</span>
+        <span class="turn-divider">/</span>
+        <span class="turn-value">10</span>
+        <div class="stars">
+          <span class="star">★</span>
+          <span class="star">★</span>
+          <span class="star dim">★</span>
+        </div>
+      </div>
+
+      <!-- Level progress dots -->
+      <div class="level-progress">
+        <div class="progress-line"><div class="progress-line-fill"></div></div>
+        <div class="prog-dot start"></div>
+        <div class="prog-dot done"></div>
+        <div class="prog-dot active"></div>
+        <div class="prog-dot"></div>
+        <div class="prog-dot boss"></div>
+      </div>
+    </div>
+
+    <!-- Quest panel -->
+    <div class="quest-panel">
+      <div class="quest-icon">⚔️</div>
+      <div class="quest-icon">📜</div>
+    </div>
+
+    <!-- Combo display -->
+    <div class="combo-display">
+      <div class="combo-text">TRIPLE COMBO!</div>
+    </div>
+
+    <!-- Bottom-left: status effects + health bar -->
+    <div class="bottom-left">
+      <div class="status-effects">
+        <div class="effect-badge fire">🔥<div class="effect-stack">2</div></div>
+        <div class="effect-badge water">💧<div class="effect-stack">1</div></div>
+        <div class="effect-badge poison">☠️</div>
+      </div>
+      <div class="player-label">
+        <span class="player-name">Hero</span>
+        <span class="player-level">Lv. 5</span>
+      </div>
+      <div class="health-bar-wrap">
+        <div class="bar-row">
+          <span class="bar-label">HP</span>
+          <div class="bar-track">
+            <div class="bar-fill hp"></div>
+          </div>
+          <span class="bar-text">72 / 100</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ability bar -->
+    <div class="ability-bar">
+      <!-- Attack (active/ready) -->
+      <div class="ability-slot active-slot">
+        ⚔️
+        <span class="key-hint">Q</span>
+      </div>
+
+      <!-- Ability on turn-based cooldown -->
+      <div class="ability-slot">
+        🌀
+        <div class="cooldown-overlay">
+          <span class="cooldown-text">2t</span>
+        </div>
+        <span class="key-hint">W</span>
+      </div>
+
+      <!-- Ability on time-based cooldown -->
+      <div class="ability-slot">
+        ✨
+        <div class="cooldown-radial"></div>
+        <div class="cooldown-overlay" style="background:transparent;">
+          <span class="cooldown-text">3s</span>
+        </div>
+        <span class="key-hint">E</span>
+      </div>
+
+      <div class="slot-divider"></div>
+
+      <!-- Item slot ready -->
+      <div class="ability-slot ready">
+        🧪
+        <span class="key-hint">R</span>
+      </div>
+
+      <!-- Item slot empty -->
+      <div class="ability-slot" style="opacity:0.3;">
+        ·
+        <span class="key-hint">F</span>
+      </div>
+    </div>
+
+    <!-- Annotation labels (toggle with button) -->
+    <div id="labels">
+      <div class="label" style="top:12px; left:50%; transform:translateX(-50%) translateY(0px);">TurnCounterHUD — NEW</div>
+      <div class="label" style="top:50px; left:50%; transform:translateX(-50%);">LevelProgressIndicator — EXISTING</div>
+      <div class="label" style="top:72px; right:56px;">QuestPanel — EXISTING</div>
+      <div class="label" style="top:36%; left:50%; transform:translateX(-50%);">ComboDisplay — EXISTING</div>
+      <div class="label" style="bottom:108px; left:12px;">PlayerStatusEffectsHUD — NEW</div>
+      <div class="label" style="bottom:80px; left:12px;">PlayerHealthBarHUD — NEW</div>
+      <div class="label" style="bottom:10px; left:50%; transform:translateX(-50%) translateY(-60px);">AbilityCooldownHUD — NEW</div>
+      <div class="label" style="top:135px; left:230px;">HealthBarUI (world-space) — EXISTING</div>
+      <div class="label" style="top:95px; left:355px;">DamagePopupManager — EXISTING</div>
+    </div>
+
+  </div><!-- /hud -->
+
+  <!-- Controls -->
+  <div class="controls">
+    <button class="btn active" id="toggleLabels">Labels ON</button>
+    <button class="btn" id="toggleDamage">HP: Normal</button>
+  </div>
+
+</div><!-- /viewport -->
+
+<script>
+  const labelsEl = document.getElementById('labels');
+  const toggleLabels = document.getElementById('toggleLabels');
+  let labelsOn = true;
+  toggleLabels.addEventListener('click', () => {
+    labelsOn = !labelsOn;
+    labelsEl.style.display = labelsOn ? '' : 'none';
+    toggleLabels.textContent = labelsOn ? 'Labels ON' : 'Labels OFF';
+    toggleLabels.classList.toggle('active', labelsOn);
+  });
+
+  // Toggle between normal and low HP state
+  const toggleDamage = document.getElementById('toggleDamage');
+  const hpFill = document.querySelector('.bar-fill.hp');
+  const hpText = document.querySelector('.bar-text');
+  let lowHp = false;
+  toggleDamage.addEventListener('click', () => {
+    lowHp = !lowHp;
+    hpFill.classList.toggle('low', lowHp);
+    hpText.textContent = lowHp ? '18 / 100' : '72 / 100';
+    toggleDamage.textContent = lowHp ? 'HP: Critical' : 'HP: Normal';
+    toggleDamage.classList.toggle('active', lowHp);
+  });
+</script>
+
+</body>
+</html>
