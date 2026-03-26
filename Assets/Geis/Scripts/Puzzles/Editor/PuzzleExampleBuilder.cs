@@ -63,6 +63,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "SWORD BREAK\nHit zone to open door\n[Physical Realm]",
+                new Vector3(0f, 4f, 0f), new Color(1f, 0.5f, 0.3f));
         }
 
         static void CreateSoulPulse(GameObject root, float x, float z)
@@ -82,6 +84,8 @@ namespace Geis.Puzzles.Editor
             SetComponent(output, "barrierCollider", barrier.GetComponent<Collider>());
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "SOUL PULSE\nPulse node to dissolve barrier\n[Soul Realm]",
+                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.6f, 1f));
         }
 
         static void CreateBowTarget(GameObject root, float x, float z)
@@ -104,6 +108,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "raisedOffset", new Vector3(0f, 3f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "BOW TARGET\nShoot sphere to raise block\n[Physical Realm]",
+                new Vector3(0f, 4f, 0f), new Color(0f, 0.9f, 1f));
         }
 
         static void CreateBowMarkShoot(GameObject root, float x, float z)
@@ -126,6 +132,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "BOW MARK + SHOOT\nMark in soul realm, shoot in physical\n[Both Realms]",
+                new Vector3(0f, 4f, 0f), new Color(0.9f, 0.95f, 0.2f));
         }
 
         static void CreateDaggerSocket(GameObject root, float x, float z)
@@ -151,6 +159,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "raisedOffset", new Vector3(0f, 3f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "DAGGER SOCKET\nTag object 'DaggerMovable', place in socket\n[Physical Realm]",
+                new Vector3(0f, 4f, 0f), new Color(1f, 0.6f, 0.1f));
         }
 
         // ── Row 1 ────────────────────────────────────────────────────────────────
@@ -187,6 +197,8 @@ namespace Geis.Puzzles.Editor
             SetComponent(movOutput, "platformMover", mover);
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { movOutput });
+            CreateWorldLabel(parent, "PRESSURE PLATE\nStand on plate to move platform\n[Soul Realm]",
+                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.9f, 0.4f));
         }
 
         static void CreateSequence(GameObject root, float x, float z)
@@ -213,6 +225,9 @@ namespace Geis.Puzzles.Editor
                 var sw = stepGo.AddComponent<SoulSwitchTrigger>();
                 SetEnum(sw, "realmMode", (int)PuzzleRealmMode.SoulOnly);
                 steps[i] = sw;
+
+                // Numbered order label above each step
+                CreateWorldLabel(stepGo, $"{i + 1}", new Vector3(0f, 1.5f, 0f), stepColors[i], 24);
             }
 
             // Sequence trigger holder (invisible)
@@ -230,6 +245,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { seq }, new Component[] { output });
+            CreateWorldLabel(parent, "SEQUENCE\nActivate steps 1→2→3 in order\n[Soul Realm]",
+                new Vector3(0f, 4f, 0f), new Color(0.9f, 0.5f, 0.9f));
         }
 
         static void CreateAlignmentDial(GameObject root, float x, float z)
@@ -257,6 +274,8 @@ namespace Geis.Puzzles.Editor
             SetComponent(output, "barrierCollider", barrier.GetComponent<Collider>());
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
+            CreateWorldLabel(parent, "ALIGNMENT DIAL\nHold E + move to rotate to 90°\n[Soul Realm]",
+                new Vector3(0f, 4f, 0f), new Color(1f, 0.85f, 0.1f));
         }
 
         static void CreateDualRealm(GameObject root, float x, float z)
@@ -295,6 +314,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { dual }, new Component[] { output });
+            CreateWorldLabel(parent, "DUAL REALM\nActivate soul switch AND stand on plate\n[Both Realms]",
+                new Vector3(0f, 4f, 0f), new Color(0.8f, 0.4f, 1f));
         }
 
         static void CreateEchoImprint(GameObject root, float x, float z)
@@ -316,6 +337,8 @@ namespace Geis.Puzzles.Editor
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { echo }, new Component[] { output });
+            CreateWorldLabel(parent, "ECHO IMPRINT\nPress F in soul realm to leave echo\n[Soul Realm]",
+                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.85f, 0.95f));
         }
 
         // ── Wiring ───────────────────────────────────────────────────────────────
@@ -390,6 +413,29 @@ namespace Geis.Puzzles.Editor
 
         static float Col(int c) => c * ColSpacing;
         static float Row(int r) => r * RowSpacing;
+
+        // ── World-space text labels (visible during Play mode) ────────────────────
+
+        /// <summary>
+        /// Creates a child GameObject with a <see cref="TextMesh"/> so the label is visible
+        /// in the 3D world during Play mode (no TMP required).
+        /// </summary>
+        static void CreateWorldLabel(GameObject parent, string text, Vector3 localPos,
+            Color col, int fontSize = 14)
+        {
+            var go = new GameObject("Label_" + text.Split('\n')[0]);
+            go.transform.SetParent(parent.transform, false);
+            go.transform.localPosition = localPos;
+            Undo.RegisterCreatedObjectUndo(go, "Create Puzzle Examples");
+
+            var tm = go.AddComponent<TextMesh>();
+            tm.text      = text;
+            tm.fontSize  = fontSize;
+            tm.color     = col;
+            tm.anchor    = TextAnchor.LowerCenter;
+            tm.alignment = TextAlignment.Center;
+            tm.characterSize = 0.12f;
+        }
 
         // ── SerializedObject field helpers ────────────────────────────────────────
 
