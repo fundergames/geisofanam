@@ -68,18 +68,28 @@ namespace RogueDeal.Boss
 
         private void OnEnable()
         {
-            BossController.OnHealthChanged += HandleHealthChanged;
-            BossController.OnPhaseChanged += HandlePhaseChanged;
-            BossController.OnImmunityChanged += HandleImmunityChanged;
+            // Generic boss (BossController)
+            BossController.OnHealthChanged          += HandleHealthChanged;
+            BossController.OnPhaseChanged           += HandlePhaseChanged;
+            BossController.OnImmunityChanged        += HandleImmunityChanged;
             BossController.OnPhaseTransitionMessage += HandlePhaseTransitionMessage;
+
+            // Giant boss (GiantBossController)
+            GiantBossController.OnSoulsChanged  += HandleHealthChanged;   // same (float,float) signature
+            GiantBossController.OnPhaseChanged  += HandlePhaseChanged;
+            GiantBossController.OnPhaseMessage  += HandlePhaseTransitionMessage;
         }
 
         private void OnDisable()
         {
-            BossController.OnHealthChanged -= HandleHealthChanged;
-            BossController.OnPhaseChanged -= HandlePhaseChanged;
-            BossController.OnImmunityChanged -= HandleImmunityChanged;
+            BossController.OnHealthChanged          -= HandleHealthChanged;
+            BossController.OnPhaseChanged           -= HandlePhaseChanged;
+            BossController.OnImmunityChanged        -= HandleImmunityChanged;
             BossController.OnPhaseTransitionMessage -= HandlePhaseTransitionMessage;
+
+            GiantBossController.OnSoulsChanged  -= HandleHealthChanged;
+            GiantBossController.OnPhaseChanged  -= HandlePhaseChanged;
+            GiantBossController.OnPhaseMessage  -= HandlePhaseTransitionMessage;
         }
 
         // ── Public API ─────────────────────────────────────────────────────────────

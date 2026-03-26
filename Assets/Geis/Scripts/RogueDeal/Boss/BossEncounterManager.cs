@@ -18,8 +18,10 @@ namespace RogueDeal.Boss
         // ── Inspector ──────────────────────────────────────────────────────────────
 
         [Header("References")]
-        [Tooltip("The BossController driving the fight. Auto-located in children if null.")]
+        [Tooltip("Generic boss controller (Soul Warden phase-based). Auto-located in children if null.")]
         [SerializeField] private BossController bossController;
+        [Tooltip("Giant boss controller (fist-slam / soul-drain encounter). Takes priority when assigned.")]
+        [SerializeField] private GiantBossController giantBossController;
         [Tooltip("The player's CombatEntity. Auto-located in scene if null.")]
         [SerializeField] private CombatEntity playerEntity;
         [Tooltip("Boss health bar UI. Auto-located in scene if null.")]
@@ -55,6 +57,9 @@ namespace RogueDeal.Boss
 
         private void Awake()
         {
+            if (giantBossController == null)
+                giantBossController = GetComponentInChildren<GiantBossController>(true);
+
             if (bossController == null)
                 bossController = GetComponentInChildren<BossController>(true);
 
@@ -64,14 +69,16 @@ namespace RogueDeal.Boss
 
         private void OnEnable()
         {
-            BossController.OnBossDefeated += HandleBossDefeated;
-            CombatEvents.OnDamageApplied += HandleDamageApplied;
+            BossController.OnBossDefeated      += HandleBossDefeated;
+            GiantBossController.OnBossDefeated += HandleBossDefeated;
+            CombatEvents.OnDamageApplied       += HandleDamageApplied;
         }
 
         private void OnDisable()
         {
-            BossController.OnBossDefeated -= HandleBossDefeated;
-            CombatEvents.OnDamageApplied -= HandleDamageApplied;
+            BossController.OnBossDefeated      -= HandleBossDefeated;
+            GiantBossController.OnBossDefeated -= HandleBossDefeated;
+            CombatEvents.OnDamageApplied       -= HandleDamageApplied;
         }
 
         private void Start()
@@ -84,14 +91,15 @@ namespace RogueDeal.Boss
 
         /// <summary>
         /// Begins the boss encounter. Safe to call from trigger volumes or cutscene scripts.
+        /// Prefers GiantBossController when assigned; falls back to BossController.
         /// </summary>
         public void StartEncounter()
         {
             if (_encounterActive) return;
 
-            if (bossController == null)
+            if (giantBossController == null && bossController == null)
             {
-                Debug.LogError("[BossEncounterManager] No BossController found — cannot start encounter.");
+                Debug.LogError("[BossEncounterManager] No boss controller found — cannot start encounter.");
                 return;
             }
 
@@ -101,7 +109,11 @@ namespace RogueDeal.Boss
 
             _encounterActive = true;
 
-            bossController.StartEncounter(playerEntity);
+            if (giantBossController != null)
+                giantBossController.StartEncounter(playerEntity);
+            else
+                bossController.StartEncounter(playerEntity);
+
             bossHealthUI?.Show();
 
             OnEncounterStarted?.Invoke();
