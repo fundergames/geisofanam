@@ -1,0 +1,358 @@
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using Geis.Animation;
+using UnityEngine;
+using UnityEngine.Playables;
+using UnityEngine.Timeline;
+using RogueDeal.Combat.Core.Data;
+using RogueDeal.Combat.Core.Effects;
+using RogueDeal.Combat.Core.Cooldowns;
+using RogueDeal.Combat.Core.Targeting;
+using RogueDeal.Combat;
+
+namespace RogueDeal.Combat.Presentation
+{
+    public partial class CombatExecutor
+    {
+        /// <summary>
+        /// Starts a combo attack using Timeline
+        /// </summary>
+        private void StartTimelineCombo(CombatAction action)
+        {
+            currentComboHit = 0;
+            
+            if (timelineDirector == null)
+            {
+                Debug.LogWarning("[CombatExecutor] Cannot start Timeline combo - PlayableDirector is null");
+                ApplyEffectsToTargets(action.effects);
+                CompleteAction();
+                return;
+            }
+            
+            if (action.timelineAsset == null)
+            {
+                Debug.LogWarning("[CombatExecutor] Cannot start Timeline combo - TimelineAsset is null");
+                ApplyEffectsToTargets(action.effects);
+                CompleteAction();
+                return;
+            }
+            
+            Debug.Log($"[CombatExecutor] Starting Timeline combo: {action.timelineAsset.name}");
+            
+            // Rotate character so animation forward (Z) points in the desired direction
+            // Animations control movement direction directly - we just orient the character
+            // Two scenarios:
+            // 1. Combat with targets: Rotate so animation forward (Z) points at target
+            // 2. Open-world/player-controlled: Use character's current facing direction (no rotation needed)
+            
+            bool shouldRotateToTarget = currentTargets != null && currentTargets.Count > 0 && currentTargetPosition != Vector3.zero;
+            
+            if (shouldRotateToTarget)
+            {
+                Vector3 directionToTarget = (currentTargetPosition - transform.position);
+                directionToTarget.y = 0; // Keep rotation horizontal
+                
+                if (directionToTarget.magnitude > 0.01f)
+                {
+                    directionToTarget.Normalize();
+                    
+                    // Rotate character so animation forward (Z) points at target
+                    // This ensures the animation's root motion moves toward the target
+                    // LookRotation makes transform.forward (Z) point at the target
+                    Quaternion targetRotation = Quaternion.LookRotation(directionToTarget);
+                    transform.rotation = targetRotation;
+                    
+                    Debug.Log($"[CombatExecutor] Rotated character so animation forward (Z) points at target.");
+                    Debug.Log($"[CombatExecutor]   Target position: {currentTargetPosition}, Character position: {transform.position}");
+                    Debug.Log($"[CombatExecutor]   Target direction: {directionToTarget}");
+                    Debug.Log($"[CombatExecutor]   Rotation applied: {targetRotation.eulerAngles}");
+                }
+            }
+            else
+            {
+                // Open-world/player-controlled - use character's current facing direction
+                // Animation will move in its forward direction (Z), which should match where player is facing
+                Debug.Log($"[CombatExecutor] Using character's current facing direction for dash (open-world/player-controlled mode).");
+                Debug.Log($"[CombatExecutor]   Character position: {transform.position}");
+                Debug.Log($"[CombatExecutor]   Character rotation: {transform.rotation.eulerAngles}");
+            }
+            
+            // Set up Timeline
+            timelineDirector.playableAsset = action.timelineAsset;
+            
+            // Store starting position for root motion continuity
+            Vector3 timelineStartPosition = transform.position;
+            
+            // Enable root motion on animator
+            if (animator != null)
+            {
+                animator.applyRootMotion = true;
+            }
+            
+            // Bind tracks to actual GameObjects
+            foreach (var output in action.timelineAsset.outputs)
+            {
+                string trackName = output.streamName;
+                
+                // Bind Attacker/Character track to this entity's animator
+                if (trackName.Contains("Attacker") || trackName.Contains("Character") || trackName.Contains("Player"))
+                {
+                    if (animator != null)
+                    {
+                        timelineDirector.SetGenericBinding(output.sourceObject, animator.gameObject);
+                        Debug.Log($"[CombatExecutor] Bound '{trackName}' to {animator.gameObject.name}");
+                        
+                        // Try to disable Timeline's position control on the Animation Track
+                        // This prevents Timeline from resetting position between clips
+                        var animationTrack = output.sourceObject as UnityEngine.Timeline.AnimationTrack;
+                        if (animationTrack != null)
+                        {
+                            // CRITICAL: Timeline's Animation Track applies position in LOCAL SPACE
+                            // but root motion is in WORLD SPACE. This mismatch causes resets.
+                            // We can't disable it programmatically, but we'll override in LateUpdate.
+                            // USER MUST: In Timeline asset, select Animation Track → Inspector → 
+                            // "Apply Transform Offsets" → UNCHECK "Position"
+                            Debug.Log($"[CombatExecutor] Animation Track found - position will be manually controlled. " +
+                                     $"IMPORTANT: In Timeline asset, disable 'Apply Transform Offsets' → 'Position' on the Animation Track!");
+                        }
+                    }
+                }
+                // Bind Target track to first target
+                else if (trackName.Contains("Target") && currentTargets != null && currentTargets.Count > 0)
+                {
+                    var targetAnimator = currentTargets[0].GetComponentInChildren<Animator>();
+                    if (targetAnimator != null)
+                    {
+                        timelineDirector.SetGenericBinding(output.sourceObject, targetAnimator.gameObject);
+                        Debug.Log($"[CombatExecutor] Bound '{trackName}' to {targetAnimator.gameObject.name}");
+                    }
+                }
+                // Bind Signal track to this executor (for Timeline signals/events)
+                else if (output.outputTargetType == typeof(PlayableDirector))
+                {
+                    timelineDirector.SetGenericBinding(output.sourceObject, timelineDirector);
+                }
+            }
+            
+            // Enable root motion on animator for Timeline
+            if (animator != null)
+            {
+                // CRITICAL: Enable root motion BEFORE Timeline plays
+                animator.applyRootMotion = true;
+                
+                // Verify root motion is actually enabled
+                if (!animator.applyRootMotion)
+                {
+                    Debug.LogError($"[CombatExecutor] CRITICAL: Failed to enable root motion! This will prevent animations from moving the character.");
+                }
+                
+                // CRITICAL: Disable Timeline's position control by setting the Animation Track's position offset mode
+                // We'll handle position entirely through root motion
+                // Also try to disable any position control at the Animator level
+                Debug.Log($"[CombatExecutor] Animator root motion enabled: {animator.applyRootMotion}");
+                Debug.Log($"[CombatExecutor] Position will be controlled by root motion, not Timeline offsets.");
+                Debug.Log($"[CombatExecutor] CRITICAL SETUP STEPS:");
+                Debug.Log($"[CombatExecutor]   1. Timeline Animation Track → Inspector → 'Apply Transform Offsets' → UNCHECK 'Position'");
+                Debug.Log($"[CombatExecutor]   2. Timeline Animation Track → Inspector → 'Track Offsets' → Set to 'None' or 'Apply Scene Offsets'");
+                Debug.Log($"[CombatExecutor]   3. Each Animation Clip → Inspector → 'Clip Transform Offsets' → Position should be (0,0,0)");
+                Debug.Log($"[CombatExecutor]   4. Animation Clip Import → 'Root Transform Position (XZ)' → MUST be 'Root Transform Position (XZ)' (NOT 'Bake Into Pose')");
+            }
+            
+            // Subscribe to Timeline stopped event
+            timelineDirector.stopped += OnTimelineStopped;
+            
+            // Start root motion tracking BEFORE playing Timeline
+            if (rootMotionController != null)
+            {
+                rootMotionController.StartTracking(timelineDirector);
+            }
+            
+            // Check Timeline duration and clips
+            if (action.timelineAsset != null)
+            {
+                int clipCount = 0;
+                foreach (var output in action.timelineAsset.outputs)
+                {
+                    var animationTrack = output.sourceObject as UnityEngine.Timeline.AnimationTrack;
+                    if (animationTrack != null)
+                    {
+                        foreach (var clip in animationTrack.GetClips())
+                        {
+                            clipCount++;
+                            Debug.Log($"[CombatExecutor] Timeline clip {clipCount}: {clip.displayName}, Duration: {clip.duration}s, Start: {clip.start}s");
+                        }
+                    }
+                }
+                Debug.Log($"[CombatExecutor] Timeline duration: {action.timelineAsset.duration} seconds, Total clips: {clipCount}, Outputs: {action.timelineAsset.outputs.Count()}");
+                
+                if (clipCount == 0)
+                {
+                    Debug.LogError("[CombatExecutor] Timeline has NO animation clips! Add clips to the Animation Track in the Timeline asset.");
+                }
+                else if (clipCount < 3)
+                {
+                    Debug.LogWarning($"[CombatExecutor] Timeline has only {clipCount} clip(s), expected 3. Add more clips to test seamless transitions.");
+                }
+            }
+            
+            // Play Timeline
+            timelineDirector.Play();
+            
+            // Verify Timeline is actually playing
+            if (timelineDirector.state != PlayState.Playing)
+            {
+                Debug.LogWarning($"[CombatExecutor] Timeline did not start playing! State: {timelineDirector.state}");
+            }
+            else
+            {
+                Debug.Log($"[CombatExecutor] Timeline is playing. Duration: {timelineDirector.duration}s");
+            }
+            
+            // Monitor Timeline playback for debugging (optional)
+            StartCoroutine(MonitorTimelinePlayback());
+            
+            // Apply effects after Timeline duration (or via Timeline signals)
+            StartCoroutine(ApplyEffectsAfterTimeline(action));
+        }
+        
+        /// <summary>
+        /// Verifies that Timeline actually started playing
+        /// </summary>
+        private IEnumerator VerifyTimelinePlaying()
+        {
+            yield return null; // Wait one frame for Timeline to start
+            
+            if (timelineDirector == null)
+            {
+                Debug.LogError("[CombatExecutor] Timeline director is null!");
+                yield break;
+            }
+            
+            Debug.Log($"[CombatExecutor] Timeline state after start: {timelineDirector.state}, Duration: {timelineDirector.duration}s, Time: {timelineDirector.time}s");
+            
+            if (timelineDirector.state != PlayState.Playing)
+            {
+                Debug.LogError($"[CombatExecutor] Timeline did not start playing! State: {timelineDirector.state}. Check that the Timeline asset has clips and is properly configured.");
+            }
+            else if (timelineDirector.duration <= 0)
+            {
+                Debug.LogWarning($"[CombatExecutor] Timeline has zero duration! It will finish immediately. Check that your Timeline asset has animation clips.");
+            }
+        }
+        
+        /// <summary>
+        /// Called when Timeline finishes playing
+        /// </summary>
+        private void OnTimelineStopped(PlayableDirector director)
+        {
+            if (director == timelineDirector && currentAction != null)
+            {
+                Debug.Log($"[CombatExecutor] Timeline finished. Final position before stop: {transform.position}");
+                timelineDirector.stopped -= OnTimelineStopped;
+                
+                // Stop root motion tracking (this will enforce final position one last time)
+                if (rootMotionController != null)
+                {
+                    Vector3 accumulated = rootMotionController.GetAccumulatedPosition();
+                    Debug.Log($"[CombatExecutor] Root motion accumulated before stop: {accumulated}");
+                    
+                    rootMotionController.StopTracking();
+                    
+                    // Wait a few frames to ensure position is locked after Timeline cleanup
+                    StartCoroutine(EnsureFinalPositionAfterTimeline());
+                }
+                
+                // Effects should have been applied via Timeline signals, but apply as fallback
+                if (currentAction != null && currentTargets != null)
+                {
+                    ApplyEffectsToTargets(currentAction.effects);
+                }
+                
+                CompleteAction();
+            }
+        }
+        
+        /// <summary>
+        /// Ensures final position is preserved after Timeline stops (Timeline might reset it during cleanup)
+        /// </summary>
+        private IEnumerator EnsureFinalPositionAfterTimeline()
+        {
+            if (rootMotionController == null) yield break;
+            
+            // Wait a few frames for Timeline to finish cleanup
+            yield return null; // Frame 1
+            yield return null; // Frame 2
+            yield return null; // Frame 3
+            
+            // Get the expected final position from root motion controller
+            Vector3 expectedPosition = rootMotionController.GetLastValidPosition();
+            float distanceFromExpected = Vector3.Distance(transform.position, expectedPosition);
+            
+            if (distanceFromExpected > 0.01f)
+            {
+                Debug.LogWarning($"[CombatExecutor] Timeline reset position after stop! Expected: {expectedPosition}, Was: {transform.position}, Restoring...");
+                transform.position = expectedPosition;
+            }
+        }
+        
+        /// <summary>
+        /// Monitors Timeline playback for debugging (optional - root motion controller handles the actual work)
+        /// </summary>
+        private IEnumerator MonitorTimelinePlayback()
+        {
+            yield return null; // Wait a frame for Timeline to start
+            
+            if (timelineDirector == null) yield break;
+            
+            double lastTimelineTime = 0;
+            float startTime = Time.time;
+            int frameCount = 0;
+            
+            Debug.Log($"[CombatExecutor] Monitoring Timeline playback. Duration: {timelineDirector.duration}s");
+            
+            while (timelineDirector != null && timelineDirector.state == PlayState.Playing)
+            {
+                frameCount++;
+                double currentTimelineTime = timelineDirector.time;
+                
+                // Log clip transitions for debugging
+                if (lastTimelineTime > 0)
+                {
+                    bool crossedBoundary = (lastTimelineTime < 0.6 && currentTimelineTime >= 0.6) ||
+                                          (lastTimelineTime < 1.07 && currentTimelineTime >= 1.07);
+                    
+                    if (crossedBoundary)
+                    {
+                        Debug.Log($"[CombatExecutor] Clip transition at Timeline time {currentTimelineTime:F2}s. Position: {transform.position}");
+                    }
+                }
+                
+                lastTimelineTime = currentTimelineTime;
+                yield return null;
+            }
+            
+            float elapsedTime = Time.time - startTime;
+            Debug.Log($"[CombatExecutor] Timeline playback complete. Ran for {elapsedTime:F2}s ({frameCount} frames). Final position: {transform.position}");
+        }
+        
+        /// <summary>
+        /// Applies effects after Timeline duration (fallback if Timeline signals aren't set up)
+        /// </summary>
+        private IEnumerator ApplyEffectsAfterTimeline(CombatAction action)
+        {
+            if (action.timelineAsset != null)
+            {
+                yield return new WaitForSeconds((float)action.timelineAsset.duration);
+                
+                // Only apply if Timeline hasn't already finished (check if still executing)
+                if (currentAction == action && currentTargets != null && isExecuting)
+                {
+                    Debug.Log("[CombatExecutor] Applying effects after Timeline (Timeline signals not set up)");
+                    ApplyEffectsToTargets(action.effects);
+                    CompleteAction();
+                }
+            }
+        }
+    }
+}

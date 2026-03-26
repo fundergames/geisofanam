@@ -8,6 +8,7 @@ using UnityEngine;
 using Geis.Combat;
 using Geis.Combat.Music;
 using Geis.InputSystem;
+using Geis.Animation;
 using Geis.Attributes;
 using Geis.SoulRealm;
 
@@ -40,59 +41,8 @@ namespace Geis.Locomotion
 
         #region Animation Variable Hashes
 
-        private readonly int _movementInputTappedHash = Animator.StringToHash("MovementInputTapped");
-        private readonly int _movementInputPressedHash = Animator.StringToHash("MovementInputPressed");
-        private readonly int _movementInputHeldHash = Animator.StringToHash("MovementInputHeld");
-        private readonly int _shuffleDirectionXHash = Animator.StringToHash("ShuffleDirectionX");
-        private readonly int _shuffleDirectionZHash = Animator.StringToHash("ShuffleDirectionZ");
-
-        private readonly int _moveSpeedHash = Animator.StringToHash("MoveSpeed");
-        private readonly int _currentGaitHash = Animator.StringToHash("CurrentGait");
-
-        private readonly int _isJumpingAnimHash = Animator.StringToHash("IsJumping");
-        private readonly int _fallingDurationHash = Animator.StringToHash("FallingDuration");
-
-        private readonly int _inclineAngleHash = Animator.StringToHash("InclineAngle");
-
-        private readonly int _strafeDirectionXHash = Animator.StringToHash("StrafeDirectionX");
-        private readonly int _strafeDirectionZHash = Animator.StringToHash("StrafeDirectionZ");
-
-        private readonly int _forwardStrafeHash = Animator.StringToHash("ForwardStrafe");
-        private readonly int _cameraRotationOffsetHash = Animator.StringToHash("CameraRotationOffset");
-        private readonly int _isStrafingHash = Animator.StringToHash("IsStrafing");
-        private readonly int _isTurningInPlaceHash = Animator.StringToHash("IsTurningInPlace");
-
-        private readonly int _isCrouchingHash = Animator.StringToHash("IsCrouching");
-
-        private readonly int _isWalkingHash = Animator.StringToHash("IsWalking");
-        private readonly int _isStoppedHash = Animator.StringToHash("IsStopped");
-        private readonly int _isStartingHash = Animator.StringToHash("IsStarting");
-
-        private readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
-
-        private readonly int _leanValueHash = Animator.StringToHash("LeanValue");
-        private readonly int _headLookXHash = Animator.StringToHash("HeadLookX");
-        private readonly int _headLookYHash = Animator.StringToHash("HeadLookY");
-
-        private readonly int _bodyLookXHash = Animator.StringToHash("BodyLookX");
-        private readonly int _bodyLookYHash = Animator.StringToHash("BodyLookY");
-
-        private readonly int _locomotionStartDirectionHash = Animator.StringToHash("LocomotionStartDirection");
-
-        private readonly int _attack1Hash = Animator.StringToHash("Attack_1");
-        private readonly int _attackTriggerHash = Animator.StringToHash("Attack");
-        private readonly int _comboStateHash = Animator.StringToHash("ComboState");
-        private readonly int _comboStateBlendHash = Animator.StringToHash("ComboStateBlend");
+        /// <summary>Parameter name hashes: <see cref="LocomotionAnimatorIds"/>.</summary>
         private const int COMBO_BLEND_SLOTS = 32;
-
-        private readonly int _dodgeDirectionHash = Animator.StringToHash("DodgeDirection");
-        private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
-
-        /// <summary>Layer 0 leaf state shortNameHashes for <c>Dodge</c> sub-state machine (must match Animator).</summary>
-        private static readonly int _dodgeLeafFrontHash = Animator.StringToHash("Dodge_Front");
-        private static readonly int _dodgeLeafBackHash = Animator.StringToHash("Dodge_Back");
-        private static readonly int _dodgeLeafLeftHash = Animator.StringToHash("Dodge_Left");
-        private static readonly int _dodgeLeafRightHash = Animator.StringToHash("Dodge_Right");
 
         #endregion
 
@@ -119,95 +69,92 @@ namespace Geis.Locomotion
 
         #endregion
 
-        #region Locomotion Settings
+        #region Locomotion tuning profiles
 
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Whether the character always faces the camera facing direction")]
+        [FoldoutGroup("Locomotion Tuning Profiles")]
+        [Tooltip("Optional. When null, values match GeisLocomotionTuningDefaults (original Synty-style baseline).")]
         [SerializeField]
-        private bool _alwaysStrafe = true;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Slowest movement speed of the player when set to a walk state or half press tick")]
+        private GeisLocomotionSpeedProfile _speedProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
-        private float _walkSpeed = 1.4f;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Default movement speed of the player")]
+        private GeisStrafeInputProfile _strafeInputProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
-        private float _runSpeed = 2.5f;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Top movement speed of the player")]
+        private GeisPlayerCapsuleProfile _capsuleProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
-        private float _sprintSpeed = 7f;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Damping factor for changing speed")]
+        private GeisGroundingProfile _groundingProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
-        private float _speedChangeDamping = 10f;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Rotation smoothing factor.")]
+        private GeisAirMovementProfile _airMovementProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
-        private float _rotationSmoothing = 10f;
-        [FoldoutGroup("Player Locomotion")]
-        [Tooltip("Offset for camera rotation.")]
+        private GeisLookLeanCurvesProfile _lookLeanProfile;
+        [FoldoutGroup("Locomotion Tuning Profiles")]
         [SerializeField]
+        private GeisAttackDodgeLocomotionProfile _attackDodgeProfile;
+
+        #endregion
+
+        #region Cached tuning (Awake: from profiles above)
+
+        private bool _alwaysStrafe;
+        private float _walkSpeed;
+        private float _runSpeed;
+        private float _sprintSpeed;
+        private float _speedChangeDamping;
+        private float _rotationSmoothing;
         private float _cameraRotationOffset;
 
-        #endregion
-
-        #region Shuffle Settings
-
-        [FoldoutGroup("Shuffles")]
-        [Tooltip("Threshold for button hold duration.")]
-        [SerializeField]
-        private float _buttonHoldThreshold = 0.15f;
-        [FoldoutGroup("Shuffles")]
-        [Tooltip("Direction of shuffling on the X-axis.")]
-        [SerializeField]
+        private float _buttonHoldThreshold;
         private float _shuffleDirectionX;
-        [FoldoutGroup("Shuffles")]
-        [Tooltip("Direction of shuffling on the Z-axis.")]
-        [SerializeField]
         private float _shuffleDirectionZ;
 
+        private float _capsuleStandingHeight;
+        private float _capsuleStandingCentre;
+        private float _capsuleCrouchingHeight;
+        private float _capsuleCrouchingCentre;
+
+        private float _forwardStrafeMinThreshold;
+        private float _forwardStrafeMaxThreshold;
+        private float _forwardStrafe;
+
+        private LayerMask _groundLayerMask;
+        private float _groundedOffset;
+
+        private float _jumpForce;
+        private float _gravityMultiplier;
+        private float _fallingBlendRampSeconds;
+
+        private bool _enableHeadTurn;
+        private float _headLookDelay;
+        private float _headLookX;
+        private float _headLookY;
+        private AnimationCurve _headLookXCurve;
+        private float _headLookLimitDegrees;
+
+        private bool _enableBodyTurn;
+        private float _bodyLookDelay;
+        private float _bodyLookX;
+        private float _bodyLookY;
+        private AnimationCurve _bodyLookXCurve;
+
+        private bool _enableLean;
+        private float _leanDelay;
+        private float _leanValue;
+        private AnimationCurve _leanCurve;
+        private float _leansHeadLooksDelay;
+        private bool _animationClipEnd;
+
+        private bool _applyRootRotationDuringAttack;
+        private bool _applyRootRotationDuringDodge;
+        private float _dodgeInputDeadzone;
+        private float _dodgeFallbackDuration;
+        private bool _requireMovementInputForDodge;
+
         #endregion
 
-        #region Capsule Settings
-
-        [FoldoutGroup("Capsule Values")]
-        [Tooltip("Standing height of the player capsule.")]
-        [SerializeField]
-        private float _capsuleStandingHeight = 1.8f;
-        [FoldoutGroup("Capsule Values")]
-        [Tooltip("Standing center of the player capsule.")]
-        [SerializeField]
-        private float _capsuleStandingCentre = 0.93f;
-        [FoldoutGroup("Capsule Values")]
-        [Tooltip("Crouching height of the player capsule.")]
-        [SerializeField]
-        private float _capsuleCrouchingHeight = 1.2f;
-        [FoldoutGroup("Capsule Values")]
-        [Tooltip("Crouching center of the player capsule.")]
-        [SerializeField]
-        private float _capsuleCrouchingCentre = 0.6f;
-
-        #endregion
-
-        #region Strafing
-
-        [FoldoutGroup("Player Strafing")]
-        [Tooltip("Minimum threshold for forward strafing angle.")]
-        [SerializeField]
-        private float _forwardStrafeMinThreshold = -55.0f;
-        [FoldoutGroup("Player Strafing")]
-        [Tooltip("Maximum threshold for forward strafing angle.")]
-        [SerializeField]
-        private float _forwardStrafeMaxThreshold = 125.0f;
-        [FoldoutGroup("Player Strafing")]
-        [Tooltip("Current forward strafing value.")]
-        [SerializeField]
-        private float _forwardStrafe = 1f;
-
-        #endregion
-
-        #region Grounded Settings
+        #region Grounded scene references
 
         [FoldoutGroup("Grounded Angle")]
         [Tooltip("Position of the rear ray for grounded angle check.")]
@@ -217,118 +164,13 @@ namespace Geis.Locomotion
         [Tooltip("Position of the front ray for grounded angle check.")]
         [SerializeField]
         private Transform _frontRayPos;
-        [FoldoutGroup("Grounded Angle")]
-        [Tooltip("Layer mask for checking ground. Default: all layers. If ground isn't detected, ensure your ground has a collider and is on a layer included here.")]
-        [SerializeField]
-        private LayerMask _groundLayerMask = ~0;
-        [FoldoutGroup("Grounded Angle")]
-        [Tooltip("Current incline angle.")]
-        [SerializeField]
-        private float _inclineAngle;
-        [FoldoutGroup("Grounded Angle")]
-        [Tooltip("Offset below character center for ground check sphere. Positive = below feet for detection.")]
-        [SerializeField]
-        private float _groundedOffset = 0.14f;
 
         #endregion
 
-        #region In-Air Settings
+        #region In-Air
 
-        [FoldoutGroup("Player In-Air")]
-        [Tooltip("Force applied when the player jumps.")]
-        [SerializeField]
-        private float _jumpForce = 10f;
-        [FoldoutGroup("Player In-Air")]
-        [Tooltip("Multiplier for gravity when in the air.")]
-        [SerializeField]
-        private float _gravityMultiplier = 2f;
-        [FoldoutGroup("Player In-Air")]
-        [Tooltip("Duration of falling.")]
-        [SerializeField]
-        private float _fallingDuration;
-
-        #endregion
-
-        #region Head Look Settings
-
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("Flag indicating if head turning is enabled.")]
-        [SerializeField]
-        private bool _enableHeadTurn = true;
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("Delay for head turning.")]
-        [SerializeField]
-        private float _headLookDelay;
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("X-axis value for head turning.")]
-        [SerializeField]
-        private float _headLookX;
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("Y-axis value for head turning.")]
-        [SerializeField]
-        private float _headLookY;
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("Curve for X-axis head turning.")]
-        [SerializeField]
-        private AnimationCurve _headLookXCurve;
-        [FoldoutGroup("Player Head Look")]
-        [Tooltip("Degrees beyond which head/body look can't follow; character rotates in place instead. Tune to match animator head look limit.")]
-        [SerializeField]
-        private float _headLookLimitDegrees = 60f;
-
-        #endregion
-
-        #region Body Look Settings
-
-        [FoldoutGroup("Player Body Look")]
-        [Tooltip("Flag indicating if body turning is enabled.")]
-        [SerializeField]
-        private bool _enableBodyTurn = true;
-        [FoldoutGroup("Player Body Look")]
-        [Tooltip("Delay for body turning.")]
-        [SerializeField]
-        private float _bodyLookDelay;
-        [FoldoutGroup("Player Body Look")]
-        [Tooltip("X-axis value for body turning.")]
-        [SerializeField]
-        private float _bodyLookX;
-        [FoldoutGroup("Player Body Look")]
-        [Tooltip("Y-axis value for body turning.")]
-        [SerializeField]
-        private float _bodyLookY;
-        [FoldoutGroup("Player Body Look")]
-        [Tooltip("Curve for X-axis body turning.")]
-        [SerializeField]
-        private AnimationCurve _bodyLookXCurve;
-
-        #endregion
-
-        #region Lean Settings
-
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Flag indicating if leaning is enabled.")]
-        [SerializeField]
-        private bool _enableLean = true;
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Delay for leaning.")]
-        [SerializeField]
-        private float _leanDelay;
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Current value for leaning.")]
-        [SerializeField]
-        private float _leanValue;
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Curve for leaning.")]
-        [SerializeField]
-        private AnimationCurve _leanCurve;
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Delay for head leaning looks.")]
-        [SerializeField]
-        private float _leansHeadLooksDelay;
-        [FoldoutGroup("Player Lean")]
-        [Tooltip("Flag indicating if an animation clip has ended.")]
-        [SerializeField]
-        private bool _animationClipEnd;
+        /// <summary>Clamp for downward velocity so gravity keeps applying (do not use <see cref="Physics.gravity.y"/> as a speed — it is an acceleration).</summary>
+        private const float _maxFallVelocityY = -55f;
 
         #endregion
 
@@ -344,11 +186,6 @@ namespace Geis.Locomotion
         /// Current data-driven combo step (0 = first hit). Aligns with GeisComboData clip index for combat/hit timing.
         /// </summary>
         public int CurrentComboState => _currentComboState;
-
-        [FoldoutGroup("Attack Root Motion")]
-        [Tooltip("Apply animation root rotation during attacks. Disable if attacks drift left/right (baked rotation mismatch).")]
-        [SerializeField]
-        private bool _applyRootRotationDuringAttack;
 
         [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
@@ -366,23 +203,6 @@ namespace Geis.Locomotion
         [Tooltip("Optional: placeholders for runtime override. Loaded from Resources/GeisComboPlaceholders if null.")]
         [SerializeField]
         private GeisComboPlaceholders _comboPlaceholders;
-
-        [FoldoutGroup("Dodge Roll")]
-        [Tooltip("Apply animation root rotation during dodge clips.")]
-        [SerializeField]
-        private bool _applyRootRotationDuringDodge;
-        [FoldoutGroup("Dodge Roll")]
-        [Tooltip("Stick magnitude below this counts as neutral (forward dodge).")]
-        [SerializeField]
-        private float _dodgeInputDeadzone = 0.05f;
-        [FoldoutGroup("Dodge Roll")]
-        [Tooltip("Fallback seconds if clip length cannot be read.")]
-        [SerializeField]
-        private float _dodgeFallbackDuration = 1.2f;
-        [FoldoutGroup("Dodge Roll")]
-        [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
-        [SerializeField]
-        private bool _requireMovementInputForDodge;
 
         #endregion
 
@@ -426,6 +246,9 @@ namespace Geis.Locomotion
         private Vector3 _previousRotation;
         private Vector3 _velocity;
 
+        private float _inclineAngle;
+        private float _fallingDuration;
+
         private float _attackStateTimeout;
         private float _dodgeStateTimeout;
         private bool _loggedDodgeAnimatorMissing;
@@ -439,6 +262,7 @@ namespace Geis.Locomotion
         private GeisComboInputType? _comboInputBuffered;
         private GeisComboInputType _firstAttackInputType;
         private bool _useDataDrivenCombo;
+        private bool _hasFallingBlendParameter;
         private AnimatorOverrideController _comboOverrideController;
         private GeisComboData _lastAppliedComboData;
 
@@ -465,8 +289,27 @@ namespace Geis.Locomotion
         public bool LocomotionIsCrouching => _isCrouching;
         public bool LocomotionIsStrafing => _isStrafing;
 
+        /// <summary>When true, locomotion animator zeros MoveSpeed/gait in air (Jump/Fall states). Used by spectral mirror.</summary>
+        public bool LocomotionAirGaitForAnimator =>
+            _currentState == AnimationState.Jump || _currentState == AnimationState.Fall;
+
         public float LocomotionJumpForce => _jumpForce;
         public float LocomotionGravityMultiplier => _gravityMultiplier;
+
+        /// <summary>
+        ///     Maps elapsed air time to <c>Falling_BlendTree</c> (FallShort 0.3 → FallLarge 2). The FallingDuration
+        ///     animator float stays as real seconds for landing transitions.
+        /// </summary>
+        public float GetFallingBlendParameter(float elapsedAirSeconds)
+        {
+            if (_fallingBlendRampSeconds <= 0.0001f)
+                return 2f;
+            float t = Mathf.Clamp01(elapsedAirSeconds / _fallingBlendRampSeconds);
+            return Mathf.Lerp(0.3f, 2f, t);
+        }
+
+        public bool LocomotionRequireMovementForDodge => _requireMovementInputForDodge;
+        public float LocomotionDodgeDeadzone => _dodgeInputDeadzone;
         public float LocomotionGroundedOffset => _groundedOffset;
         public LayerMask LocomotionGroundLayerMask => _groundLayerMask;
 
@@ -511,6 +354,79 @@ namespace Geis.Locomotion
 
         #region Start
 
+        private void Awake()
+        {
+            ApplyLocomotionTuningFromProfiles();
+        }
+
+        /// <summary>
+        /// Copies tuning from assigned ScriptableObjects (or <see cref="GeisLocomotionTuningDefaults"/> when a slot is null).
+        /// </summary>
+        private void ApplyLocomotionTuningFromProfiles()
+        {
+            var sp = _speedProfile;
+            _alwaysStrafe = sp != null ? sp.alwaysStrafe : GeisLocomotionTuningDefaults.AlwaysStrafe;
+            _walkSpeed = sp != null ? sp.walkSpeed : GeisLocomotionTuningDefaults.WalkSpeed;
+            _runSpeed = sp != null ? sp.runSpeed : GeisLocomotionTuningDefaults.RunSpeed;
+            _sprintSpeed = sp != null ? sp.sprintSpeed : GeisLocomotionTuningDefaults.SprintSpeed;
+            _speedChangeDamping = sp != null ? sp.speedChangeDamping : GeisLocomotionTuningDefaults.SpeedChangeDamping;
+            _rotationSmoothing = sp != null ? sp.rotationSmoothing : GeisLocomotionTuningDefaults.RotationSmoothing;
+
+            var sip = _strafeInputProfile;
+            _buttonHoldThreshold = sip != null ? sip.buttonHoldThreshold : GeisLocomotionTuningDefaults.ButtonHoldThreshold;
+            _forwardStrafeMinThreshold = sip != null ? sip.forwardStrafeMinThreshold : GeisLocomotionTuningDefaults.ForwardStrafeMinThreshold;
+            _forwardStrafeMaxThreshold = sip != null ? sip.forwardStrafeMaxThreshold : GeisLocomotionTuningDefaults.ForwardStrafeMaxThreshold;
+            _forwardStrafe = sip != null ? sip.forwardStrafe : GeisLocomotionTuningDefaults.ForwardStrafe;
+
+            var cap = _capsuleProfile;
+            _capsuleStandingHeight = cap != null ? cap.standingHeight : GeisLocomotionTuningDefaults.CapsuleStandingHeight;
+            _capsuleStandingCentre = cap != null ? cap.standingCentre : GeisLocomotionTuningDefaults.CapsuleStandingCentre;
+            _capsuleCrouchingHeight = cap != null ? cap.crouchingHeight : GeisLocomotionTuningDefaults.CapsuleCrouchingHeight;
+            _capsuleCrouchingCentre = cap != null ? cap.crouchingCentre : GeisLocomotionTuningDefaults.CapsuleCrouchingCentre;
+
+            var gp = _groundingProfile;
+            _groundLayerMask = gp != null ? gp.groundLayerMask : (LayerMask)~0;
+            _groundedOffset = gp != null ? gp.groundedOffset : GeisLocomotionTuningDefaults.GroundedOffset;
+
+            var air = _airMovementProfile;
+            _jumpForce = air != null ? air.jumpForce : GeisLocomotionTuningDefaults.JumpForce;
+            _gravityMultiplier = air != null ? air.gravityMultiplier : GeisLocomotionTuningDefaults.GravityMultiplier;
+            _fallingBlendRampSeconds = air != null ? air.fallingBlendRampSeconds : GeisLocomotionTuningDefaults.FallingBlendRampSeconds;
+
+            var ll = _lookLeanProfile;
+            _enableHeadTurn = ll != null ? ll.enableHeadTurn : true;
+            _headLookDelay = ll != null ? ll.headLookDelay : 0f;
+            _headLookXCurve = SafeLocomotionCurve(ll != null ? ll.headLookXCurve : null);
+            _headLookLimitDegrees = ll != null ? ll.headLookLimitDegrees : GeisLocomotionTuningDefaults.HeadLookLimitDegrees;
+            _enableBodyTurn = ll != null ? ll.enableBodyTurn : true;
+            _bodyLookDelay = ll != null ? ll.bodyLookDelay : 0f;
+            _bodyLookXCurve = SafeLocomotionCurve(ll != null ? ll.bodyLookXCurve : null);
+            _enableLean = ll != null ? ll.enableLean : true;
+            _leanDelay = ll != null ? ll.leanDelay : 0f;
+            _leanCurve = SafeLocomotionCurve(ll != null ? ll.leanCurve : null);
+            _leansHeadLooksDelay = ll != null ? ll.leansHeadLooksDelay : 0f;
+
+            var ad = _attackDodgeProfile;
+            _applyRootRotationDuringAttack = ad != null
+                ? ad.applyRootRotationDuringAttack
+                : GeisLocomotionTuningDefaults.ApplyRootRotationDuringAttack;
+            _applyRootRotationDuringDodge = ad != null
+                ? ad.applyRootRotationDuringDodge
+                : GeisLocomotionTuningDefaults.ApplyRootRotationDuringDodge;
+            _dodgeInputDeadzone = ad != null ? ad.dodgeInputDeadzone : GeisLocomotionTuningDefaults.DodgeInputDeadzone;
+            _dodgeFallbackDuration = ad != null ? ad.dodgeFallbackDuration : GeisLocomotionTuningDefaults.DodgeFallbackDuration;
+            _requireMovementInputForDodge = ad != null
+                ? ad.requireMovementInputForDodge
+                : GeisLocomotionTuningDefaults.RequireMovementInputForDodge;
+        }
+
+        private static AnimationCurve SafeLocomotionCurve(AnimationCurve c)
+        {
+            if (c != null && c.keys != null && c.keys.Length > 0)
+                return c;
+            return AnimationCurve.Linear(-1f, -1f, 1f, 1f);
+        }
+
         /// <inheritdoc cref="Start" />
         private void Start()
         {
@@ -537,8 +453,10 @@ namespace Geis.Locomotion
 
             _isStrafing = _alwaysStrafe;
 
-            _useDataDrivenCombo = _comboData != null && _animator != null && HasAnimatorParameter("Attack")
-                && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState"));
+            _useDataDrivenCombo = _comboData != null && _animator != null && AnimatorParameterGuard.HasParameter(_animator, "Attack")
+                && (AnimatorParameterGuard.HasParameter(_animator, "ComboStateBlend") || AnimatorParameterGuard.HasParameter(_animator, "ComboState"));
+
+            _hasFallingBlendParameter = AnimatorParameterGuard.HasParameter(_animator, "FallingBlend");
 
             ApplyComboOverridesIfReady();
 
@@ -829,7 +747,7 @@ namespace Geis.Locomotion
                     _currentComboState = 0;
                     SwitchState(AnimationState.Attack);
                 }
-                else if (_animator != null && HasAnimatorParameter("Attack_1"))
+                else if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "Attack_1"))
                 {
                     _firstAttackInputType = GeisComboInputType.Light;
                     SwitchState(AnimationState.Attack);
@@ -861,9 +779,12 @@ namespace Geis.Locomotion
 
         private void OnDodgeRequested()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
+                return;
+
             if (_currentState != AnimationState.Locomotion || !_isGrounded || _isCrouching)
                 return;
-            if (_animator == null || !HasAnimatorParameter("Dodge") || !HasAnimatorParameter("DodgeDirection"))
+            if (_animator == null || !AnimatorParameterGuard.HasParameter(_animator, "Dodge") || !AnimatorParameterGuard.HasParameter(_animator, "DodgeDirection"))
             {
                 if (!_loggedDodgeAnimatorMissing)
                 {
@@ -921,8 +842,8 @@ namespace Geis.Locomotion
             _dodgePreserveStrafeFacing = _isStrafing;
 
             int dir = ComputeDodgeDirectionIndex();
-            if (_animator != null && HasAnimatorParameter("DodgeDirection"))
-                _animator.SetInteger(_dodgeDirectionHash, dir);
+            if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "DodgeDirection"))
+                _animator.SetInteger(LocomotionAnimatorIds.DodgeDirection, dir);
 
             // Strafing keeps the body facing camera forward; only snap yaw to dodge axis when not strafing (e.g. sprint).
             if (!_dodgePreserveStrafeFacing)
@@ -932,8 +853,8 @@ namespace Geis.Locomotion
                     transform.rotation = Quaternion.LookRotation(face);
             }
 
-            if (_animator != null && HasAnimatorParameter("Dodge"))
-                _animator.SetTrigger(_dodgeTriggerHash);
+            if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "Dodge"))
+                _animator.SetTrigger(LocomotionAnimatorIds.Dodge);
 
             _dodgeAnimatorEnteredLeaf = false;
             _dodgeStateTimeout = _dodgeFallbackDuration;
@@ -941,8 +862,10 @@ namespace Geis.Locomotion
 
         private static bool IsDodgeLeafShortNameHash(int shortNameHash)
         {
-            return shortNameHash == _dodgeLeafFrontHash || shortNameHash == _dodgeLeafBackHash
-                || shortNameHash == _dodgeLeafLeftHash || shortNameHash == _dodgeLeafRightHash;
+            return shortNameHash == LocomotionAnimatorIds.DodgeLeafFront
+                || shortNameHash == LocomotionAnimatorIds.DodgeLeafBack
+                || shortNameHash == LocomotionAnimatorIds.DodgeLeafLeft
+                || shortNameHash == LocomotionAnimatorIds.DodgeLeafRight;
         }
 
         private void UpdateDodgeState()
@@ -1004,20 +927,20 @@ namespace Geis.Locomotion
             _velocity.x = 0f;
             _velocity.z = 0f;
 
-            if (_useDataDrivenCombo && _animator != null && HasAnimatorParameter("Attack")
-                && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState")))
+            if (_useDataDrivenCombo && _animator != null && AnimatorParameterGuard.HasParameter(_animator, "Attack")
+                && (AnimatorParameterGuard.HasParameter(_animator, "ComboStateBlend") || AnimatorParameterGuard.HasParameter(_animator, "ComboState")))
             {
                 SetComboStateBlend(_currentComboState);
-                _animator.SetTrigger(_attackTriggerHash);
+                _animator.SetTrigger(LocomotionAnimatorIds.Attack);
                 var comboData = GetCurrentComboData();
                 _attackStateTimeout = comboData != null ? 2f : 1.5f;
                 int weaponIdx = GetWeaponIndexForMusic();
                 CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, _currentComboState, weaponIdx);
                 OnAttackPerformed?.Invoke(weaponIdx);
             }
-            else if (_animator != null && HasAnimatorParameter("Attack_1"))
+            else if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "Attack_1"))
             {
-                _animator.SetTrigger(_attack1Hash);
+                _animator.SetTrigger(LocomotionAnimatorIds.Attack1);
                 _attackStateTimeout = 1.5f;
                 int weaponIdx = GetWeaponIndexForMusic();
                 CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, 0, weaponIdx);
@@ -1051,7 +974,7 @@ namespace Geis.Locomotion
                     {
                         _currentComboState = nextState;
                         SetComboStateBlend(_currentComboState);
-                        _animator.SetTrigger(_attackTriggerHash);
+                        _animator.SetTrigger(LocomotionAnimatorIds.Attack);
                         var clip = comboData.GetClipForState(_currentComboState);
                         _attackStateTimeout = clip != null ? clip.length + 0.2f : 1.5f;
                         int weaponIdx = GetWeaponIndexForMusic();
@@ -1085,18 +1008,10 @@ namespace Geis.Locomotion
         /// </summary>
         private void SetComboStateBlend(int state)
         {
-            if (HasAnimatorParameter("ComboStateBlend"))
-                _animator.SetFloat(_comboStateBlendHash, (float)state / (COMBO_BLEND_SLOTS - 1));
+            if (AnimatorParameterGuard.HasParameter(_animator, "ComboStateBlend"))
+                _animator.SetFloat(LocomotionAnimatorIds.ComboStateBlend, (float)state / (COMBO_BLEND_SLOTS - 1));
             else
-                _animator.SetInteger(_comboStateHash, state);
-        }
-
-        private bool HasAnimatorParameter(string name)
-        {
-            if (_animator == null || _animator.runtimeAnimatorController == null) return false;
-            foreach (var p in _animator.parameters)
-                if (p.name == name) return true;
-            return false;
+                _animator.SetInteger(LocomotionAnimatorIds.ComboState, state);
         }
 
         /// <summary>
@@ -1247,40 +1162,53 @@ namespace Geis.Locomotion
         /// </summary>
         private void UpdateAnimatorController()
         {
-            _animator.SetFloat(_leanValueHash, _leanValue);
-            _animator.SetFloat(_headLookXHash, _headLookX);
-            _animator.SetFloat(_headLookYHash, _headLookY);
-            _animator.SetFloat(_bodyLookXHash, _bodyLookX);
-            _animator.SetFloat(_bodyLookYHash, _bodyLookY);
+            if (_animator == null)
+                return;
 
-            _animator.SetFloat(_isStrafingHash, _isStrafing ? 1.0f : 0.0f);
+            // Horizontal velocity still applies in Jump/Fall for gameplay, but MoveSpeed / gait are for ground
+            // locomotion — feeding real speed mid-air reads as "running in the air" on many Animator graphs.
+            bool airGaitForAnimator = _currentState == AnimationState.Jump || _currentState == AnimationState.Fall;
 
-            _animator.SetFloat(_inclineAngleHash, _inclineAngle);
+            var snap = new LocomotionPresentationSnapshot
+            {
+                LeanValue = _leanValue,
+                HeadLookX = _headLookX,
+                HeadLookY = _headLookY,
+                BodyLookX = _bodyLookX,
+                BodyLookY = _bodyLookY,
+                IsStrafingFloat = _isStrafing ? 1.0f : 0.0f,
+                InclineAngle = _inclineAngle,
+                MoveSpeed2D = _speed2D,
+                CurrentGait = (int)_currentGait,
+                StrafeDirectionX = _strafeDirectionX,
+                StrafeDirectionZ = _strafeDirectionZ,
+                ForwardStrafe = _forwardStrafe,
+                CameraRotationOffset = _cameraRotationOffset,
+                MovementInputHeld = _movementInputHeld,
+                MovementInputPressed = _movementInputPressed,
+                MovementInputTapped = _movementInputTapped,
+                ShuffleDirectionX = _shuffleDirectionX,
+                ShuffleDirectionZ = _shuffleDirectionZ,
+                IsTurningInPlace = _isTurningInPlace,
+                IsCrouching = _isCrouching,
+                FallingDuration = _fallingDuration,
+                IsGrounded = _isGrounded,
+                IsWalking = _isWalking,
+                IsStopped = _isStopped,
+                IsStarting = _isStarting,
+                LocomotionStartDirection = _locomotionStartDirection
+            };
 
-            _animator.SetFloat(_moveSpeedHash, _speed2D);
-            _animator.SetInteger(_currentGaitHash, (int) _currentGait);
+            var ctx = new LocomotionApplyContext
+            {
+                AirGaitForAnimator = airGaitForAnimator,
+                HasFallingBlendParameter = _hasFallingBlendParameter,
+                FallingBlendValue = GetFallingBlendParameter(_fallingDuration),
+                SetIsJumping = false,
+                IsJumpingValue = false
+            };
 
-            _animator.SetFloat(_strafeDirectionXHash, _strafeDirectionX);
-            _animator.SetFloat(_strafeDirectionZHash, _strafeDirectionZ);
-            _animator.SetFloat(_forwardStrafeHash, _forwardStrafe);
-            _animator.SetFloat(_cameraRotationOffsetHash, _cameraRotationOffset);
-
-            _animator.SetBool(_movementInputHeldHash, _movementInputHeld);
-            _animator.SetBool(_movementInputPressedHash, _movementInputPressed);
-            _animator.SetBool(_movementInputTappedHash, _movementInputTapped);
-            _animator.SetFloat(_shuffleDirectionXHash, _shuffleDirectionX);
-            _animator.SetFloat(_shuffleDirectionZHash, _shuffleDirectionZ);
-
-            _animator.SetBool(_isTurningInPlaceHash, _isTurningInPlace);
-            _animator.SetBool(_isCrouchingHash, _isCrouching);
-
-            _animator.SetFloat(_fallingDurationHash, _fallingDuration);
-            _animator.SetBool(_isGroundedHash, _isGrounded);
-
-            _animator.SetBool(_isWalkingHash, _isWalking);
-            _animator.SetBool(_isStoppedHash, _isStopped);
-
-            _animator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
+            LocomotionAnimatorApplier.ApplySyntyLocomotion(_animator, snap, ctx);
         }
 
         #endregion
@@ -1359,7 +1287,7 @@ namespace Geis.Locomotion
         /// </summary>
         private void ApplyGravity()
         {
-            if (_velocity.y > Physics.gravity.y)
+            if (_velocity.y > _maxFallVelocityY)
             {
                 _velocity.y += Physics.gravity.y * _gravityMultiplier * Time.deltaTime;
             }
@@ -1566,7 +1494,6 @@ namespace Geis.Locomotion
                     if (!_isStarting)
                     {
                         _locomotionStartDirection = _newDirectionDifferenceAngle;
-                        _animator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
                     }
 
                     float delayTime = 0.2f;
@@ -1583,7 +1510,6 @@ namespace Geis.Locomotion
             }
 
             _isStarting = isStartingCheck;
-            _animator.SetBool(_isStartingHash, _isStarting);
         }
 
         /// <summary>
@@ -1618,6 +1544,10 @@ namespace Geis.Locomotion
             // Fallback: if layer mask is "Nothing" (0), use all layers so ground is detected
             LayerMask mask = _groundLayerMask.value != 0 ? _groundLayerMask : (LayerMask)(-1);
             _isGrounded = Physics.CheckSphere(spherePosition, _controller.radius, mask, QueryTriggerInteraction.Ignore);
+
+            // Sphere can overlap ground colliders while moving upward past ledges; CC has no support in that case.
+            if (_isGrounded && _controller != null && !_controller.isGrounded && _velocity.y > 0.5f)
+                _isGrounded = false;
 
             if (_isGrounded)
             {
@@ -1957,11 +1887,21 @@ namespace Geis.Locomotion
             if (!_isGrounded)
             {
                 SwitchState(AnimationState.Fall);
+                return;
             }
+
+            // Sticky downward velocity only when sphere and CharacterController both agree (see SoulGhostMotor).
+            // Sphere-alone false positives in air used to clamp vy to -2f every frame → slow float.
+            bool supportedByController = _controller != null && _controller.isGrounded;
+            if (_isGrounded && supportedByController && _velocity.y < 0f)
+                _velocity.y = -2f;
+            else
+                ApplyGravity();
 
             if (_isCrouching)
             {
                 SwitchState(AnimationState.Crouch);
+                return;
             }
 
             CheckEnableTurns();
@@ -2003,7 +1943,7 @@ namespace Geis.Locomotion
         /// </summary>
         private void EnterJumpState()
         {
-            _animator.SetBool(_isJumpingAnimHash, true);
+            _animator.SetBool(LocomotionAnimatorIds.IsJumping, true);
 
             _isSliding = false;
 
@@ -2020,8 +1960,9 @@ namespace Geis.Locomotion
 
             if (_velocity.y <= 0f)
             {
-                _animator.SetBool(_isJumpingAnimHash, false);
+                _animator.SetBool(LocomotionAnimatorIds.IsJumping, false);
                 SwitchState(AnimationState.Fall);
+                return;
             }
 
             GroundedCheck();
@@ -2038,7 +1979,7 @@ namespace Geis.Locomotion
         /// </summary>
         private void ExitJumpState()
         {
-            _animator.SetBool(_isJumpingAnimHash, false);
+            _animator.SetBool(LocomotionAnimatorIds.IsJumping, false);
         }
 
         #endregion
@@ -2051,10 +1992,18 @@ namespace Geis.Locomotion
         private void EnterFallState()
         {
             ResetFallingDuration();
-            _velocity.y = 0f;
 
             DeactivateCrouch();
             _isSliding = false;
+
+            // Jump exit clears IsJumping; ensure fall never blends with jump pose (e.g. dodge → fall).
+            // Same-frame animator sync: transition frame does not run UpdateFallState(), so drive IsGrounded /
+            // FallingDuration here so the Falling_BlendTree activates immediately.
+            if (_animator != null)
+            {
+                _animator.SetBool(LocomotionAnimatorIds.IsJumping, false);
+                UpdateAnimatorController();
+            }
         }
 
         /// <summary>
@@ -2074,16 +2023,15 @@ namespace Geis.Locomotion
 
             // GroundedCheck must run AFTER Move() so we detect landing using the new position
             GroundedCheck();
+
+            // Elapsed air time before writing FallingDuration to the animator (avoid one-frame lag).
+            UpdateFallingDuration();
             UpdateAnimatorController();
 
             // Use _isGrounded (Physics.CheckSphere) instead of _controller.isGrounded - CharacterController
             // isGrounded is unreliable and often fails to detect landing
             if (_isGrounded)
-            {
                 SwitchState(AnimationState.Locomotion);
-            }
-
-            UpdateFallingDuration();
         }
 
         #endregion

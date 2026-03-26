@@ -1,13 +1,7 @@
 {
-    "name": "RogueDeal",
-    "rootNamespace": "RogueDeal",
-    "references": [
-        "Geis.Animation",
-        "Funder.Core.Runtime",
-        "Unity.InputSystem",
-        "Unity.TextMeshPro",
-        "Unity.Timeline"
-    ],
+    "name": "Geis.Animation",
+    "rootNamespace": "Geis.Animation",
+    "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

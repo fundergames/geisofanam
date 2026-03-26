@@ -1,3 +1,4 @@
+using Geis.Animation;
 using Geis.InputSystem;
 using Geis.Locomotion;
 using UnityEngine;
@@ -6,40 +7,12 @@ namespace Geis.SoulRealm
 {
     /// <summary>
     /// Drives the spectral copy's Animator with the same locomotion parameters as
-    /// <see cref="GeisPlayerAnimationController"/> (mirror of <c>UpdateAnimatorController</c> + facing/strafe).
+    /// <see cref="GeisPlayerAnimationController"/> via <see cref="LocomotionAnimatorApplier"/>.
     /// </summary>
     public sealed class SoulSpectralAnimatorDriver : MonoBehaviour
     {
         private const float AnimationDampTime = 5f;
         private const float StrafeDirectionDampTime = 20f;
-
-        private static readonly int MovementInputTappedHash = Animator.StringToHash("MovementInputTapped");
-        private static readonly int MovementInputPressedHash = Animator.StringToHash("MovementInputPressed");
-        private static readonly int MovementInputHeldHash = Animator.StringToHash("MovementInputHeld");
-        private static readonly int ShuffleDirectionXHash = Animator.StringToHash("ShuffleDirectionX");
-        private static readonly int ShuffleDirectionZHash = Animator.StringToHash("ShuffleDirectionZ");
-        private static readonly int MoveSpeedHash = Animator.StringToHash("MoveSpeed");
-        private static readonly int CurrentGaitHash = Animator.StringToHash("CurrentGait");
-        private static readonly int IsJumpingHash = Animator.StringToHash("IsJumping");
-        private static readonly int FallingDurationHash = Animator.StringToHash("FallingDuration");
-        private static readonly int InclineAngleHash = Animator.StringToHash("InclineAngle");
-        private static readonly int StrafeDirectionXHash = Animator.StringToHash("StrafeDirectionX");
-        private static readonly int StrafeDirectionZHash = Animator.StringToHash("StrafeDirectionZ");
-        private static readonly int ForwardStrafeHash = Animator.StringToHash("ForwardStrafe");
-        private static readonly int CameraRotationOffsetHash = Animator.StringToHash("CameraRotationOffset");
-        private static readonly int IsStrafingHash = Animator.StringToHash("IsStrafing");
-        private static readonly int IsTurningInPlaceHash = Animator.StringToHash("IsTurningInPlace");
-        private static readonly int IsCrouchingHash = Animator.StringToHash("IsCrouching");
-        private static readonly int IsWalkingHash = Animator.StringToHash("IsWalking");
-        private static readonly int IsStoppedHash = Animator.StringToHash("IsStopped");
-        private static readonly int IsStartingHash = Animator.StringToHash("IsStarting");
-        private static readonly int IsGroundedHash = Animator.StringToHash("IsGrounded");
-        private static readonly int LeanValueHash = Animator.StringToHash("LeanValue");
-        private static readonly int HeadLookXHash = Animator.StringToHash("HeadLookX");
-        private static readonly int HeadLookYHash = Animator.StringToHash("HeadLookY");
-        private static readonly int BodyLookXHash = Animator.StringToHash("BodyLookX");
-        private static readonly int BodyLookYHash = Animator.StringToHash("BodyLookY");
-        private static readonly int LocomotionStartDirectionHash = Animator.StringToHash("LocomotionStartDirection");
 
         private enum GaitState
         {
@@ -53,6 +26,7 @@ namespace Geis.SoulRealm
         private SoulGhostMotor motor;
         private GeisInputReader inputReader;
         private GeisPlayerAnimationController bodyLocomotion;
+        private bool _hasFallingBlendParameter;
 
         private float movementInputDuration;
         private bool movementInputHeld;
@@ -84,6 +58,7 @@ namespace Geis.SoulRealm
             bodyLocomotion = body;
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
+            _hasFallingBlendParameter = animator != null && AnimatorParameterGuard.HasParameter(animator, "FallingBlend");
         }
 
         private void LateUpdate()
@@ -115,33 +90,50 @@ namespace Geis.SoulRealm
             CalculateGait(speed2D);
             bool isStopped = moveDirection.magnitude < 0.01f && speed2D < 0.5f;
 
-            animator.SetFloat(LeanValueHash, 0f);
-            animator.SetFloat(HeadLookXHash, 0f);
-            animator.SetFloat(HeadLookYHash, 0f);
-            animator.SetFloat(BodyLookXHash, 0f);
-            animator.SetFloat(BodyLookYHash, 0f);
-            animator.SetFloat(IsStrafingHash, isStrafingAnim ? 1f : 0f);
-            animator.SetFloat(InclineAngleHash, 0f);
-            animator.SetFloat(MoveSpeedHash, speed2D);
-            animator.SetInteger(CurrentGaitHash, (int)currentGait);
-            animator.SetFloat(StrafeDirectionXHash, strafeDirectionX);
-            animator.SetFloat(StrafeDirectionZHash, strafeDirectionZ);
-            animator.SetFloat(ForwardStrafeHash, forwardStrafe);
-            animator.SetFloat(CameraRotationOffsetHash, cameraRotationOffset);
-            animator.SetBool(MovementInputHeldHash, movementInputHeld);
-            animator.SetBool(MovementInputPressedHash, movementInputPressed);
-            animator.SetBool(MovementInputTappedHash, movementInputTapped);
-            animator.SetFloat(ShuffleDirectionXHash, shuffleDirectionX);
-            animator.SetFloat(ShuffleDirectionZHash, shuffleDirectionZ);
-            animator.SetBool(IsTurningInPlaceHash, false);
-            animator.SetFloat(FallingDurationHash, fallingDuration);
-            animator.SetBool(IsGroundedHash, grounded);
-            animator.SetBool(IsWalkingHash, bodyLocomotion.LocomotionIsWalking);
-            animator.SetBool(IsCrouchingHash, bodyLocomotion.LocomotionIsCrouching);
-            animator.SetBool(IsStoppedHash, isStopped);
-            animator.SetBool(IsStartingHash, false);
-            animator.SetFloat(LocomotionStartDirectionHash, 0f);
-            animator.SetBool(IsJumpingHash, !grounded && motor.VerticalVelocity > 0.5f);
+            bool airGait = bodyLocomotion.LocomotionAirGaitForAnimator;
+
+            var snap = new LocomotionPresentationSnapshot
+            {
+                LeanValue = 0f,
+                HeadLookX = 0f,
+                HeadLookY = 0f,
+                BodyLookX = 0f,
+                BodyLookY = 0f,
+                IsStrafingFloat = isStrafingAnim ? 1f : 0f,
+                InclineAngle = 0f,
+                MoveSpeed2D = speed2D,
+                CurrentGait = (int)currentGait,
+                StrafeDirectionX = strafeDirectionX,
+                StrafeDirectionZ = strafeDirectionZ,
+                ForwardStrafe = forwardStrafe,
+                CameraRotationOffset = cameraRotationOffset,
+                MovementInputHeld = movementInputHeld,
+                MovementInputPressed = movementInputPressed,
+                MovementInputTapped = movementInputTapped,
+                ShuffleDirectionX = shuffleDirectionX,
+                ShuffleDirectionZ = shuffleDirectionZ,
+                IsTurningInPlace = false,
+                IsCrouching = bodyLocomotion.LocomotionIsCrouching,
+                FallingDuration = fallingDuration,
+                IsGrounded = grounded,
+                IsWalking = bodyLocomotion.LocomotionIsWalking,
+                IsStopped = isStopped,
+                IsStarting = false,
+                LocomotionStartDirection = 0f
+            };
+
+            var ctx = new LocomotionApplyContext
+            {
+                AirGaitForAnimator = airGait,
+                HasFallingBlendParameter = _hasFallingBlendParameter && bodyLocomotion != null,
+                FallingBlendValue = bodyLocomotion != null
+                    ? bodyLocomotion.GetFallingBlendParameter(fallingDuration)
+                    : 0f,
+                SetIsJumping = true,
+                IsJumpingValue = !grounded && motor.VerticalVelocity > 0.5f
+            };
+
+            LocomotionAnimatorApplier.ApplySyntyLocomotion(animator, snap, ctx);
         }
 
         private void UpdateMovementInputFlags()

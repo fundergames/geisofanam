@@ -3561,7 +3561,7 @@ BlendTree:
     m_CycleOffset: 0
     m_DirectBlendParameter: MoveSpeed
     m_Mirror: 0
-  m_BlendParameter: FallingDuration
+  m_BlendParameter: FallingBlend
   m_BlendParameterY: MoveSpeed
   m_MinThreshold: 0.3
   m_MaxThreshold: 2
@@ -3854,6 +3854,12 @@ AnimatorController:
   - m_Name: FallingDuration
     m_Type: 1
     m_DefaultFloat: 0
+    m_DefaultInt: 0
+    m_DefaultBool: 0
+    m_Controller: {fileID: 9100000}
+  - m_Name: FallingBlend
+    m_Type: 1
+    m_DefaultFloat: 0.3
     m_DefaultInt: 0
     m_DefaultBool: 0
     m_Controller: {fileID: 9100000}

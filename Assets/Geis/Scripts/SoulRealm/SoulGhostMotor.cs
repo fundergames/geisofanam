@@ -11,12 +11,18 @@ namespace Geis.SoulRealm
     [RequireComponent(typeof(CharacterController))]
     public sealed class SoulGhostMotor : MonoBehaviour
     {
+        private const float MaxFallVelocityY = -55f;
+
         [SerializeField] private GeisInputReader inputReader;
 
         [Header("Fallback (no body locomotion reference)")]
         [SerializeField] private float fallbackMoveSpeed = 4.5f;
         [SerializeField] private float fallbackJumpForce = 10f;
         [SerializeField] private float fallbackGravityMultiplier = 2f;
+
+        [Header("Dodge (soul realm)")]
+        [SerializeField] private float ghostDodgeDuration = 0.35f;
+        [SerializeField] private float ghostDodgeSpeed = 7f;
 
         private CharacterController _cc;
         private Transform _cameraTransform;
@@ -31,6 +37,9 @@ namespace Geis.SoulRealm
         private bool _jumpQueued;
         private bool _groundedAfterMove;
 
+        private float _dodgeTimeRemaining;
+        private Vector3 _dodgePlanarDir = Vector3.forward;
+
         private void Awake()
         {
             _cc = GetComponent<CharacterController>();
@@ -38,14 +47,30 @@ namespace Geis.SoulRealm
 
         private void OnEnable()
         {
-            if (inputReader != null)
-                inputReader.onJumpPerformed += OnJump;
+            RefreshInputSubscriptions();
         }
 
         private void OnDisable()
         {
-            if (inputReader != null)
-                inputReader.onJumpPerformed -= OnJump;
+            UnsubscribeInput();
+        }
+
+        private void RefreshInputSubscriptions()
+        {
+            if (inputReader == null)
+                return;
+            inputReader.onJumpPerformed -= OnJump;
+            inputReader.onDodgePerformed -= OnDodgePerformed;
+            inputReader.onJumpPerformed += OnJump;
+            inputReader.onDodgePerformed += OnDodgePerformed;
+        }
+
+        private void UnsubscribeInput()
+        {
+            if (inputReader == null)
+                return;
+            inputReader.onJumpPerformed -= OnJump;
+            inputReader.onDodgePerformed -= OnDodgePerformed;
         }
 
         private void OnJump()
@@ -54,23 +79,67 @@ namespace Geis.SoulRealm
                 _jumpQueued = true;
         }
 
+        private void OnDodgePerformed()
+        {
+            if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.AllowGhostMovement)
+                return;
+            if (_dodgeTimeRemaining > 0f)
+                return;
+
+            // Match body dodge: sphere grounded only. CC often false for the ghost capsule; requiring both blocked dodge.
+            if (!GroundedCheck())
+                return;
+
+            // Soul-realm dodge: default to camera-forward if no stick (body can require move input; ghost should not).
+
+            _dodgePlanarDir = ComputeGhostDodgePlanarDirection();
+            _dodgeTimeRemaining = ghostDodgeDuration;
+        }
+
+        private Vector3 ComputeGhostDodgePlanarDirection()
+        {
+            float dz = _bodyLocomotion != null ? _bodyLocomotion.LocomotionDodgeDeadzone : 0.05f;
+            Vector2 m = inputReader != null ? inputReader._moveComposite : Vector2.zero;
+            if (_cameraController != null)
+            {
+                Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
+                Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
+                if (m.sqrMagnitude >= dz * dz)
+                    return (camFwd * m.y + camRight * m.x).normalized;
+                return camFwd.sqrMagnitude > 0.0001f ? camFwd : transform.forward;
+            }
+
+            if (m.sqrMagnitude >= dz * dz && _cameraTransform != null)
+            {
+                Vector3 camFwd = Vector3.Scale(_cameraTransform.forward, new Vector3(1f, 0f, 1f)).normalized;
+                Vector3 camRight = Vector3.Scale(_cameraTransform.right, new Vector3(1f, 0f, 1f)).normalized;
+                return (camFwd * m.y + camRight * m.x).normalized;
+            }
+
+            return transform.forward;
+        }
+
         private void Start()
         {
             if (inputReader == null)
                 inputReader = FindFirstObjectByType<GeisInputReader>();
             if (_cameraController == null && Camera.main != null)
                 _cameraTransform = Camera.main.transform;
+            RefreshInputSubscriptions();
         }
 
         public void Configure(GeisInputReader reader, GeisPlayerAnimationController bodyLocomotion = null,
             GeisCameraController cameraController = null)
         {
+            UnsubscribeInput();
             inputReader = reader;
             _bodyLocomotion = bodyLocomotion;
             _cameraController = cameraController;
             if (_bodyLocomotion != null && _cc != null)
                 ApplyCapsuleFromBody();
             _groundedAfterMove = GroundedCheck();
+            if (isActiveAndEnabled)
+                RefreshInputSubscriptions();
         }
 
         /// <summary>Horizontal movement speed (matches player <c>_speed2D</c> calculation).</summary>
@@ -106,7 +175,19 @@ namespace Geis.SoulRealm
 
             bool groundedBeforeMove = GroundedCheck();
 
-            if (_bodyLocomotion != null)
+            if (_dodgeTimeRemaining > 0f)
+            {
+                _dodgeTimeRemaining -= Time.deltaTime;
+                Vector3 d = _dodgePlanarDir;
+                d.y = 0f;
+                if (d.sqrMagnitude < 0.0001f)
+                    d = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
+                else
+                    d.Normalize();
+                _velocity.x = d.x * ghostDodgeSpeed;
+                _velocity.z = d.z * ghostDodgeSpeed;
+            }
+            else if (_bodyLocomotion != null)
                 CalculateMoveDirection(groundedBeforeMove);
             else
                 FallbackCalculateVelocity(groundedBeforeMove);
@@ -117,9 +198,9 @@ namespace Geis.SoulRealm
                 _jumpQueued = false;
             }
 
-            // Sticky grounded when moving down; otherwise apply gravity (including upward jump so we never
-            // float when grounded check falsely stays true in air).
-            if (groundedBeforeMove && _velocity.y <= 0f)
+            // Snap to ground only when both sphere and CharacterController agree (sphere alone can false-positive in air).
+            bool stickyGrounded = groundedBeforeMove && _cc != null && _cc.isGrounded;
+            if (stickyGrounded && _velocity.y <= 0f)
                 _velocity.y = -2f;
             else
                 ApplyGravity();
@@ -127,7 +208,21 @@ namespace Geis.SoulRealm
             _cc.Move(_velocity * Time.deltaTime);
             _groundedAfterMove = GroundedCheck();
 
-            ApplyRotation();
+            if (_dodgeTimeRemaining > 0f)
+                ApplyRotationDodge();
+            else
+                ApplyRotation();
+        }
+
+        private void ApplyRotationDodge()
+        {
+            Vector3 d = _dodgePlanarDir;
+            d.y = 0f;
+            if (d.sqrMagnitude < 0.0001f)
+                return;
+            Quaternion targetRot = Quaternion.LookRotation(d.normalized);
+            float t = (_bodyLocomotion != null ? _bodyLocomotion.LocomotionRotationSmoothing : 12f) * Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
         }
 
         private void ApplyCapsuleFromBody()
@@ -231,7 +326,7 @@ namespace Geis.SoulRealm
         private void ApplyGravity()
         {
             float gm = _bodyLocomotion != null ? _bodyLocomotion.LocomotionGravityMultiplier : fallbackGravityMultiplier;
-            if (_velocity.y > Physics.gravity.y)
+            if (_velocity.y > MaxFallVelocityY)
                 _velocity.y += Physics.gravity.y * gm * Time.deltaTime;
         }
 
