@@ -1,3 +1,4 @@
+using Geis.Animation;
 using UnityEngine;
 
 namespace RogueDeal.Combat
@@ -48,7 +49,7 @@ namespace RogueDeal.Combat
                 }
                 else
                 {
-                    Debug.Log($"[CombatAnimationController] Available parameters: {GetParameterList()}");
+                    Debug.Log($"[CombatAnimationController] Available parameters: {AnimatorParameterGuard.FormatParameterList(animator)}");
                 }
             }
         }
@@ -92,14 +93,13 @@ namespace RogueDeal.Combat
             }
 
             string trigger = !string.IsNullOrEmpty(triggerName) ? triggerName : lightAttackTrigger;
-            if (HasParameter(trigger))
+            if (AnimatorParameterGuard.TrySetTrigger(animator, trigger))
             {
                 Debug.Log($"[CombatAnimationController] Setting trigger '{trigger}' on {gameObject.name}");
-                animator.SetTrigger(trigger);
             }
             else
             {
-                Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{trigger}' parameter. Available parameters: {GetParameterList()}");
+                Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{trigger}' trigger. Available parameters: {AnimatorParameterGuard.FormatParameterList(animator)}");
             }
         }
 
@@ -128,14 +128,13 @@ namespace RogueDeal.Combat
             }
             else
             {
-                if (HasParameter(lightAttackTrigger))
+                if (AnimatorParameterGuard.TrySetTrigger(animator, lightAttackTrigger))
                 {
                     Debug.Log($"[CombatAnimationController] Setting trigger '{lightAttackTrigger}' on {gameObject.name}");
-                    animator.SetTrigger(lightAttackTrigger);
                 }
                 else
                 {
-                    Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{lightAttackTrigger}' parameter. Available parameters: {GetParameterList()}");
+                    Debug.LogWarning($"[CombatAnimationController] Animator on {animator.gameObject.name} doesn't have '{lightAttackTrigger}' trigger. Available parameters: {AnimatorParameterGuard.FormatParameterList(animator)}");
                 }
             }
         }
@@ -167,30 +166,7 @@ namespace RogueDeal.Combat
         {
         }
 
-        private bool HasParameter(string paramName)
-        {
-            if (animator == null || animator.runtimeAnimatorController == null)
-                return false;
-
-            foreach (var param in animator.parameters)
-            {
-                if (param.name == paramName)
-                    return true;
-            }
-            return false;
-        }
-
-        private string GetParameterList()
-        {
-            if (animator == null || animator.runtimeAnimatorController == null)
-                return "None (no controller)";
-
-            var paramNames = new System.Collections.Generic.List<string>();
-            foreach (var param in animator.parameters)
-            {
-                paramNames.Add($"{param.name}({param.type})");
-            }
-            return string.Join(", ", paramNames);
-        }
+        private bool HasParameter(string paramName) =>
+            AnimatorParameterGuard.HasParameter(animator, paramName);
     }
 }

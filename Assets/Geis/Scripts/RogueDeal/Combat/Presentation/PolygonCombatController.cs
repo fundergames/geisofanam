@@ -1,4 +1,5 @@
 using System.Collections;
+using Geis.Animation;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using RogueDeal.Combat;
@@ -78,24 +79,6 @@ namespace RogueDeal.Combat.Presentation
         private CombatAction[] _availableActions;
         private int _currentComboIndex;
 
-        private readonly int _moveSpeedHash = Animator.StringToHash("MoveSpeed");
-        private readonly int _currentGaitHash = Animator.StringToHash("CurrentGait");
-        private readonly int _strafeDirectionXHash = Animator.StringToHash("StrafeDirectionX");
-        private readonly int _strafeDirectionZHash = Animator.StringToHash("StrafeDirectionZ");
-        private readonly int _isStrafingHash = Animator.StringToHash("IsStrafing");
-        private readonly int _isCrouchingHash = Animator.StringToHash("IsCrouching");
-        private readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
-        private readonly int _isJumpingHash = Animator.StringToHash("IsJumping");
-        private readonly int _speedHash = Animator.StringToHash("Speed");
-        private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
-        private readonly int _takeActionHash = Animator.StringToHash("TakeAction");
-        private readonly int _actionIndexHash = Animator.StringToHash("ActionIndex");
-        private readonly int _actionTypeHash = Animator.StringToHash("ActionType");
-        private readonly int _isActionHash = Animator.StringToHash("IsAction");
-        private readonly int _attack1Hash = Animator.StringToHash("Attack_1");
-        private readonly int _attack2Hash = Animator.StringToHash("Attack_2");
-        private readonly int _attack3Hash = Animator.StringToHash("Attack_3");
-
         private const float MovementRampTime = 0.12f;
 
         private bool _usePolygonParams;
@@ -135,8 +118,9 @@ namespace RogueDeal.Combat.Presentation
             if (_animator != null)
             {
                 _animator.applyRootMotion = true;
-                _usePolygonParams = HasParameter("MoveSpeed");
-                _useLegacyAttackTriggers = HasParameter("Attack_1") && HasParameter("Attack_2");
+                _usePolygonParams = AnimatorParameterGuard.HasParameter(_animator, "MoveSpeed");
+                _useLegacyAttackTriggers = AnimatorParameterGuard.HasParameter(_animator, "Attack_1")
+                    && AnimatorParameterGuard.HasParameter(_animator, "Attack_2");
                 if (_animator.runtimeAnimatorController == null && defaultAnimatorController != null)
                     _animator.runtimeAnimatorController = defaultAnimatorController;
             }
@@ -293,11 +277,11 @@ namespace RogueDeal.Combat.Presentation
             if (state.JumpPressed && _isGrounded && !_isAttacking && !_isDodging)
             {
                 _velocity.y = jumpForce;
-                if (_animator != null && HasParameter("IsJumping"))
-                    _animator.SetBool(_isJumpingHash, true);
+                if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "IsJumping"))
+                    _animator.SetBool(LocomotionAnimatorIds.IsJumping, true);
             }
-            if (HasParameter("IsJumping") && _animator != null && _isGrounded)
-                _animator.SetBool(_isJumpingHash, false);
+            if (AnimatorParameterGuard.HasParameter(_animator, "IsJumping") && _animator != null && _isGrounded)
+                _animator.SetBool(LocomotionAnimatorIds.IsJumping, false);
 
             if (state.DodgePressed && _isGrounded && !_isAttacking)
             {
@@ -335,8 +319,8 @@ namespace RogueDeal.Combat.Presentation
                 _dodgeDirection = transform.forward;
             }
             transform.rotation = Quaternion.LookRotation(_dodgeDirection);
-            if (_animator != null && HasParameter("Dodge"))
-                _animator.SetTrigger(_dodgeTriggerHash);
+            if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "Dodge"))
+                _animator.SetTrigger(LocomotionAnimatorIds.Dodge);
         }
 
         private void StartAttack()
@@ -375,28 +359,28 @@ namespace RogueDeal.Combat.Presentation
             if (_animator != null && IsAnimatorValid())
             {
                 int weaponTypeInt = actionToUse != null ? (int)actionToUse.weaponType : 0;
-                if (HasParameter("ActionType")) _animator.SetInteger(_actionTypeHash, weaponTypeInt);
+                if (AnimatorParameterGuard.HasParameter(_animator, "ActionType")) _animator.SetInteger(LocomotionAnimatorIds.ActionType, weaponTypeInt);
 
                 if (_useLegacyAttackTriggers)
                 {
                     int n = (_currentComboIndex % actionCount) + 1;
                     if (actionToUse != null && actionToUse.weaponType == WeaponType.Bow)
                     {
-                        if (n == 1 && HasParameter("Attack_1")) _animator.SetTrigger(_attack1Hash);
-                        else if (HasParameter("Attack_2")) _animator.SetTrigger(_attack2Hash);
+                        if (n == 1 && AnimatorParameterGuard.HasParameter(_animator, "Attack_1")) _animator.SetTrigger(LocomotionAnimatorIds.Attack1);
+                        else if (AnimatorParameterGuard.HasParameter(_animator, "Attack_2")) _animator.SetTrigger(LocomotionAnimatorIds.Attack2);
                     }
                     else
                     {
-                        if (n == 1 && HasParameter("Attack_1")) _animator.SetTrigger(_attack1Hash);
-                        else if (n == 2 && HasParameter("Attack_2")) _animator.SetTrigger(_attack2Hash);
-                        else if (n >= 3 && HasParameter("Attack_3")) _animator.SetTrigger(_attack3Hash);
+                        if (n == 1 && AnimatorParameterGuard.HasParameter(_animator, "Attack_1")) _animator.SetTrigger(LocomotionAnimatorIds.Attack1);
+                        else if (n == 2 && AnimatorParameterGuard.HasParameter(_animator, "Attack_2")) _animator.SetTrigger(LocomotionAnimatorIds.Attack2);
+                        else if (n >= 3 && AnimatorParameterGuard.HasParameter(_animator, "Attack_3")) _animator.SetTrigger(LocomotionAnimatorIds.Attack3);
                     }
                 }
                 else
                 {
-                    if (HasParameter("ActionIndex")) _animator.SetInteger(_actionIndexHash, actionIndex);
-                    if (HasParameter("IsAction")) _animator.SetBool(_isActionHash, true);
-                    if (HasParameter("TakeAction")) _animator.SetTrigger(_takeActionHash);
+                    if (AnimatorParameterGuard.HasParameter(_animator, "ActionIndex")) _animator.SetInteger(LocomotionAnimatorIds.ActionIndex, actionIndex);
+                    if (AnimatorParameterGuard.HasParameter(_animator, "IsAction")) _animator.SetBool(LocomotionAnimatorIds.IsAction, true);
+                    if (AnimatorParameterGuard.HasParameter(_animator, "TakeAction")) _animator.SetTrigger(LocomotionAnimatorIds.TakeAction);
                 }
                 _attackStateTimeout = 5f;
                 StartCoroutine(UpdateAttackTimeoutFromAnimation());
@@ -428,7 +412,7 @@ namespace RogueDeal.Combat.Presentation
                 _attackStateTimeout -= Time.deltaTime;
                 if (_attackStateTimeout <= 0) ResetAttackState();
             }
-            if (!_useLegacyAttackTriggers && _animator != null && HasParameter("IsAction") && !_animator.GetBool(_isActionHash))
+            if (!_useLegacyAttackTriggers && _animator != null && AnimatorParameterGuard.HasParameter(_animator, "IsAction") && !_animator.GetBool(LocomotionAnimatorIds.IsAction))
                 ResetAttackState();
         }
 
@@ -437,8 +421,8 @@ namespace RogueDeal.Combat.Presentation
             _isAttacking = false;
             if (useWeaponColliders && _combatExecutor != null)
                 _combatExecutor.ClearCurrentAction();
-            if (_animator != null && HasParameter("IsAction"))
-                _animator.SetBool(_isActionHash, false);
+            if (_animator != null && AnimatorParameterGuard.HasParameter(_animator, "IsAction"))
+                _animator.SetBool(LocomotionAnimatorIds.IsAction, false);
         }
 
         private IEnumerator UpdateAttackTimeoutFromAnimation()
@@ -456,17 +440,18 @@ namespace RogueDeal.Combat.Presentation
         {
             if (_animator == null || !IsAnimatorValid()) return;
 
-            if (_usePolygonParams)
-            {
-                if (HasParameter("MoveSpeed")) _animator.SetFloat(_moveSpeedHash, _speed2D);
-                if (HasParameter("CurrentGait")) _animator.SetInteger(_currentGaitHash, _currentGait);
-                if (HasParameter("StrafeDirectionX")) _animator.SetFloat(_strafeDirectionXHash, _strafeDirectionX);
-                if (HasParameter("StrafeDirectionZ")) _animator.SetFloat(_strafeDirectionZHash, _strafeDirectionZ);
-                if (HasParameter("IsStrafing")) _animator.SetFloat(_isStrafingHash, _isStrafing ? 1f : 0f);
-                if (HasParameter("IsCrouching")) _animator.SetBool(_isCrouchingHash, _isCrouching);
-            }
-            if (HasParameter("IsGrounded")) _animator.SetBool(_isGroundedHash, _isGrounded);
-            if (HasParameter("Speed")) _animator.SetFloat(_speedHash, _isAttacking || _isDodging ? 0f : (_speed2D / sprintSpeed));
+            LocomotionAnimatorApplier.ApplyPolygonLocomotion(
+                _animator,
+                _usePolygonParams,
+                _isAttacking || _isDodging,
+                _speed2D,
+                _currentGait,
+                _strafeDirectionX,
+                _strafeDirectionZ,
+                _isStrafing ? 1f : 0f,
+                _isCrouching,
+                _isGrounded,
+                sprintSpeed);
         }
 
         private void UpdateLockOnIndicator()
@@ -493,14 +478,6 @@ namespace RogueDeal.Combat.Presentation
 
         public void OnAttackEnd() => ResetAttackState();
         public void OnDodgeEnd() => _isDodging = false;
-
-        private bool HasParameter(string name)
-        {
-            if (_animator == null || _animator.runtimeAnimatorController == null) return false;
-            foreach (var p in _animator.parameters)
-                if (p.name == name) return true;
-            return false;
-        }
 
         private bool IsAnimatorValid() => _animator != null && _animator.runtimeAnimatorController != null;
 

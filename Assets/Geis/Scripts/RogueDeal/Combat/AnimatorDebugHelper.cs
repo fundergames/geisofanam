@@ -1,3 +1,4 @@
+using Geis.Animation;
 using UnityEngine;
 
 namespace RogueDeal.Combat
@@ -110,18 +111,8 @@ namespace RogueDeal.Combat
             }
         }
         
-        private bool HasParameter(Animator anim, string paramName)
-        {
-            if (anim == null || anim.runtimeAnimatorController == null)
-                return false;
-            
-            foreach (var param in anim.parameters)
-            {
-                if (param.name == paramName)
-                    return true;
-            }
-            return false;
-        }
+        private static bool HasParameter(Animator anim, string paramName) =>
+            AnimatorParameterGuard.HasParameter(anim, paramName);
         
         [ContextMenu("Log Current Animation State")]
         public void LogCurrentState()
