@@ -4033,74 +4033,19 @@ MonoBehaviour:
   _inputReader: {fileID: 9022905960281365610}
   _animator: {fileID: 9022905960281365609}
   _controller: {fileID: 8663971696254839474}
-  _alwaysStrafe: 1
-  _walkSpeed: 1.4
-  _runSpeed: 2.5
-  _sprintSpeed: 7
-  _speedChangeDamping: 10
-  _rotationSmoothing: 10
-  _cameraRotationOffset: 0
-  _buttonHoldThreshold: 0.15
-  _shuffleDirectionX: 0
-  _shuffleDirectionZ: 0
-  _capsuleStandingHeight: 1.8
-  _capsuleStandingCentre: 0.93
-  _capsuleCrouchingHeight: 1.2
-  _capsuleCrouchingCentre: 0.6
-  _forwardStrafeMinThreshold: -55
-  _forwardStrafeMaxThreshold: 125
-  _forwardStrafe: 1
+  _speedProfile: {fileID: 0}
+  _strafeInputProfile: {fileID: 0}
+  _capsuleProfile: {fileID: 0}
+  _groundingProfile: {fileID: 0}
+  _airMovementProfile: {fileID: 0}
+  _lookLeanProfile: {fileID: 0}
+  _attackDodgeProfile: {fileID: 0}
   _rearRayPos: {fileID: 5825215148077825390}
   _frontRayPos: {fileID: 1127523209969722715}
-  _groundLayerMask:
-    serializedVersion: 2
-    m_Bits: 0
-  _inclineAngle: 0
-  _groundedOffset: -0.14
-  _gravityMultiplier: 2
-  _fallingBlendRampSeconds: 0.65
-  _fallingDuration: 0
-  _enableHeadTurn: 1
-  _headLookDelay: 0
-  _headLookX: 0
-  _headLookY: 0
-  _headLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _headLookLimitDegrees: 60
-  _enableBodyTurn: 1
-  _bodyLookDelay: 0
-  _bodyLookX: 0
-  _bodyLookY: 0
-  _bodyLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _enableLean: 1
-  _leanDelay: 0
-  _leanValue: 0
-  _leanCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _leansHeadLooksDelay: 0
-  _animationClipEnd: 0
-  _applyRootRotationDuringAttack: 1
   _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
   _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
   _weaponSwitcher: {fileID: 1644897884}
   _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
-  _applyRootRotationDuringDodge: 1
-  _dodgeInputDeadzone: 0.05
-  _dodgeFallbackDuration: 1.2
-  _requireMovementInputForDodge: 1
 --- !u!114 &1976761596
 MonoBehaviour:
   m_ObjectHideFlags: 0
