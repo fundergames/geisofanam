@@ -1,0 +1,16 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 96283a7d71f2340d7a54a315157867b8, type: 3}
+  m_Name: Bow_Weapon_Combo_Data
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponComboData
+  weaponCombos:
+  - {fileID: 11400000, guid: 311e5095fc3108e429dbb46d3b48d1cd, type: 2}

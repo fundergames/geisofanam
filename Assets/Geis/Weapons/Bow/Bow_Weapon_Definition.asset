@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6e557124252be4256b027bd69a1d70d5, type: 3}
+  m_Name: Bow_Weapon_Definition
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponDefinition
+  weaponPrefab: {fileID: 1218206468385280803, guid: b1f094a1cf8f9304d897a0dd0b29da00, type: 3}
+  displayName: Bow
+  comboData: {fileID: 11400000, guid: 311e5095fc3108e429dbb46d3b48d1cd, type: 2}
+  weaponStats: {fileID: 11400000, guid: 2d79439bc3ae645158f4a2afd68b619c, type: 2}
+  combatAction: {fileID: 11400000, guid: 6e5c519dc3e4d4d3a9d79894423be967, type: 2}
