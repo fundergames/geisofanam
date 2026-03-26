@@ -1,3 +1,4 @@
+using Geis.Puzzles;
 using UnityEditor;
 using UnityEngine;
 
