@@ -346,9 +346,14 @@ namespace RogueDeal.Boss
         private IEnumerator ExposeCritSpot()
         {
             _critSpotExposed = true;
-            critSpot?.SetVulnerable(true);
 
-            Debug.Log("[GiantBossController] Both hands broken — crit spot exposed!");
+            // Phase 1: crit spot only takes damage from the spectral ghost inside the Soul Realm.
+            // Phase 2: physical weapon hits land directly (soul-realm work was already done on shields).
+            bool soulRealmRequired = !_phase2Active;
+            critSpot?.SetVulnerable(true, requiresSoulRealm: soulRealmRequired);
+
+            Debug.Log($"[GiantBossController] Both hands broken — crit spot exposed! " +
+                      $"(requiresSoulRealm: {soulRealmRequired})");
 
             yield return new WaitForSeconds(definition.critSpotVulnerableWindow);
 
