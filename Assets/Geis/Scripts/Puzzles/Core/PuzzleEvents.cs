@@ -1,4 +1,5 @@
 using Funder.Core.Events;
+using UnityEngine;
 
 namespace Geis.Puzzles
 {
@@ -19,5 +20,19 @@ namespace Geis.Puzzles
     {
         public PuzzleTriggerBase Trigger;
         public bool Activated;
+    }
+
+    /// <summary>
+    /// Raised when the sword emits a soul resonance pulse in the soul realm.
+    /// <see cref="Triggers.SoulPulseReceptorTrigger"/> subscribes to this.
+    /// The future sword soul-pulse system raises this; use
+    /// <see cref="Triggers.SoulPulseReceptorTrigger.RaisePulse"/> as the call site.
+    /// </summary>
+    public struct SoulPulseEvent : IEvent
+    {
+        /// <summary>World-space origin of the pulse.</summary>
+        public Vector3 Origin;
+        /// <summary>Radius of the pulse wave.</summary>
+        public float Radius;
     }
 }
