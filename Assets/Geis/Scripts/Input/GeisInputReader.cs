@@ -48,6 +48,10 @@ namespace Geis.InputSystem
 
         public Action onLightAttackPerformed;
         public Action onHeavyAttackPerformed;
+        /// <summary>Fires when the heavy-attack button is first pressed (started phase). Used by bow charge.</summary>
+        public Action onHeavyAttackStarted;
+        /// <summary>Fires when the heavy-attack button is released (canceled phase). Used by bow charge-release.</summary>
+        public Action onHeavyAttackReleased;
         public Action onDodgePerformed;
 
         private int _lastDodgeFrame = -1;
@@ -307,6 +311,11 @@ namespace Geis.InputSystem
         /// </summary>
         public void OnHeavyAttack(InputAction.CallbackContext context)
         {
+            if (context.started)
+                onHeavyAttackStarted?.Invoke();
+            else if (context.canceled)
+                onHeavyAttackReleased?.Invoke();
+
             if (!context.performed) return;
             onHeavyAttackPerformed?.Invoke();
         }

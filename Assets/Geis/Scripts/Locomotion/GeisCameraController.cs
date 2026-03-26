@@ -44,6 +44,25 @@ namespace Geis.Locomotion
         private float _positionalCameraLag = 1f;
         [SerializeField]
         private float _rotationalCameraLag = 0.35f;
+        [Header("Aim Mode Camera")]
+        [Tooltip("Camera distance in aim mode (closer, over-the-shoulder)")]
+        [SerializeField]
+        private float _aimCameraDistance = 2.5f;
+        [Tooltip("Right shoulder offset in aim mode")]
+        [SerializeField]
+        private float _aimCameraHorizontalOffset = 0.55f;
+        [Tooltip("Height offset in aim mode")]
+        [SerializeField]
+        private float _aimCameraHeightOffset = 0.15f;
+        [Tooltip("How quickly the camera transitions in/out of aim mode")]
+        [SerializeField]
+        private float _aimTransitionSpeed = 10f;
+
+        private bool _isAimMode;
+        private float _currentEffectiveDistance;
+        private float _currentEffectiveHorizontalOffset;
+        private float _currentEffectiveHeightOffset;
+
         private float _cameraInversion;
 
         private GeisInputReader _inputReader;
@@ -175,8 +194,19 @@ namespace Geis.Locomotion
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
 
+            _currentEffectiveDistance = _cameraDistance;
+            _currentEffectiveHorizontalOffset = _cameraHorizontalOffset;
+            _currentEffectiveHeightOffset = _cameraHeightOffset;
             _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Enables or disables over-the-shoulder aim camera mode. Transitions smoothly.
+        /// </summary>
+        public void SetAimMode(bool enable)
+        {
+            _isAimMode = enable;
         }
 
         /// <summary>
@@ -245,7 +275,16 @@ namespace Geis.Locomotion
             transform.position = _newPosition;
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0);
 
-            _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
+            float targetDist   = _isAimMode ? _aimCameraDistance          : _cameraDistance;
+            float targetHoriz  = _isAimMode ? _aimCameraHorizontalOffset  : _cameraHorizontalOffset;
+            float targetHeight = _isAimMode ? _aimCameraHeightOffset      : _cameraHeightOffset;
+            float aimT = 1f - Mathf.Exp(-_aimTransitionSpeed * Time.deltaTime);
+            _currentEffectiveDistance         = Mathf.Lerp(_currentEffectiveDistance,         targetDist,   aimT);
+            _currentEffectiveHorizontalOffset = Mathf.Lerp(_currentEffectiveHorizontalOffset, targetHoriz,  aimT);
+            _currentEffectiveHeightOffset     = Mathf.Lerp(_currentEffectiveHeightOffset,     targetHeight, aimT);
+            _syntyCamera.localPosition = new Vector3(_currentEffectiveHorizontalOffset,
+                                                      _currentEffectiveHeightOffset,
+                                                      _currentEffectiveDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
 
             _lastPosition = _newPosition;

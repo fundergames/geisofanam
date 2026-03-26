@@ -485,8 +485,9 @@ namespace Geis.Locomotion
         private void ActivateAim()
         {
             _isAiming = true;
-
             _isStrafing = !_isSprinting;
+            if (IsBowEquipped)
+                _cameraController?.SetAimMode(true);
         }
 
         /// <summary>
@@ -496,6 +497,7 @@ namespace Geis.Locomotion
         {
             _isAiming = false;
             _isStrafing = !_isSprinting && (_alwaysStrafe || _isLockedOn);
+            _cameraController?.SetAimMode(false);
         }
 
         /// <summary>
@@ -763,6 +765,7 @@ namespace Geis.Locomotion
         {
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
                 return;
+            if (_isAiming && IsBowEquipped) return;
             if (!_isGrounded || _isCrouching) return;
 
             if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
@@ -952,6 +955,12 @@ namespace Geis.Locomotion
         {
             return _weaponSwitcher != null ? _weaponSwitcher.CurrentWeaponIndex : 0;
         }
+
+        /// <summary>True while the player is holding the aim button.</summary>
+        public bool IsAiming => _isAiming;
+
+        /// <summary>True when weapon slot 3 (Bow) is currently equipped.</summary>
+        public bool IsBowEquipped => _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == 3;
 
         private void UpdateAttackState()
         {
