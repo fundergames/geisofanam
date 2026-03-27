@@ -298,6 +298,19 @@ namespace Geis.SoulRealm
                 visuals.SetSoulRealmBlend(1f);
         }
 
+        /// <summary>
+        /// Immediately ejects the player from the Soul Realm without requiring the hold input.
+        /// Used by boss encounters when the crit window expires.
+        /// </summary>
+        public void ForceExitSoulRealm()
+        {
+            if (!_isSoulRealm) return;
+            _exitHoldTimer = 0f;
+            if (cameraController != null)
+                cameraController.EndSoulRealmExitHoldRotationLerp();
+            CompleteExitSoulRealm();
+        }
+
         private void CompleteExitSoulRealm()
         {
             _exitHoldTimer = 0f;
