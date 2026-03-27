@@ -8,15 +8,34 @@ See `Assets/Docs/AGENTS.md` for the multi-agent orchestration workflow (Design â
 
 ## Cursor Cloud specific instructions
 
-### Environment limitations
+### Unity Editor setup
 
-- **Unity Editor is NOT available** in the Cloud Agent VM. C# compilation, Unity Test Runner, Play mode, and builds all require Unity 6 (`6000.3.9f1`) which is a large GUI application. This means:
-  - No `.sln` / `.csproj` files exist (Unity auto-generates them on project open; they are gitignored).
-  - C# static analysis (Roslyn, OmniSharp) cannot run without these project files.
-  - Unity editor tests in `Packages/com.funder.core/Tests/Editor/` cannot be executed.
-- All C# changes must be validated by code review; runtime testing requires a local Unity Editor.
+Unity 6 (`6000.3.9f1`) is installed at `/home/ubuntu/Unity/Hub/Editor/6000.3.9f1/Editor/Unity`. Unity Hub is installed at `/opt/unityhub/unityhub`.
 
-### What CAN be done in Cloud Agent
+**License activation is required before the editor can run.** A Unity account must be signed in via Unity Hub to obtain a license. To launch Unity Hub on the desktop:
+```
+DISPLAY=:1 /opt/unityhub/unityhub --no-sandbox --disable-gpu-sandbox &
+```
+After login, the editor can be used via the desktop or in batch mode.
+
+**Batch mode** (headless, no GPU):
+```bash
+UNITY=/home/ubuntu/Unity/Hub/Editor/6000.3.9f1/Editor/Unity
+$UNITY -batchmode -nographics -quit -projectPath /workspace -logFile /tmp/unity.log
+```
+Note: batch mode requires the `com.unity.editor.headless` entitlement. Personal licenses may only work with the GUI editor (via `xvfb-run` or desktop). If batch mode fails with license error, run the editor with a display instead:
+```bash
+xvfb-run --auto-servernum --server-args="-screen 0 1920x1080x24" \
+  /home/ubuntu/Unity/Hub/Editor/6000.3.9f1/Editor/Unity \
+  -projectPath /workspace -logFile /tmp/unity.log
+```
+
+**Running editor tests** (requires license):
+```bash
+$UNITY -batchmode -nographics -runTests -testPlatform EditMode -projectPath /workspace -logFile /tmp/unity_tests.log
+```
+
+### What CAN be done without Unity license
 
 | Task | How |
 |------|-----|
@@ -33,8 +52,10 @@ Installed via: `pip3 install -r Tools/requirements.txt -r Tools/discord_agent_bo
 
 ### Key paths
 
+- **Unity binary**: `/home/ubuntu/Unity/Hub/Editor/6000.3.9f1/Editor/Unity`
 - **Game scripts**: `Assets/Geis/Scripts/` (C#, ~310 files)
 - **Core framework package**: `Packages/com.funder.core/` (FSM, events, services)
+- **Core package tests**: `Packages/com.funder.core/Tests/Editor/` (StateMachine, EventBus, ServiceLocator, RandomHub)
 - **Python tools**: `Tools/meshy_generate.py`, `Tools/discord_agent_bot/`
 - **Feature files**: `Assets/Docs/Features/*.md`
 - **Project docs**: `Assets/Docs/PROJECT.md`, `Assets/Docs/VisualStyleGuide.md`
