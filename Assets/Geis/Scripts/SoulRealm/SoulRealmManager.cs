@@ -290,7 +290,10 @@ namespace Geis.SoulRealm
             if (cameraController != null)
                 cameraController.CaptureSoulRealmEntryState();
             if (cameraController != null && _ghostLookAt != null)
+            {
                 cameraController.SetFollowTarget(_ghostLookAt);
+                cameraController.SnapOrbitRotationToLookTarget(_ghostLookAt);
+            }
 
             ApplyFreezeToWorld(true);
 

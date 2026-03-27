@@ -21,7 +21,8 @@ namespace RogueDeal.Boss
     ///     → Player damages CritSpot → DrainSouls().
     ///     → Cycle repeats.
     ///
-    /// Phase ends when remaining souls reach 0 (boss defeated).
+    /// Phase ends when remaining souls drop to or below phase3SoulThreshold (Phase 3 begins),
+    /// unless phase3SoulThreshold is 0 — then this phase runs until the boss is defeated.
     ///
     /// Shields are primed via BossPart.ResetForCycle(useShields: true) so each new cycle
     /// re-arms them automatically without any additional Phase 2 logic.
@@ -49,7 +50,8 @@ namespace RogueDeal.Boss
 
         public void OnUpdate(GiantBossController boss)
         {
-            if (boss.SoulPercent <= 0f)
+            float t = boss.Definition.phase3SoulThreshold;
+            if (t > 0f && boss.SoulPercent <= t)
                 IsComplete = true;
         }
 

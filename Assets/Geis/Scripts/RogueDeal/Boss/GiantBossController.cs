@@ -17,6 +17,7 @@ namespace RogueDeal.Boss
     ///   - Manages phase transitions via the IBossPhase interface:
     ///       Phase 1  → no shields, slam-dodge-attack.
     ///       Phase 2  → hands land Shielded; soul-realm shield must be broken first.
+    ///       Phase 3  → same structure as Phase 2; tuning via GiantBossDefinition (optional if phase3SoulThreshold is 0).
     ///
     /// Slam cycle detail (per hand):
     ///   1. SetState(Slamming)  — windup animation plays.
@@ -58,7 +59,7 @@ namespace RogueDeal.Boss
         /// <summary>Remaining souls changed. (remaining, total)</summary>
         public static event Action<float, float> OnSoulsChanged;
 
-        /// <summary>Phase number changed. (1 or 2)</summary>
+        /// <summary>Phase number changed. (1, 2, or 3)</summary>
         public static event Action<int> OnPhaseChanged;
 
         /// <summary>Boss defeated — all souls drained.</summary>
@@ -67,10 +68,13 @@ namespace RogueDeal.Boss
         /// <summary>Narrative message for the phase transition banner.</summary>
         public static event Action<string> OnPhaseMessage;
 
+        /// <summary>Crit vulnerability window ended (timeout or encounter end). For UI/VFX.</summary>
+        public static event Action OnCritWindowExpired;
+
         // ── Runtime state ──────────────────────────────────────────────────────────
 
         private float _remainingSouls;
-        private bool _phase2Active;
+        private int _phaseIndex = 1;
         private bool _rightHandBroken;
         private bool _leftHandBroken;
         private bool _critSpotExposed;
@@ -89,6 +93,9 @@ namespace RogueDeal.Boss
         public float SoulPercent               => definition != null && definition.totalSouls > 0f
                                                       ? _remainingSouls / definition.totalSouls
                                                       : 0f;
+
+        /// <summary>1 = first phase, 2 = shielded hands, 3 = final phase (if enabled).</summary>
+        public int CurrentPhaseIndex => _phaseIndex;
 
         // ── Unity lifecycle ────────────────────────────────────────────────────────
 
@@ -143,7 +150,7 @@ namespace RogueDeal.Boss
                 playerEntity = FindFirstObjectByType<CombatEntity>();
 
             _remainingSouls    = definition.totalSouls;
-            _phase2Active      = false;
+            _phaseIndex        = 1;
             _rightHandBroken   = false;
             _leftHandBroken    = false;
             _critSpotExposed   = false;
@@ -216,22 +223,36 @@ namespace RogueDeal.Boss
 
         private void AdvancePhase()
         {
-            if (!_phase2Active)
+            if (_phaseIndex == 1)
             {
-                _phase2Active = true;
+                _phaseIndex = 2;
                 TransitionToPhase(new GiantBossPhase2());
                 OnPhaseChanged?.Invoke(2);
                 OnPhaseMessage?.Invoke("The Soul Warden's fists begin to glow...");
+                return;
             }
-            else
+
+            if (_phaseIndex == 2 && definition.phase3SoulThreshold > 0f)
             {
-                // Phase 2 complete → boss defeated
-                DefeatBoss();
+                _phaseIndex = 3;
+                TransitionToPhase(new GiantBossPhase3());
+                OnPhaseChanged?.Invoke(3);
+                OnPhaseMessage?.Invoke("The veil tears...");
             }
         }
 
         private void TransitionToPhase(IBossPhase newPhase)
         {
+            if (_critWindowCoroutine != null)
+            {
+                StopCoroutine(_critWindowCoroutine);
+                _critWindowCoroutine = null;
+            }
+
+            critSpot?.SetVulnerable(false);
+            _critSpotExposed = false;
+            SoulRealmManager.Instance?.ForceExitSoulRealm();
+
             _currentPhase?.OnExit(this);
             _currentPhase = newPhase;
             _currentPhase.OnEnter(this);
@@ -247,12 +268,12 @@ namespace RogueDeal.Boss
                 yield return new WaitUntil(() => !_critSpotExposed);
 
                 yield return SlamHand(rightHandPart, "R");
-                yield return new WaitForSeconds(definition.timeBetweenSlams);
+                yield return new WaitForSeconds(definition.GetTimeBetweenSlams(_phaseIndex));
 
                 yield return new WaitUntil(() => !_critSpotExposed);
 
                 yield return SlamHand(leftHandPart, "L");
-                yield return new WaitForSeconds(definition.timeBetweenSlams);
+                yield return new WaitForSeconds(definition.GetTimeBetweenSlams(_phaseIndex));
             }
         }
 
@@ -263,9 +284,7 @@ namespace RogueDeal.Boss
                 || hand.State == BossPartState.Disabled)
                 yield break;
 
-            float groundedDuration = _phase2Active
-                ? definition.slamGroundedDurationPhase2
-                : definition.slamGroundedDuration;
+            float groundedDuration = definition.GetSlamGroundedDuration(_phaseIndex);
 
             // ── Windup ──────────────────────────────────────────────────────────
             hand.SetState(BossPartState.Slamming);
@@ -277,7 +296,7 @@ namespace RogueDeal.Boss
             DealSlamDamage(hand);
             bossAnimator?.SetTrigger($"SlamLand_{suffix}");
 
-            bool needsShield = _phase2Active
+            bool needsShield = _phaseIndex >= 2
                 && hand.Definition != null
                 && hand.Definition.hasSoulShieldInPhase2;
 
@@ -348,32 +367,31 @@ namespace RogueDeal.Boss
         {
             _critSpotExposed = true;
 
-            // Both phases: crit spot requires the Soul Realm.
-            // Phase 1 — ghost attacks the core after breaking both hands bare.
-            // Phase 2 — ghost attacks the core after breaking shielded-then-grounded hands.
-            critSpot?.SetVulnerable(true, requiresSoulRealm: true);
+            float windowSeconds = definition.GetCritWindowSeconds(_phaseIndex);
+            bool requiresSoul = definition.GetCritRequiresSoulRealm(_phaseIndex);
+            critSpot?.SetVulnerable(true, requiresSoulRealm: requiresSoul);
 
-            Debug.Log("[GiantBossController] Both hands broken — crit spot exposed (Soul Realm required).");
+            Debug.Log($"[GiantBossController] Both hands broken — crit spot exposed " +
+                      $"(soulRealm={requiresSoul}, window={windowSeconds:F1}s).");
 
             float elapsed = 0f;
-            while (elapsed < definition.critSpotVulnerableWindow && _encounterStarted)
+            while (elapsed < windowSeconds && _encounterStarted)
             {
                 elapsed += Time.deltaTime;
                 yield return null;
             }
 
-            // If the encounter is still running the window timed out without a kill.
-            // Kick the player out of the Soul Realm and reset fists (re-applying shields in Phase 2).
             if (_encounterStarted)
             {
                 SoulRealmManager.Instance?.ForceExitSoulRealm();
+                OnCritWindowExpired?.Invoke();
                 Debug.Log("[GiantBossController] Crit window expired — ejecting from Soul Realm, resetting hands.");
             }
 
             critSpot?.SetVulnerable(false);
             _critSpotExposed = false;
 
-            ResetPartsForPhase(_phase2Active);
+            ResetPartsForPhase(_phaseIndex >= 2);
 
             Debug.Log("[GiantBossController] Crit window closed — hands reset.");
         }

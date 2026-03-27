@@ -2,6 +2,7 @@
 // Original: Synty.AnimationBaseLocomotion.Samples.SampleCameraController
 
 using Geis.InputSystem;
+using Geis.SoulRealm;
 using UnityEngine;
 
 namespace Geis.Locomotion
@@ -217,6 +218,31 @@ namespace Geis.Locomotion
                 _playerTarget = newPlayerTarget;
         }
 
+        /// <summary>
+        /// Aligns orbit yaw/pitch and pivot position to a look-at transform (same convention as <see cref="Start"/>).
+        /// Used when entering soul realm so the view is behind the ghost instead of keeping the pre-entry orbit.
+        /// Does not modify soul-realm exit baseline from <see cref="CaptureSoulRealmEntryState"/>.
+        /// </summary>
+        public void SnapOrbitRotationToLookTarget(Transform lookTarget)
+        {
+            if (lookTarget == null)
+                return;
+
+            transform.position = lookTarget.position;
+            transform.rotation = lookTarget.rotation;
+
+            _targetAngleX = transform.eulerAngles.x;
+            _targetAngleY = transform.eulerAngles.y;
+            _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+            _currentAngleX = _targetAngleX;
+            _currentAngleY = _targetAngleY;
+            _lastAngleX = _currentAngleX;
+            _lastAngleY = _currentAngleY;
+            _lastPosition = transform.position;
+
+            transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
+        }
+
         /// <inheritdoc cref="LateUpdate" />
         private void LateUpdate()
         {
@@ -245,7 +271,11 @@ namespace Geis.Locomotion
                 _targetAngleX += rotationX;
                 _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
 
-                if (_isLockedOn && _lockOnTarget != null)
+                // Lock-on normally overrides yaw; soul realm still needs free look (body/ghost follow is handled elsewhere).
+                bool useLockOnYaw = _isLockedOn && _lockOnTarget != null
+                    && !(SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive);
+
+                if (useLockOnYaw)
                 {
                     Vector3 aimVector = _lockOnTarget.position - _playerTarget.position;
                     Quaternion targetRotation = Quaternion.LookRotation(aimVector);

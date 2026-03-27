@@ -10,15 +10,16 @@ namespace RogueDeal.Boss
     /// <summary>
     /// The soul core / weak point exposed on the giant boss after both hands are broken.
     ///
-    /// Two damage modes, selected per-phase by GiantBossController:
+    /// Two damage modes, selected per-phase by GiantBossController from
+    /// <see cref="GiantBossDefinition"/> (critRequiresSoulRealmPhase1/2/3):
     ///
-    ///   requiresSoulRealm = true  (Phase 1)
+    ///   requiresSoulRealm = true
     ///     The crit spot is only damageable from inside the Soul Realm.
     ///     Physical weapon hits are silently blocked (entity HP restored, no OnCritHit).
     ///     The spectral ghost must move within interactionRadius and press light attack.
     ///     Each ghost hit fires OnCritHit(this, ghostHitDamage).
     ///
-    ///   requiresSoulRealm = false  (Phase 2)
+    ///   requiresSoulRealm = false
     ///     Physical weapon-hitbox hits register normally via CombatEvents.OnDamageApplied
     ///     and fire OnCritHit(this, rawDamage).
     ///
