@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using Geis.SoulRealm;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using UnityEngine;
@@ -347,20 +348,31 @@ namespace RogueDeal.Boss
         {
             _critSpotExposed = true;
 
-            // Phase 1: crit spot only takes damage from the spectral ghost inside the Soul Realm.
-            // Phase 2: physical weapon hits land directly (soul-realm work was already done on shields).
-            bool soulRealmRequired = !_phase2Active;
-            critSpot?.SetVulnerable(true, requiresSoulRealm: soulRealmRequired);
+            // Both phases: crit spot requires the Soul Realm.
+            // Phase 1 — ghost attacks the core after breaking both hands bare.
+            // Phase 2 — ghost attacks the core after breaking shielded-then-grounded hands.
+            critSpot?.SetVulnerable(true, requiresSoulRealm: true);
 
-            Debug.Log($"[GiantBossController] Both hands broken — crit spot exposed! " +
-                      $"(requiresSoulRealm: {soulRealmRequired})");
+            Debug.Log("[GiantBossController] Both hands broken — crit spot exposed (Soul Realm required).");
 
-            yield return new WaitForSeconds(definition.critSpotVulnerableWindow);
+            float elapsed = 0f;
+            while (elapsed < definition.critSpotVulnerableWindow && _encounterStarted)
+            {
+                elapsed += Time.deltaTime;
+                yield return null;
+            }
+
+            // If the encounter is still running the window timed out without a kill.
+            // Kick the player out of the Soul Realm and reset fists (re-applying shields in Phase 2).
+            if (_encounterStarted)
+            {
+                SoulRealmManager.Instance?.ForceExitSoulRealm();
+                Debug.Log("[GiantBossController] Crit window expired — ejecting from Soul Realm, resetting hands.");
+            }
 
             critSpot?.SetVulnerable(false);
             _critSpotExposed = false;
 
-            // Reset parts for the next cycle (shields if Phase 2)
             ResetPartsForPhase(_phase2Active);
 
             Debug.Log("[GiantBossController] Crit window closed — hands reset.");
