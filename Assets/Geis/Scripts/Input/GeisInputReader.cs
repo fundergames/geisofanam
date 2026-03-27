@@ -12,6 +12,10 @@ using UnityEngine.Serialization;
 
 namespace Geis.InputSystem
 {
+    /// <summary>
+    /// Runs early so move / look vectors are updated before other <see cref="MonoBehaviour.Update"/> logic.
+    /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class GeisInputReader : MonoBehaviour, GeisControls.IPlayerActions
     {
         public Vector2 _mouseDelta;
@@ -106,6 +110,11 @@ namespace Geis.InputSystem
             if (_controls == null)
                 return;
 
+            // Move only here — locomotion runs in Update. Look is polled in LateUpdate via
+            // <see cref="PollLookInputForCamera"/> so gamepad sticks match Input System timing for the camera.
+            _moveComposite = _controls.Player.Move.ReadValue<Vector2>();
+            _movementInputDetected = _moveComposite.magnitude > 0f;
+
             var gp = Gamepad.current;
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
             {
@@ -148,6 +157,17 @@ namespace Geis.InputSystem
             onDodgePerformed?.Invoke();
         }
 
+        /// <summary>
+        /// Call from <see cref="Geis.Locomotion.GeisCameraController"/> LateUpdate before applying orbit rotation.
+        /// Reading Look here (not in Update) fixes gamepad right-stick look; Update runs before input is finalized for the frame.
+        /// </summary>
+        public void PollLookInputForCamera()
+        {
+            if (_controls == null)
+                return;
+            _mouseDelta = _controls.Player.Look.ReadValue<Vector2>();
+        }
+
         /// <summary>True on the frame SoulRealm was pressed (enter detection).</summary>
         public bool SoulRealmWasPressedThisFrame()
         {
@@ -163,7 +183,7 @@ namespace Geis.InputSystem
         /// <param name="context">The context of the callback.</param>
         public void OnLook(InputAction.CallbackContext context)
         {
-            _mouseDelta = context.ReadValue<Vector2>();
+            // Values come from Update() via Look.ReadValue — see comment there.
         }
 
         /// <summary>
@@ -172,8 +192,7 @@ namespace Geis.InputSystem
         /// <param name="context">The context of the callback.</param>
         public void OnMove(InputAction.CallbackContext context)
         {
-            _moveComposite = context.ReadValue<Vector2>();
-            _movementInputDetected = _moveComposite.magnitude > 0;
+            // Values come from Update() via Move.ReadValue — see comment there.
         }
 
         /// <summary>

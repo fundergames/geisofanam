@@ -23,6 +23,8 @@ namespace Geis.SoulRealm
         [Header("Dodge (soul realm)")]
         [SerializeField] private float ghostDodgeDuration = 0.35f;
         [SerializeField] private float ghostDodgeSpeed = 7f;
+        [Tooltip("Stick magnitude below this uses camera-forward dodge (avoids drift steering dodges forward).")]
+        [SerializeField] private float ghostDodgeDirectionDeadzone = 0.35f;
 
         private CharacterController _cc;
         private Transform _cameraTransform;
@@ -98,7 +100,9 @@ namespace Geis.SoulRealm
 
         private Vector3 ComputeGhostDodgePlanarDirection()
         {
-            float dz = _bodyLocomotion != null ? _bodyLocomotion.LocomotionDodgeDeadzone : 0.05f;
+            float dz = Mathf.Max(
+                ghostDodgeDirectionDeadzone,
+                _bodyLocomotion != null ? _bodyLocomotion.LocomotionDodgeDeadzone : 0.05f);
             Vector2 m = inputReader != null ? inputReader._moveComposite : Vector2.zero;
             if (_cameraController != null)
             {
@@ -284,6 +288,18 @@ namespace Geis.SoulRealm
             {
                 _targetMaxSpeed = _currentMaxSpeed;
             }
+            else if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive && inputReader != null)
+            {
+                // Body gait/sprint flags freeze while soul realm suppresses locomotion — use live sprint input.
+                if (b.LocomotionIsCrouching)
+                    _targetMaxSpeed = b.LocomotionWalkSpeed;
+                else if (inputReader.IsSprintHeldOrToggled)
+                    _targetMaxSpeed = b.LocomotionSprintSpeed;
+                else if (b.LocomotionIsWalking)
+                    _targetMaxSpeed = b.LocomotionWalkSpeed;
+                else
+                    _targetMaxSpeed = b.LocomotionRunSpeed;
+            }
             else if (b.LocomotionIsCrouching)
             {
                 _targetMaxSpeed = b.LocomotionWalkSpeed;
@@ -345,8 +361,14 @@ namespace Geis.SoulRealm
             }
 
             float rotSmooth = _bodyLocomotion.LocomotionRotationSmoothing;
-            bool strafe = _bodyLocomotion.LocomotionIsStrafing;
             Vector3 direction = new Vector3(_moveDirection.x, 0f, _moveDirection.z);
+
+            // Body strafe flag freezes in soul realm. Move-relative facing yaws the ghost with the left stick, which
+            // swings the follow LookAt in world space and feels like the camera is turning. While moving in soul realm,
+            // face camera forward (strafe-style) so only the right stick orbits the view.
+            bool strafe = _bodyLocomotion.LocomotionIsStrafing;
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                strafe = direction.sqrMagnitude > 0.01f;
 
             if (strafe && direction.sqrMagnitude > 0.01f)
             {

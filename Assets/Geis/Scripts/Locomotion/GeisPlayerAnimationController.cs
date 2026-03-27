@@ -14,6 +14,11 @@ using Geis.SoulRealm;
 
 namespace Geis.Locomotion
 {
+    /// <summary>
+    /// Runs before default managers so <see cref="ApplyLocomotionTuningFromProfiles"/> fills cached tuning
+    /// before e.g. <see cref="SoulRealm.SoulRealmManager"/> configures the ghost from these values.
+    /// </summary>
+    [DefaultExecutionOrder(-100)]
     public class GeisPlayerAnimationController : MonoBehaviour
     {
         #region Enum
@@ -98,59 +103,62 @@ namespace Geis.Locomotion
 
         #region Cached tuning (Awake: from profiles above)
 
-        private bool _alwaysStrafe;
-        private float _walkSpeed;
-        private float _runSpeed;
-        private float _sprintSpeed;
-        private float _speedChangeDamping;
-        private float _rotationSmoothing;
+        // Defaults match GeisLocomotionTuningDefaults so SoulRealm / SoulGhostMotor can read Locomotion* safely
+        // even if another component's Awake runs before ours (Unity does not guarantee Awake order).
+
+        private bool _alwaysStrafe = GeisLocomotionTuningDefaults.AlwaysStrafe;
+        private float _walkSpeed = GeisLocomotionTuningDefaults.WalkSpeed;
+        private float _runSpeed = GeisLocomotionTuningDefaults.RunSpeed;
+        private float _sprintSpeed = GeisLocomotionTuningDefaults.SprintSpeed;
+        private float _speedChangeDamping = GeisLocomotionTuningDefaults.SpeedChangeDamping;
+        private float _rotationSmoothing = GeisLocomotionTuningDefaults.RotationSmoothing;
         private float _cameraRotationOffset;
 
-        private float _buttonHoldThreshold;
+        private float _buttonHoldThreshold = GeisLocomotionTuningDefaults.ButtonHoldThreshold;
         private float _shuffleDirectionX;
         private float _shuffleDirectionZ;
 
-        private float _capsuleStandingHeight;
-        private float _capsuleStandingCentre;
-        private float _capsuleCrouchingHeight;
-        private float _capsuleCrouchingCentre;
+        private float _capsuleStandingHeight = GeisLocomotionTuningDefaults.CapsuleStandingHeight;
+        private float _capsuleStandingCentre = GeisLocomotionTuningDefaults.CapsuleStandingCentre;
+        private float _capsuleCrouchingHeight = GeisLocomotionTuningDefaults.CapsuleCrouchingHeight;
+        private float _capsuleCrouchingCentre = GeisLocomotionTuningDefaults.CapsuleCrouchingCentre;
 
-        private float _forwardStrafeMinThreshold;
-        private float _forwardStrafeMaxThreshold;
-        private float _forwardStrafe;
+        private float _forwardStrafeMinThreshold = GeisLocomotionTuningDefaults.ForwardStrafeMinThreshold;
+        private float _forwardStrafeMaxThreshold = GeisLocomotionTuningDefaults.ForwardStrafeMaxThreshold;
+        private float _forwardStrafe = GeisLocomotionTuningDefaults.ForwardStrafe;
 
-        private LayerMask _groundLayerMask;
-        private float _groundedOffset;
+        private LayerMask _groundLayerMask = (LayerMask)(-1);
+        private float _groundedOffset = GeisLocomotionTuningDefaults.GroundedOffset;
 
-        private float _jumpForce;
-        private float _gravityMultiplier;
-        private float _fallingBlendRampSeconds;
+        private float _jumpForce = GeisLocomotionTuningDefaults.JumpForce;
+        private float _gravityMultiplier = GeisLocomotionTuningDefaults.GravityMultiplier;
+        private float _fallingBlendRampSeconds = GeisLocomotionTuningDefaults.FallingBlendRampSeconds;
 
-        private bool _enableHeadTurn;
+        private bool _enableHeadTurn = true;
         private float _headLookDelay;
         private float _headLookX;
         private float _headLookY;
-        private AnimationCurve _headLookXCurve;
-        private float _headLookLimitDegrees;
+        private AnimationCurve _headLookXCurve = AnimationCurve.Linear(-1f, -1f, 1f, 1f);
+        private float _headLookLimitDegrees = GeisLocomotionTuningDefaults.HeadLookLimitDegrees;
 
-        private bool _enableBodyTurn;
+        private bool _enableBodyTurn = true;
         private float _bodyLookDelay;
         private float _bodyLookX;
         private float _bodyLookY;
-        private AnimationCurve _bodyLookXCurve;
+        private AnimationCurve _bodyLookXCurve = AnimationCurve.Linear(-1f, -1f, 1f, 1f);
 
-        private bool _enableLean;
+        private bool _enableLean = true;
         private float _leanDelay;
         private float _leanValue;
-        private AnimationCurve _leanCurve;
+        private AnimationCurve _leanCurve = AnimationCurve.Linear(-1f, -1f, 1f, 1f);
         private float _leansHeadLooksDelay;
         private bool _animationClipEnd;
 
-        private bool _applyRootRotationDuringAttack;
-        private bool _applyRootRotationDuringDodge;
-        private float _dodgeInputDeadzone;
-        private float _dodgeFallbackDuration;
-        private bool _requireMovementInputForDodge;
+        private bool _applyRootRotationDuringAttack = GeisLocomotionTuningDefaults.ApplyRootRotationDuringAttack;
+        private bool _applyRootRotationDuringDodge = GeisLocomotionTuningDefaults.ApplyRootRotationDuringDodge;
+        private float _dodgeInputDeadzone = GeisLocomotionTuningDefaults.DodgeInputDeadzone;
+        private float _dodgeFallbackDuration = GeisLocomotionTuningDefaults.DodgeFallbackDuration;
+        private bool _requireMovementInputForDodge = GeisLocomotionTuningDefaults.RequireMovementInputForDodge;
 
         #endregion
 

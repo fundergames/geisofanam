@@ -90,7 +90,6 @@ namespace Geis.Locomotion
         private float _soulRealmBaselineTargetAngleY;
         private float _soulRealmBaselineCurrentAngleX;
         private float _soulRealmBaselineCurrentAngleY;
-        private Vector3 _soulRealmBaselineLastPosition;
 
         private float _soulRealmHoldStartTargetAngleX;
         private float _soulRealmHoldStartTargetAngleY;
@@ -107,7 +106,6 @@ namespace Geis.Locomotion
             _soulRealmBaselineTargetAngleY = _targetAngleY;
             _soulRealmBaselineCurrentAngleX = _currentAngleX;
             _soulRealmBaselineCurrentAngleY = _currentAngleY;
-            _soulRealmBaselineLastPosition = _lastPosition;
             _soulRealmBaselineCaptured = true;
         }
 
@@ -152,7 +150,8 @@ namespace Geis.Locomotion
             _currentAngleX = _soulRealmBaselineCurrentAngleX;
             _currentAngleY = _soulRealmBaselineCurrentAngleY;
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
-            _lastPosition = _soulRealmBaselineLastPosition;
+            // Keep lag state aligned with the snapped pivot so positional follow lerps normally next frame.
+            _lastPosition = transform.position;
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
         }
@@ -223,6 +222,9 @@ namespace Geis.Locomotion
         {
             if (_playerTarget == null)
                 return;
+
+            if (_inputReader != null)
+                _inputReader.PollLookInputForCamera();
 
             float positionalSharpness = 1f / Mathf.Max(_positionalCameraLag, 0.01f);
             float rotationalSharpness = 1f / Mathf.Max(_rotationalCameraLag, 0.01f);

@@ -97,6 +97,16 @@ namespace Geis.SoulRealm
                 ghostMotor.Configure(inputReader, bodyLocomotion, cameraController);
         }
 
+        /// <summary>
+        /// Re-applies ghost configuration after all <see cref="MonoBehaviour.Awake"/> calls on the scene.
+        /// Ensures <see cref="GeisPlayerAnimationController"/> tuning is applied before we mirror capsule/speeds.
+        /// </summary>
+        private void Start()
+        {
+            if (ghostMotor != null && inputReader != null)
+                ghostMotor.Configure(inputReader, bodyLocomotion, cameraController);
+        }
+
         private void OnDestroy()
         {
             if (Instance == this)
