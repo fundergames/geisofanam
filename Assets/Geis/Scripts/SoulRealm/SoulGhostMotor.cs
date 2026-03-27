@@ -42,6 +42,9 @@ namespace Geis.SoulRealm
         private float _dodgeTimeRemaining;
         private Vector3 _dodgePlanarDir = Vector3.forward;
 
+        private Transform _groundRideSurface;
+        private Vector3 _groundRideLastWorldPos;
+
         private void Awake()
         {
             _cc = GetComponent<CharacterController>();
@@ -209,7 +212,16 @@ namespace Geis.SoulRealm
             else
                 ApplyGravity();
 
-            _cc.Move(_velocity * Time.deltaTime);
+            float rideOff = _bodyLocomotion != null ? _bodyLocomotion.LocomotionGroundedOffset : 0.14f;
+            LayerMask rideMask = _bodyLocomotion != null ? _bodyLocomotion.LocomotionGroundLayerMask : (LayerMask)(-1);
+            if (rideMask.value == 0)
+                rideMask = (LayerMask)(-1);
+
+            Vector3 groundRide = GroundRideUtility.GetRideDelta(
+                transform, _cc, rideMask, rideOff,
+                ref _groundRideSurface, ref _groundRideLastWorldPos, groundedBeforeMove);
+
+            _cc.Move(groundRide + _velocity * Time.deltaTime);
             _groundedAfterMove = GroundedCheck();
 
             if (_dodgeTimeRemaining > 0f)

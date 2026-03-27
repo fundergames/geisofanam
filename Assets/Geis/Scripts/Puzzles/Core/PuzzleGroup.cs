@@ -23,7 +23,7 @@ namespace Geis.Puzzles
         [SerializeField] private PuzzleTriggerBase[] triggers;
         [SerializeField] private PuzzleOutputBase[]  outputs;
         [SerializeField] private LogicMode           logicMode = LogicMode.AllRequired;
-        [Tooltip("If true the puzzle can only be solved once; outputs stay active permanently.")]
+        [Tooltip("If true, the puzzle stays solved after the first solve and trigger releases no longer call Deactivate on outputs. Use false for hold-to-activate puzzles (e.g. pressure plates that must release).")]
         [SerializeField] private bool                oneShot = true;
         [Tooltip("(Timed mode) All triggers must fire within this many seconds of the first.")]
         [SerializeField] private float               timedWindowSeconds = 3f;

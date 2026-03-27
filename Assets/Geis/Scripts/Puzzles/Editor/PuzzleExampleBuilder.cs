@@ -176,7 +176,7 @@ namespace Geis.Puzzles.Editor
             var trigger = plate.AddComponent<PressurePlateTrigger>();
             SetString(trigger, "activatorTag", "Player");
             SetComponent(trigger, "plateVisual", plate.transform);
-            SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.SoulOnly);
+            SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.BothRealms);
 
             // Moving platform with two waypoints
             var platform = CreateBox(parent, "Platform", new Vector3(0, 0.5f, 5f),
@@ -196,7 +196,7 @@ namespace Geis.Puzzles.Editor
             var movOutput = platform.AddComponent<MovingPlatformOutput>();
             SetComponent(movOutput, "platformMover", mover);
 
-            WireGroup(parent, new Component[] { trigger }, new Component[] { movOutput });
+            WireGroup(parent, new Component[] { trigger }, new Component[] { movOutput }, oneShot: false);
             CreateWorldLabel(parent, "PRESSURE PLATE\nStand on plate to move platform\n[Soul Realm]",
                 new Vector3(0f, 4f, 0f), new Color(0.4f, 0.9f, 0.4f));
         }
@@ -343,7 +343,7 @@ namespace Geis.Puzzles.Editor
 
         // ── Wiring ───────────────────────────────────────────────────────────────
 
-        static void WireGroup(GameObject parent, Component[] triggers, Component[] outputs)
+        static void WireGroup(GameObject parent, Component[] triggers, Component[] outputs, bool oneShot = true)
         {
             var group = parent.AddComponent<PuzzleGroup>();
             var so    = new SerializedObject(group);
@@ -359,6 +359,7 @@ namespace Geis.Puzzles.Editor
             for (int i = 0; i < outputs.Length; i++)
                 outProp.GetArrayElementAtIndex(i).objectReferenceValue = outputs[i];
 
+            so.FindProperty("oneShot").boolValue = oneShot;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 

@@ -397,6 +397,8 @@ namespace Geis.Locomotion
         private bool _isAiming;
         private bool _isCrouching;
         private bool _isGrounded = true;
+        private Transform _groundRideSurface;
+        private Vector3 _groundRideLastWorldPos;
         private bool _isLockedOn;
         private bool _isSliding;
         private bool _isSprinting;
@@ -1236,7 +1238,10 @@ namespace Geis.Locomotion
         private void Update()
         {
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
+            {
+                ApplyMovingGroundRideWhileBodySuppressed();
                 return;
+            }
 
             ApplyComboOverridesIfReady();
 
@@ -1367,12 +1372,35 @@ namespace Geis.Locomotion
         /// </summary>
         private void Move()
         {
-            _controller.Move(_velocity * Time.deltaTime);
+            LayerMask rideMask = _groundLayerMask.value != 0 ? _groundLayerMask : (LayerMask)(-1);
+            Vector3 groundRide = GroundRideUtility.GetRideDelta(
+                transform, _controller, rideMask, _groundedOffset,
+                ref _groundRideSurface, ref _groundRideLastWorldPos, _isGrounded);
+
+            _controller.Move(groundRide + _velocity * Time.deltaTime);
 
             if (_isLockedOn && _targetLockOnPos != null && _currentLockOnTarget != null)
             {
                 _targetLockOnPos.position = _currentLockOnTarget.transform.position;
             }
+        }
+
+        /// <summary>
+        /// Soul realm suppresses full locomotion <see cref="Update"/>, but the body must still follow
+        /// kinematic floors (see <see cref="GroundRideUtility"/>).
+        /// </summary>
+        private void ApplyMovingGroundRideWhileBodySuppressed()
+        {
+            if (_controller == null)
+                return;
+
+            GroundedCheck();
+            LayerMask rideMask = _groundLayerMask.value != 0 ? _groundLayerMask : (LayerMask)(-1);
+            Vector3 groundRide = GroundRideUtility.GetRideDelta(
+                transform, _controller, rideMask, _groundedOffset,
+                ref _groundRideSurface, ref _groundRideLastWorldPos, _isGrounded);
+            if (groundRide.sqrMagnitude > 1e-12f)
+                _controller.Move(groundRide);
         }
 
         /// <summary>

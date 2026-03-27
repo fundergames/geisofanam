@@ -1,12 +1,14 @@
 using System.Collections.Generic;
 using Geis.InputSystem;
 using Geis.Locomotion;
+using Geis.Puzzles;
 using UnityEngine;
 
 namespace Geis.SoulRealm
 {
     /// <summary>
-    /// Soul realm state: physical body stays visible at the entry pose (no locomotion; animator paused), spectral copy moves, selective world freeze, hold-to-exit with camera lerp.
+    /// Soul realm state: physical body stays visible (no locomotion; animator paused) but still follows
+    /// moving ground; spectral copy moves, selective world freeze, hold-to-exit with camera lerp.
     /// </summary>
     public sealed class SoulRealmManager : MonoBehaviour
     {
@@ -152,6 +154,8 @@ namespace Geis.SoulRealm
 
                 if (ghostMotor == null)
                     ghostMotor = ghostRoot.GetComponent<SoulGhostMotor>();
+                if (ghostRoot.CompareTag("Untagged"))
+                    ghostRoot.tag = "Player";
                 ghostRoot.SetActive(false);
                 return;
             }
@@ -168,6 +172,7 @@ namespace Geis.SoulRealm
             lookGo.transform.SetParent(ghostRoot.transform, false);
             lookGo.transform.localPosition = new Vector3(0f, 1.6f, 0f);
             _ghostLookAt = lookGo.transform;
+            ghostRoot.tag = "Player";
             ghostRoot.SetActive(false);
         }
 
@@ -257,8 +262,7 @@ namespace Geis.SoulRealm
 
             if (bodyAnimator != null)
                 bodyAnimator.speed = 0f;
-            if (bodyCharacterController != null)
-                bodyCharacterController.enabled = false;
+            // Leave body CharacterController enabled so ground ride can move it with platforms.
 
             _spectralMeshSourceRoot = spectralCharacterVisualRoot != null
                 ? spectralCharacterVisualRoot
@@ -337,6 +341,8 @@ namespace Geis.SoulRealm
                 if (ghostMotor != null)
                     ghostMotor.enabled = false;
             }
+
+            PressurePlateTrigger.RefreshOverlapsAfterSoulRealmExit();
 
             if (bodyAnimator != null)
                 bodyAnimator.speed = 1f;

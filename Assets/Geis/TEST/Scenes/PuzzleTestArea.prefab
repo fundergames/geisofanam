@@ -59100,7 +59100,7 @@ MonoBehaviour:
   outputs:
   - {fileID: 5372199375150769979}
   logicMode: 0
-  oneShot: 1
+  oneShot: 0
   timedWindowSeconds: 3
   onSolved:
     m_PersistentCalls:
@@ -69936,12 +69936,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7257e8528a6e4fa4faadebe5100f2320, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PressurePlateTrigger
-  realmMode: 0
+  realmMode: 2
   activatorTag: Player
-  secondaryTag: 
+  secondaryTag:
   plateVisual: {fileID: 3122558615220600732}
   pressedScale: {x: 1, y: 0.5, z: 1}
   releasedScale: {x: 1, y: 1, z: 1}
+  plateRenderer: {fileID: 0}
+  useColorTint: 1
+  releasedColor: {r: 0.45, g: 0.85, b: 0.45, a: 1}
+  pressedColor: {r: 0.15, g: 0.95, b: 0.35, a: 1}
 --- !u!1 &5122528405273100258
 GameObject:
   m_ObjectHideFlags: 0
@@ -72730,6 +72734,8 @@ MonoBehaviour:
   activationDelay: 0
   platformMover: {fileID: 747895499750479826}
   invertBehaviour: 0
+  plateInteraction: 0
+  endMovement: 0
 --- !u!1 &5346804037419963075
 GameObject:
   m_ObjectHideFlags: 0
@@ -113053,6 +113059,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
+  - {fileID: 421577137897930146}
   - {fileID: 450365491609235937}
   - {fileID: 6392380080478932640}
   - {fileID: 1132452788393322669}
@@ -113061,7 +113068,6 @@ Transform:
   - {fileID: 6059798430066083109}
   - {fileID: 778438187907031535}
   - {fileID: 6480569863991592208}
-  - {fileID: 421577137897930146}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &8693761156367851443
