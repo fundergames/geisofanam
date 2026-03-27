@@ -2,7 +2,6 @@
 // Original: Synty.AnimationBaseLocomotion.Samples.SampleCameraController
 
 using Geis.InputSystem;
-using Geis.SoulRealm;
 using UnityEngine;
 
 namespace Geis.Locomotion
@@ -45,25 +44,6 @@ namespace Geis.Locomotion
         private float _positionalCameraLag = 1f;
         [SerializeField]
         private float _rotationalCameraLag = 0.35f;
-        [Header("Aim Mode Camera")]
-        [Tooltip("Camera distance in aim mode (closer, over-the-shoulder)")]
-        [SerializeField]
-        private float _aimCameraDistance = 2.5f;
-        [Tooltip("Right shoulder offset in aim mode")]
-        [SerializeField]
-        private float _aimCameraHorizontalOffset = 0.55f;
-        [Tooltip("Height offset in aim mode")]
-        [SerializeField]
-        private float _aimCameraHeightOffset = 0.15f;
-        [Tooltip("How quickly the camera transitions in/out of aim mode")]
-        [SerializeField]
-        private float _aimTransitionSpeed = 10f;
-
-        private bool _isAimMode;
-        private float _currentEffectiveDistance;
-        private float _currentEffectiveHorizontalOffset;
-        private float _currentEffectiveHeightOffset;
-
         private float _cameraInversion;
 
         private GeisInputReader _inputReader;
@@ -91,6 +71,7 @@ namespace Geis.Locomotion
         private float _soulRealmBaselineTargetAngleY;
         private float _soulRealmBaselineCurrentAngleX;
         private float _soulRealmBaselineCurrentAngleY;
+        private Vector3 _soulRealmBaselineLastPosition;
 
         private float _soulRealmHoldStartTargetAngleX;
         private float _soulRealmHoldStartTargetAngleY;
@@ -107,6 +88,7 @@ namespace Geis.Locomotion
             _soulRealmBaselineTargetAngleY = _targetAngleY;
             _soulRealmBaselineCurrentAngleX = _currentAngleX;
             _soulRealmBaselineCurrentAngleY = _currentAngleY;
+            _soulRealmBaselineLastPosition = _lastPosition;
             _soulRealmBaselineCaptured = true;
         }
 
@@ -151,8 +133,7 @@ namespace Geis.Locomotion
             _currentAngleX = _soulRealmBaselineCurrentAngleX;
             _currentAngleY = _soulRealmBaselineCurrentAngleY;
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
-            // Keep lag state aligned with the snapped pivot so positional follow lerps normally next frame.
-            _lastPosition = transform.position;
+            _lastPosition = _soulRealmBaselineLastPosition;
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
         }
@@ -194,19 +175,8 @@ namespace Geis.Locomotion
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
 
-            _currentEffectiveDistance = _cameraDistance;
-            _currentEffectiveHorizontalOffset = _cameraHorizontalOffset;
-            _currentEffectiveHeightOffset = _cameraHeightOffset;
             _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
-        }
-
-        /// <summary>
-        /// Enables or disables over-the-shoulder aim camera mode. Transitions smoothly.
-        /// </summary>
-        public void SetAimMode(bool enable)
-        {
-            _isAimMode = enable;
         }
 
         /// <summary>
@@ -219,9 +189,8 @@ namespace Geis.Locomotion
         }
 
         /// <summary>
-        /// Aligns orbit yaw/pitch and pivot position to a look-at transform (same convention as <see cref="Start"/>).
-        /// Used when entering soul realm so the view is behind the ghost instead of keeping the pre-entry orbit.
-        /// Does not modify soul-realm exit baseline from <see cref="CaptureSoulRealmEntryState"/>.
+        /// After switching follow target (e.g. body → ghost), snap orbit pivot and yaw/pitch to match the new look rig
+        /// so the camera does not keep the previous orbit angles.
         /// </summary>
         public void SnapOrbitRotationToLookTarget(Transform lookTarget)
         {
@@ -249,9 +218,6 @@ namespace Geis.Locomotion
             if (_playerTarget == null)
                 return;
 
-            if (_inputReader != null)
-                _inputReader.PollLookInputForCamera();
-
             float positionalSharpness = 1f / Mathf.Max(_positionalCameraLag, 0.01f);
             float rotationalSharpness = 1f / Mathf.Max(_rotationalCameraLag, 0.01f);
             float posSmooth = 1f - Mathf.Exp(-positionalSharpness * Time.deltaTime);
@@ -271,11 +237,7 @@ namespace Geis.Locomotion
                 _targetAngleX += rotationX;
                 _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
 
-                // Lock-on normally overrides yaw; soul realm still needs free look (body/ghost follow is handled elsewhere).
-                bool useLockOnYaw = _isLockedOn && _lockOnTarget != null
-                    && !(SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive);
-
-                if (useLockOnYaw)
+                if (_isLockedOn && _lockOnTarget != null)
                 {
                     Vector3 aimVector = _lockOnTarget.position - _playerTarget.position;
                     Quaternion targetRotation = Quaternion.LookRotation(aimVector);
@@ -307,16 +269,7 @@ namespace Geis.Locomotion
             transform.position = _newPosition;
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0);
 
-            float targetDist   = _isAimMode ? _aimCameraDistance          : _cameraDistance;
-            float targetHoriz  = _isAimMode ? _aimCameraHorizontalOffset  : _cameraHorizontalOffset;
-            float targetHeight = _isAimMode ? _aimCameraHeightOffset      : _cameraHeightOffset;
-            float aimT = 1f - Mathf.Exp(-_aimTransitionSpeed * Time.deltaTime);
-            _currentEffectiveDistance         = Mathf.Lerp(_currentEffectiveDistance,         targetDist,   aimT);
-            _currentEffectiveHorizontalOffset = Mathf.Lerp(_currentEffectiveHorizontalOffset, targetHoriz,  aimT);
-            _currentEffectiveHeightOffset     = Mathf.Lerp(_currentEffectiveHeightOffset,     targetHeight, aimT);
-            _syntyCamera.localPosition = new Vector3(_currentEffectiveHorizontalOffset,
-                                                      _currentEffectiveHeightOffset,
-                                                      _currentEffectiveDistance * -1);
+            _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
 
             _lastPosition = _newPosition;

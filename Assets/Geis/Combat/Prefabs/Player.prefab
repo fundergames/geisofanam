@@ -334,12 +334,12 @@ Transform:
   m_GameObject: {fileID: 1504239852103271070}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -0.13000011, y: 2.2199998, z: -5.41}
+  m_LocalPosition: {x: -0.13000011, y: 3.4499998, z: -5.41}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5121379523908192781}
-  m_Father: {fileID: 666165706435539312}
+  m_Father: {fileID: 4359838154996232716}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &9185949923837509450
 MonoBehaviour:
@@ -355,7 +355,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Locomotion.GeisCameraController
   _syntyCharacter: {fileID: 4835237707196811125}
   _mainCamera: {fileID: 4444417130243386476}
-  _playerTarget: {fileID: 666165706435539312}
+  _playerTarget: {fileID: 0}
   _lockOnTarget: {fileID: 0}
   _invertCamera: 0
   _hideCursor: 0
@@ -1156,6 +1156,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 666165706435539312}
+  - {fileID: 1830455648905568996}
   - {fileID: 119932982296280757}
   - {fileID: 9000669497598635718}
   m_Father: {fileID: 0}
@@ -1233,7 +1234,7 @@ MonoBehaviour:
   cameraController: {fileID: 9185949923837509450}
   bodyAnimator: {fileID: 1805344173469404896}
   bodyCharacterController: {fileID: 709469704089620938}
-  bodyLookAtTransform: {fileID: 0}
+  bodyLookAtTransform: {fileID: 4721983645019283747}
   ghostRoot: {fileID: 0}
   ghostMotor: {fileID: 0}
   exitHoldDuration: 2
@@ -1833,8 +1834,39 @@ Transform:
   - {fileID: 3358480956565478090}
   - {fileID: 4738826679180577720}
   - {fileID: 4402415863190738631}
-  - {fileID: 1830455648905568996}
+  - {fileID: 4721983645019283747}
   m_Father: {fileID: 4359838154996232716}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4721983645019283746
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4721983645019283747}
+  m_Layer: 3
+  m_Name: SyntyPlayer_LookAt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4721983645019283747
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4721983645019283746}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 666165706435539312}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2851687277793832976
 MonoBehaviour:

@@ -1,0 +1,40 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfc207ad26a7b4267b53be909af3272c, type: 3}
+  m_Name: GiantBoss_Test
+  m_EditorClassIdentifier: Assembly-CSharp::RogueDeal.Boss.GiantBossDefinition
+  bossName: Giant (Test)
+  title: Primitive Arena
+  loreDescription: 
+  portrait: {fileID: 0}
+  totalSouls: 100
+  soulDrainPerDamagePoint: 1
+  phase2SoulThreshold: 0.55
+  phase3SoulThreshold: 0.28
+  rightHand: {fileID: 11400000, guid: 07877b8357cf54b41b2f84d29dbb4ae4, type: 2}
+  leftHand: {fileID: 11400000, guid: 932022fdbb1384e52852496f9e96b9c6, type: 2}
+  critSpot: {fileID: 0}
+  slamWindupDuration: 0.6
+  slamGroundedDuration: 5
+  slamGroundedDurationPhase2: 10
+  slamGroundedDurationPhase3: 0
+  slamRecoveryDuration: 0.5
+  timeBetweenSlams: 0.8
+  timeBetweenSlamsPhase3: 0
+  slamDamage: 8
+  slamDamageRadius: 8
+  critSpotVulnerableWindow: 8
+  critSpotVulnerableWindowPhase2: 0
+  critSpotVulnerableWindowPhase3: 0
+  critRequiresSoulRealmPhase1: 1
+  critRequiresSoulRealmPhase2: 1
+  critRequiresSoulRealmPhase3: 1
