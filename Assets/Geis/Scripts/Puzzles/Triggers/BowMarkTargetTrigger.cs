@@ -19,6 +19,9 @@ namespace Geis.Puzzles
     [RequireComponent(typeof(Collider))]
     public class BowMarkTargetTrigger : PuzzleTriggerBase
     {
+        /// <summary>Mark phase and shoot phase span both realms.</summary>
+        public override PuzzleRealmMode RealmMode => PuzzleRealmMode.BothRealms;
+
         [Header("Mark (Soul Realm)")]
         [SerializeField] private float markRange = 5f;
         [Tooltip("Seconds the mark persists. 0 = permanent until shot or reset.")]
@@ -53,6 +56,7 @@ namespace Geis.Puzzles
         private void Update()
         {
             if (IsActivated) return;
+            if (!IsAccessibleInCurrentRealm()) return;
 
             bool soulActive = Geis.SoulRealm.SoulRealmManager.Instance != null &&
                               Geis.SoulRealm.SoulRealmManager.Instance.IsSoulRealmActive;

@@ -13,6 +13,10 @@ using Geis.SoulRealm;
 
 namespace Geis.Locomotion
 {
+    /// <summary>
+    /// Runs after <see cref="Puzzles.PlatformMover"/> (-50) so <see cref="GroundRideUtility"/> sees this frame&apos;s platform motion.
+    /// </summary>
+    [DefaultExecutionOrder(100)]
     public class GeisPlayerAnimationController : MonoBehaviour
     {
         #region Enum

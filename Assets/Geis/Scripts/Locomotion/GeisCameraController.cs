@@ -212,6 +212,19 @@ namespace Geis.Locomotion
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
         }
 
+        /// <summary>
+        /// Moves the orbit pivot to a new look point without changing viewing yaw/pitch (e.g. soul realm: keep player cam orientation).
+        /// </summary>
+        public void SnapFollowPositionKeepView(Transform lookTarget)
+        {
+            if (lookTarget == null)
+                return;
+
+            transform.position = lookTarget.position;
+            _lastPosition = transform.position;
+            transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0f);
+        }
+
         /// <inheritdoc cref="LateUpdate" />
         private void LateUpdate()
         {

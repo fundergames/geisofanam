@@ -12,6 +12,9 @@ namespace Geis.Puzzles
     /// </summary>
     public class DualRealmTrigger : PuzzleTriggerBase
     {
+        /// <summary>Composite is always relevant in both realms; sub-triggers carry SoulOnly / PhysicalOnly.</summary>
+        public override PuzzleRealmMode RealmMode => PuzzleRealmMode.BothRealms;
+
         [Header("Sub-Triggers")]
         [Tooltip("Trigger that must be active in the soul realm (SoulOnly element).")]
         [SerializeField] private PuzzleTriggerBase soulTrigger;

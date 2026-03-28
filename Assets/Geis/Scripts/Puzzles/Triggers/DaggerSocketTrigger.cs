@@ -55,7 +55,7 @@ namespace Geis.Puzzles
 
             bool soulActive = SoulRealmManager.Instance != null &&
                               SoulRealmManager.Instance.IsSoulRealmActive;
-            bool wantIndicator = soulActive && !IsActivated;
+            bool wantIndicator = soulActive && !IsActivated && IsAccessibleInCurrentRealm();
 
             if (wantIndicator && !_indicatorVisible)
                 ShowIndicator();
@@ -65,6 +65,7 @@ namespace Geis.Puzzles
 
         private void OnTriggerEnter(Collider other)
         {
+            if (!IsAccessibleInCurrentRealm()) return;
             if (!other.CompareTag(acceptedTag)) return;
 
             _overlapCount++;

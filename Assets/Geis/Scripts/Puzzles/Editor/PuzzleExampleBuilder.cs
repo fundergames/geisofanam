@@ -51,20 +51,20 @@ namespace Geis.Puzzles.Editor
 
             // Trigger zone
             var zone = CreateBox(parent, "SwordZone", new Vector3(0, 0.05f, 0),
-                new Vector3(2f, 0.1f, 2f), new Color(1f, 0.3f, 0.2f));
+                new Vector3(2f, 0.1f, 2f), PuzzleRealmColors.PhysicalOnly);
             var trigger = zone.AddComponent<SwordHitTrigger>();
             SetInt(trigger, "hitsRequired", 1);
             SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.PhysicalOnly);
 
             // Output door
             var door = CreateBox(parent, "Door", new Vector3(0, 1.5f, 4f),
-                new Vector3(1.5f, 3f, 0.2f), new Color(0.6f, 0.4f, 0.2f));
+                new Vector3(1.5f, 3f, 0.2f), new Color(0.45f, 0.38f, 0.32f));
             var output = door.AddComponent<DoorOutput>();
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "SWORD BREAK\nHit zone to open door\n[Physical Realm]",
-                new Vector3(0f, 4f, 0f), new Color(1f, 0.5f, 0.3f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.PhysicalOnly);
         }
 
         static void CreateSoulPulse(GameObject root, float x, float z)
@@ -72,20 +72,21 @@ namespace Geis.Puzzles.Editor
             var parent = CreateGroup(root, "Example_SoulPulse [pulse to dissolve barrier]", x, z);
 
             var node = CreateSphere(parent, "PulseNode", new Vector3(0, 0.5f, 0),
-                0.5f, new Color(0.4f, 0.5f, 1f));
+                0.5f, PuzzleRealmColors.SoulOnly);
             var trigger = node.AddComponent<SoulPulseReceptorTrigger>();
             SetFloat(trigger, "detectionRadius", 2f);
             SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.SoulOnly);
 
             var barrier = CreateBox(parent, "Barrier", new Vector3(0, 1.5f, 4f),
-                new Vector3(2f, 3f, 0.25f), new Color(0.3f, 0.6f, 1f, 0.6f));
+                new Vector3(2f, 3f, 0.25f),
+                new Color(PuzzleRealmColors.SoulOnly.r, PuzzleRealmColors.SoulOnly.g, PuzzleRealmColors.SoulOnly.b, 0.6f));
             var output = barrier.AddComponent<BarrierOutput>();
             SetComponent(output, "barrierRenderer", barrier.GetComponent<Renderer>());
             SetComponent(output, "barrierCollider", barrier.GetComponent<Collider>());
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "SOUL PULSE\nPulse node to dissolve barrier\n[Soul Realm]",
-                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.6f, 1f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.SoulOnly);
         }
 
         static void CreateBowTarget(GameObject root, float x, float z)
@@ -93,7 +94,7 @@ namespace Geis.Puzzles.Editor
             var parent = CreateGroup(root, "Example_BowTarget [shoot to raise block]", x, z);
 
             var target = CreateSphere(parent, "Target", new Vector3(0, 1f, 5f),
-                0.5f, new Color(0f, 0.9f, 1f));
+                0.5f, PuzzleRealmColors.PhysicalOnly);
             var col = target.GetComponent<SphereCollider>();
             if (col == null) col = target.AddComponent<SphereCollider>();
             col.isTrigger = true;
@@ -109,7 +110,7 @@ namespace Geis.Puzzles.Editor
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "BOW TARGET\nShoot sphere to raise block\n[Physical Realm]",
-                new Vector3(0f, 4f, 0f), new Color(0f, 0.9f, 1f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.PhysicalOnly);
         }
 
         static void CreateBowMarkShoot(GameObject root, float x, float z)
@@ -117,7 +118,7 @@ namespace Geis.Puzzles.Editor
             var parent = CreateGroup(root, "Example_BowMark [mark soul → shoot physical]", x, z);
 
             var node = CreateSphere(parent, "MarkNode", new Vector3(0, 1.2f, 4f),
-                0.45f, new Color(0.8f, 0.9f, 0.2f));
+                0.45f, PuzzleRealmColors.BothRealms);
             var col = node.GetComponent<SphereCollider>();
             if (col == null) col = node.AddComponent<SphereCollider>();
             col.isTrigger = true;
@@ -127,13 +128,13 @@ namespace Geis.Puzzles.Editor
             SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.BothRealms);
 
             var door = CreateBox(parent, "Door", new Vector3(0, 1.5f, -3f),
-                new Vector3(1.5f, 3f, 0.2f), new Color(0.7f, 0.6f, 0.2f));
+                new Vector3(1.5f, 3f, 0.2f), PuzzleRealmColors.BothRealms);
             var output = door.AddComponent<DoorOutput>();
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "BOW MARK + SHOOT\nMark in soul realm, shoot in physical\n[Both Realms]",
-                new Vector3(0f, 4f, 0f), new Color(0.9f, 0.95f, 0.2f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.BothRealms);
         }
 
         static void CreateDaggerSocket(GameObject root, float x, float z)
@@ -141,7 +142,7 @@ namespace Geis.Puzzles.Editor
             var parent = CreateGroup(root, "Example_DaggerSocket [place object to raise block]", x, z);
 
             var socket = CreateBox(parent, "Socket", new Vector3(0, 0.05f, 0),
-                new Vector3(1.5f, 0.1f, 1.5f), new Color(1f, 0.55f, 0.1f));
+                new Vector3(1.5f, 0.1f, 1.5f), PuzzleRealmColors.PhysicalOnly);
             var col = socket.GetComponent<Collider>();
             if (col != null) col.isTrigger = true;
             var trigger = socket.AddComponent<DaggerSocketTrigger>();
@@ -150,7 +151,8 @@ namespace Geis.Puzzles.Editor
 
             // A movable placeholder the designer can tag "DaggerMovable"
             var movable = CreateBox(parent, "MovableObject [tag: DaggerMovable]",
-                new Vector3(4f, 0.5f, 0f), new Vector3(1f, 1f, 1f), new Color(1f, 0.7f, 0.2f));
+                new Vector3(4f, 0.5f, 0f), new Vector3(1f, 1f, 1f),
+                new Color(0.95f, 0.55f, 0.28f));
 
             var block = CreateBox(parent, "Block", new Vector3(0, 0.5f, -4f),
                 new Vector3(1.5f, 1f, 1.5f), new Color(0.5f, 0.5f, 0.5f));
@@ -160,7 +162,7 @@ namespace Geis.Puzzles.Editor
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "DAGGER SOCKET\nTag object 'DaggerMovable', place in socket\n[Physical Realm]",
-                new Vector3(0f, 4f, 0f), new Color(1f, 0.6f, 0.1f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.PhysicalOnly);
         }
 
         // ── Row 1 ────────────────────────────────────────────────────────────────
@@ -170,7 +172,7 @@ namespace Geis.Puzzles.Editor
             var parent = CreateGroup(root, "Example_PressurePlate [stand to move platform]", x, z);
 
             var plate = CreateBox(parent, "Plate", new Vector3(0, 0.05f, 0),
-                new Vector3(2f, 0.1f, 2f), new Color(0.4f, 0.8f, 0.4f));
+                new Vector3(2f, 0.1f, 2f), PuzzleRealmColors.BothRealms);
             var col = plate.GetComponent<Collider>();
             if (col != null) col.isTrigger = true;
             var trigger = plate.AddComponent<PressurePlateTrigger>();
@@ -197,8 +199,8 @@ namespace Geis.Puzzles.Editor
             SetComponent(movOutput, "platformMover", mover);
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { movOutput }, oneShot: false);
-            CreateWorldLabel(parent, "PRESSURE PLATE\nStand on plate to move platform\n[Soul Realm]",
-                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.9f, 0.4f));
+            CreateWorldLabel(parent, "PRESSURE PLATE\nStand on plate to move platform\n[Both Realms]",
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.BothRealms);
         }
 
         static void CreateSequence(GameObject root, float x, float z)
@@ -207,11 +209,12 @@ namespace Geis.Puzzles.Editor
 
             // Three step switches at different positions
             var steps = new SoulSwitchTrigger[3];
+            var soul = PuzzleRealmColors.SoulOnly;
             var stepColors = new Color[]
             {
-                new Color(1f, 0.3f, 0.3f),
-                new Color(0.3f, 1f, 0.3f),
-                new Color(0.3f, 0.5f, 1f),
+                soul,
+                new Color(Mathf.Min(1f, soul.r + 0.08f), Mathf.Min(1f, soul.g + 0.1f), soul.b),
+                new Color(Mathf.Min(1f, soul.r + 0.16f), Mathf.Min(1f, soul.g + 0.2f), Mathf.Min(1f, soul.b + 0.05f)),
             };
             for (int i = 0; i < 3; i++)
             {
@@ -240,13 +243,13 @@ namespace Geis.Puzzles.Editor
             SetEnum(seq, "realmMode", (int)PuzzleRealmMode.SoulOnly);
 
             var door = CreateBox(parent, "Door", new Vector3(0, 1.5f, 5f),
-                new Vector3(1.5f, 3f, 0.2f), new Color(0.6f, 0.4f, 0.6f));
+                new Vector3(1.5f, 3f, 0.2f), PuzzleRealmColors.SoulOnly);
             var output = door.AddComponent<DoorOutput>();
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { seq }, new Component[] { output });
             CreateWorldLabel(parent, "SEQUENCE\nActivate steps 1→2→3 in order\n[Soul Realm]",
-                new Vector3(0f, 4f, 0f), new Color(0.9f, 0.5f, 0.9f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.SoulOnly);
         }
 
         static void CreateAlignmentDial(GameObject root, float x, float z)
@@ -256,7 +259,7 @@ namespace Geis.Puzzles.Editor
             var dialBase = CreateBox(parent, "DialBase", new Vector3(0, 0.5f, 0),
                 new Vector3(1f, 1f, 1f), new Color(0.5f, 0.5f, 0.5f));
             var dialVisual = CreateBox(parent, "DialArrow", new Vector3(0, 1.1f, 0),
-                new Vector3(0.15f, 0.15f, 0.9f), new Color(1f, 0.8f, 0.1f));
+                new Vector3(0.15f, 0.15f, 0.9f), PuzzleRealmColors.SoulOnly);
             dialVisual.transform.SetParent(dialBase.transform, true);
             var col = dialBase.GetComponent<Collider>();
             if (col != null) col.isTrigger = true;
@@ -268,14 +271,15 @@ namespace Geis.Puzzles.Editor
             SetEnum(trigger, "realmMode", (int)PuzzleRealmMode.SoulOnly);
 
             var barrier = CreateBox(parent, "Barrier", new Vector3(0, 1.5f, 4f),
-                new Vector3(2f, 3f, 0.2f), new Color(0.4f, 0.7f, 0.9f, 0.7f));
+                new Vector3(2f, 3f, 0.2f),
+                new Color(PuzzleRealmColors.SoulOnly.r, PuzzleRealmColors.SoulOnly.g, PuzzleRealmColors.SoulOnly.b, 0.7f));
             var output = barrier.AddComponent<BarrierOutput>();
             SetComponent(output, "barrierRenderer", barrier.GetComponent<Renderer>());
             SetComponent(output, "barrierCollider", barrier.GetComponent<Collider>());
 
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "ALIGNMENT DIAL\nHold E + move to rotate to 90°\n[Soul Realm]",
-                new Vector3(0f, 4f, 0f), new Color(1f, 0.85f, 0.1f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.SoulOnly);
         }
 
         static void CreateDualRealm(GameObject root, float x, float z)
@@ -284,7 +288,7 @@ namespace Geis.Puzzles.Editor
 
             // Soul sub-trigger
             var soulGo = CreateBox(parent, "SoulSwitch [soul realm]",
-                new Vector3(-2f, 1f, 1f), new Vector3(0.8f, 0.8f, 0.8f), new Color(0.4f, 0.55f, 1f));
+                new Vector3(-2f, 1f, 1f), new Vector3(0.8f, 0.8f, 0.8f), PuzzleRealmColors.SoulOnly);
             var soulCol = soulGo.GetComponent<Collider>();
             if (soulCol != null) soulCol.isTrigger = true;
             var soulSw = soulGo.AddComponent<SoulSwitchTrigger>();
@@ -292,7 +296,7 @@ namespace Geis.Puzzles.Editor
 
             // Physical sub-trigger (plate)
             var physGo = CreateBox(parent, "PhysPlate [physical realm]",
-                new Vector3(2f, 0.05f, 1f), new Vector3(1.5f, 0.1f, 1.5f), new Color(1f, 0.55f, 0.2f));
+                new Vector3(2f, 0.05f, 1f), new Vector3(1.5f, 0.1f, 1.5f), PuzzleRealmColors.PhysicalOnly);
             var physCol = physGo.GetComponent<Collider>();
             if (physCol != null) physCol.isTrigger = true;
             var physPlate = physGo.AddComponent<PressurePlateTrigger>();
@@ -309,13 +313,13 @@ namespace Geis.Puzzles.Editor
             SetEnum(dual, "realmMode", (int)PuzzleRealmMode.BothRealms);
 
             var door = CreateBox(parent, "Door", new Vector3(0, 1.5f, 5f),
-                new Vector3(1.5f, 3f, 0.2f), new Color(0.7f, 0.4f, 0.8f));
+                new Vector3(1.5f, 3f, 0.2f), PuzzleRealmColors.BothRealms);
             var output = door.AddComponent<DoorOutput>();
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { dual }, new Component[] { output });
             CreateWorldLabel(parent, "DUAL REALM\nActivate soul switch AND stand on plate\n[Both Realms]",
-                new Vector3(0f, 4f, 0f), new Color(0.8f, 0.4f, 1f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.BothRealms);
         }
 
         static void CreateEchoImprint(GameObject root, float x, float z)
@@ -324,7 +328,7 @@ namespace Geis.Puzzles.Editor
 
             // The echo trigger zone (where player presses F)
             var echoZone = CreateBox(parent, "EchoZone [press F here in soul realm]",
-                new Vector3(0f, 0.05f, 0f), new Vector3(2f, 0.1f, 2f), new Color(0.5f, 0.8f, 1f));
+                new Vector3(0f, 0.05f, 0f), new Vector3(2f, 0.1f, 2f), PuzzleRealmColors.SoulOnly);
             var echoCol = echoZone.GetComponent<Collider>();
             if (echoCol != null) echoCol.isTrigger = true;
             var echo = echoZone.AddComponent<EchoImprintTrigger>();
@@ -332,13 +336,13 @@ namespace Geis.Puzzles.Editor
             SetEnum(echo, "realmMode", (int)PuzzleRealmMode.SoulOnly);
 
             var door = CreateBox(parent, "Door", new Vector3(0, 1.5f, 5f),
-                new Vector3(1.5f, 3f, 0.2f), new Color(0.4f, 0.8f, 0.9f));
+                new Vector3(1.5f, 3f, 0.2f), PuzzleRealmColors.SoulOnly);
             var output = door.AddComponent<DoorOutput>();
             SetVector3(output, "openPositionOffset", new Vector3(0f, 3.5f, 0f));
 
             WireGroup(parent, new Component[] { echo }, new Component[] { output });
             CreateWorldLabel(parent, "ECHO IMPRINT\nPress F in soul realm to leave echo\n[Soul Realm]",
-                new Vector3(0f, 4f, 0f), new Color(0.4f, 0.85f, 0.95f));
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.SoulOnly);
         }
 
         // ── Wiring ───────────────────────────────────────────────────────────────

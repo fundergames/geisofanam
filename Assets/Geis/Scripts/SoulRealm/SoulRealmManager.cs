@@ -1,8 +1,10 @@
+using System;
 using System.Collections.Generic;
 using Geis.InputSystem;
 using Geis.Locomotion;
 using Geis.Puzzles;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Geis.SoulRealm
 {
@@ -10,9 +12,13 @@ namespace Geis.SoulRealm
     /// Soul realm state: physical body stays visible (no locomotion; animator paused) but still follows
     /// moving ground; spectral copy moves, selective world freeze, hold-to-exit with camera lerp.
     /// </summary>
+    [DefaultExecutionOrder(-100)]
     public sealed class SoulRealmManager : MonoBehaviour
     {
         public static SoulRealmManager Instance { get; private set; }
+
+        /// <summary>Invoked when soul realm is entered or exited (for puzzle visibility, etc.).</summary>
+        public static event Action SoulRealmStateChanged;
 
         [Header("References")]
         [SerializeField] private GeisInputReader inputReader;
@@ -27,7 +33,15 @@ namespace Geis.SoulRealm
         [SerializeField] private SoulGhostMotor ghostMotor;
 
         [Header("Timing")]
-        [SerializeField] private float exitHoldDuration = 2f;
+        [Tooltip("Longest hold when ghost and body are separated by at least the reference distance.")]
+        [FormerlySerializedAs("exitHoldDuration")]
+        [SerializeField] private float exitHoldMaxDuration = 2f;
+        [Tooltip("Separation (m) between ghost and body look targets at which exit uses the full max duration; closer pairs finish sooner.")]
+        [SerializeField] private float exitHoldReferenceDistance = 12f;
+        [Tooltip("Minimum exit hold when ghost is near the body (default 1 second).")]
+        [SerializeField] private float exitHoldMinDuration = 1f;
+        [Tooltip("If true, separation uses horizontal (XZ) distance only.")]
+        [SerializeField] private bool exitHoldUseHorizontalDistance = true;
         [SerializeField] private float enterGraceSeconds = 0.35f;
 
         [Header("Visuals")]
@@ -45,6 +59,7 @@ namespace Geis.SoulRealm
         private GameObject _followPivot;
         private float _enterGrace;
         private float _exitHoldTimer;
+        private float _exitHoldDurationThisAttempt = 2f;
         private bool _isSoulRealm;
 
         private Vector3 _bodyPositionAtEntry;
@@ -114,6 +129,14 @@ namespace Geis.SoulRealm
             if (Instance == this)
                 Instance = null;
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            exitHoldMinDuration = Mathf.Max(1f, exitHoldMinDuration);
+            exitHoldMaxDuration = Mathf.Max(exitHoldMinDuration, exitHoldMaxDuration);
+        }
+#endif
 
         private void ResolveReferences()
         {
@@ -203,11 +226,21 @@ namespace Geis.SoulRealm
 
                 if (canExit && sr.IsPressed())
                 {
-                    if (_exitHoldTimer <= 0f && cameraController != null)
-                        cameraController.BeginSoulRealmExitHoldRotationLerp();
+                    if (_exitHoldTimer <= 0f)
+                    {
+                        _exitHoldDurationThisAttempt = ComputeExitHoldDurationForCurrentSeparation();
+                        if (_exitHoldDurationThisAttempt <= 0f)
+                        {
+                            CompleteExitSoulRealm();
+                            return;
+                        }
+
+                        if (cameraController != null)
+                            cameraController.BeginSoulRealmExitHoldRotationLerp();
+                    }
 
                     _exitHoldTimer += Time.deltaTime;
-                    float p = Mathf.Clamp01(_exitHoldTimer / exitHoldDuration);
+                    float p = Mathf.Clamp01(_exitHoldTimer / _exitHoldDurationThisAttempt);
                     if (cameraController != null)
                         cameraController.SetSoulRealmExitHoldProgress(p);
 
@@ -224,7 +257,7 @@ namespace Geis.SoulRealm
                     if (ghostMotor != null)
                         ghostMotor.enabled = false;
 
-                    if (_exitHoldTimer >= exitHoldDuration)
+                    if (_exitHoldTimer >= _exitHoldDurationThisAttempt)
                         CompleteExitSoulRealm();
                 }
                 else
@@ -296,13 +329,15 @@ namespace Geis.SoulRealm
             if (cameraController != null && _ghostLookAt != null)
             {
                 cameraController.SetFollowTarget(_ghostLookAt);
-                cameraController.SnapOrbitRotationToLookTarget(_ghostLookAt);
+                cameraController.SnapFollowPositionKeepView(_ghostLookAt);
             }
 
             ApplyFreezeToWorld(true);
 
             if (visuals != null)
                 visuals.SetSoulRealmBlend(1f);
+
+            SoulRealmStateChanged?.Invoke();
         }
 
         /// <summary>
@@ -362,6 +397,37 @@ namespace Geis.SoulRealm
 
             if (visuals != null)
                 visuals.SetSoulRealmBlend(0f);
+
+            SoulRealmStateChanged?.Invoke();
+        }
+
+        private float ComputeExitSeparationDistance()
+        {
+            if (_ghostLookAt == null || bodyLookAtTransform == null)
+                return exitHoldReferenceDistance;
+
+            Vector3 a = _ghostLookAt.position;
+            Vector3 b = bodyLookAtTransform.position;
+            if (exitHoldUseHorizontalDistance)
+            {
+                a.y = 0f;
+                b.y = 0f;
+            }
+
+            return Vector3.Distance(a, b);
+        }
+
+        /// <summary>
+        /// Scales hold time with ghost–body separation: full <see cref="exitHoldMaxDuration"/> at or beyond reference distance, shorter when closer.
+        /// </summary>
+        private float ComputeExitHoldDurationForCurrentSeparation()
+        {
+            float dist = ComputeExitSeparationDistance();
+            float refD = Mathf.Max(0.001f, exitHoldReferenceDistance);
+            float t = (dist / refD) * exitHoldMaxDuration;
+            float minD = Mathf.Max(1f, exitHoldMinDuration);
+            float maxD = Mathf.Max(minD, exitHoldMaxDuration);
+            return Mathf.Clamp(t, minD, maxD);
         }
 
         private static void ApplyFreezeToWorld(bool frozen)
