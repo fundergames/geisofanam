@@ -46,20 +46,42 @@ namespace Geis.SoulRealm
 
         [Header("Visuals")]
         [SerializeField] private SoulRealmVisuals visuals;
+        [Tooltip("Screen-centered particle trail while holding soul-realm exit (left bumper). Auto-added if unset.")]
+        [SerializeField] private SoulRealmExitHoldVfx exitHoldVfx;
 
         [Header("Spectral ghost mesh")]
         [Tooltip("Mesh root for the moving spectral copy. The physical character stays visible and frozen in place. If empty, first SkinnedMeshRenderer under the player is used.")]
         [SerializeField] private Transform spectralCharacterVisualRoot;
-        [Tooltip("Optional URP Lit (or other) material for the ghost copy. If empty, a green transparent Lit is created at runtime.")]
+        [Tooltip("Optional URP Lit (or other) material for the ghost copy. If set, overrides dissolve shader below.")]
         [SerializeField] private Material spectralMaterial;
 
+        [Tooltip("Noise dissolve material (e.g. Dissolve_Metallic_DoubleSide). Used when Spectral Material is empty; copies each mesh slot from the body materials.")]
+        [SerializeField] private Material spectralDissolveMaterialTemplate;
+
+        [Tooltip("Seconds for the ghost to dissolve in after entering soul realm (not used during exit hold). Clamped to at least 0.2s so one frame cannot snap the effect.")]
+        [SerializeField] private float spectralDissolveEnterDuration = 0.45f;
+
+        [Tooltip("Only if the ghost dissolves the wrong way: set true when the shader uses 1−Dissolve on the property (opposite of puzzle props). Default off matches realm dissolve.")]
+        [SerializeField] private bool spectralDissolveInvertForShader;
+
+        [Tooltip("If true and Spectral Material is empty, ghost uses Spectral Dissolve Material Template.")]
+        [SerializeField] private bool useSpectralDissolveShader = true;
+
         private static readonly List<SoulRealmFreezeTarget> FreezeRegistry = new List<SoulRealmFreezeTarget>();
+
+        /// <summary>
+        /// Single-frame delta clamp for soul-realm timers. Editor step / breakpoint / unpause can produce huge
+        /// <see cref="Time.deltaTime"/>, which would otherwise complete exit hold and eject in one frame.
+        /// </summary>
+        private const float SoulRealmMaxDeltaPerFrame = 0.25f;
 
         private Transform _ghostLookAt;
         private GameObject _followPivot;
         private float _enterGrace;
         private float _exitHoldTimer;
         private float _exitHoldDurationThisAttempt = 2f;
+        /// <summary>True while exit input is held and exit is allowed (after grace). Do not use _exitHoldTimer &gt; 0 alone — timer is 0 on the first hold frame.</summary>
+        private bool _exitHoldHeld;
         private bool _isSoulRealm;
 
         private Vector3 _bodyPositionAtEntry;
@@ -69,6 +91,25 @@ namespace Geis.SoulRealm
 
         public bool IsSoulRealmActive => _isSoulRealm;
         public float SoulRealmBlend => _isSoulRealm ? 1f : 0f;
+
+        /// <summary>
+        /// Linear 0–1 while holding to exit soul realm (elapsed hold time / configured duration for this attempt).
+        /// 0 if not in soul realm or not holding.
+        /// </summary>
+        public float SoulRealmExitHoldProgress01 =>
+            !_isSoulRealm || _exitHoldDurationThisAttempt <= 0f
+                ? 0f
+                : Mathf.Clamp01(_exitHoldTimer / _exitHoldDurationThisAttempt);
+
+        /// <summary>
+        /// Linear wall-clock progress through the exit hold: 0 at hold start, ~0.5 at half the hold duration,
+        /// 1 when the timer reaches the transition (same ratio as <see cref="SoulRealmExitHoldProgress01"/>).
+        /// Map to spectral dissolve as 0 = fully visible, 1 = fully dissolved at transition.
+        /// </summary>
+        public float SoulRealmExitHoldLinearProgress01 => SoulRealmExitHoldProgress01;
+
+        /// <summary>True while the player is holding exit (after enter grace). Matches camera/pivot lerp; spectral dissolve should use this, not <c>_exitHoldTimer &gt; 0</c>.</summary>
+        public bool IsSoulRealmExitHoldInProgress => _isSoulRealm && _exitHoldHeld;
 
         /// <summary>True while the ghost motor should run (soul realm; disabled while holding exit).</summary>
         public bool AllowGhostMovement
@@ -122,6 +163,8 @@ namespace Geis.SoulRealm
         {
             if (ghostMotor != null && inputReader != null)
                 ghostMotor.Configure(inputReader, bodyLocomotion, cameraController);
+            if (exitHoldVfx != null && cameraController != null)
+                exitHoldVfx.SetCameraController(cameraController);
         }
 
         private void OnDestroy()
@@ -160,6 +203,11 @@ namespace Geis.SoulRealm
                 visuals = GetComponentInChildren<SoulRealmVisuals>(true);
             if (visuals == null)
                 visuals = gameObject.AddComponent<SoulRealmVisuals>();
+
+            if (exitHoldVfx == null)
+                exitHoldVfx = GetComponentInChildren<SoulRealmExitHoldVfx>(true);
+            if (exitHoldVfx == null)
+                exitHoldVfx = gameObject.AddComponent<SoulRealmExitHoldVfx>();
         }
 
         private void EnsureGhost()
@@ -216,8 +264,10 @@ namespace Geis.SoulRealm
                 return;
             }
 
+            float dt = Mathf.Min(Time.deltaTime, SoulRealmMaxDeltaPerFrame);
+
             if (_enterGrace > 0f)
-                _enterGrace -= Time.deltaTime;
+                _enterGrace -= dt;
 
             if (inputReader != null && inputReader.SoulRealm != null)
             {
@@ -226,6 +276,7 @@ namespace Geis.SoulRealm
 
                 if (canExit && sr.IsPressed())
                 {
+                    _exitHoldHeld = true;
                     if (_exitHoldTimer <= 0f)
                     {
                         _exitHoldDurationThisAttempt = ComputeExitHoldDurationForCurrentSeparation();
@@ -237,9 +288,11 @@ namespace Geis.SoulRealm
 
                         if (cameraController != null)
                             cameraController.BeginSoulRealmExitHoldRotationLerp();
+                        if (exitHoldVfx != null && _followPivot != null)
+                            exitHoldVfx.Begin(_followPivot.transform);
                     }
 
-                    _exitHoldTimer += Time.deltaTime;
+                    _exitHoldTimer += dt;
                     float p = Mathf.Clamp01(_exitHoldTimer / _exitHoldDurationThisAttempt);
                     if (cameraController != null)
                         cameraController.SetSoulRealmExitHoldProgress(p);
@@ -262,9 +315,12 @@ namespace Geis.SoulRealm
                 }
                 else
                 {
+                    _exitHoldHeld = false;
                     if (_exitHoldTimer > 0f)
                     {
                         _exitHoldTimer = 0f;
+                        if (exitHoldVfx != null)
+                            exitHoldVfx.End();
                         if (cameraController != null)
                             cameraController.EndSoulRealmExitHoldRotationLerp();
                         if (ghostMotor != null)
@@ -286,6 +342,7 @@ namespace Geis.SoulRealm
             _isSoulRealm = true;
             _enterGrace = enterGraceSeconds;
             _exitHoldTimer = 0f;
+            _exitHoldHeld = false;
 
             if (bodyLocomotion != null)
             {
@@ -312,6 +369,10 @@ namespace Geis.SoulRealm
 
             if (ghostRoot != null && bodyLocomotion != null && ghostMotor != null && inputReader != null)
             {
+                Material dissolveTpl = spectralMaterial == null && useSpectralDissolveShader
+                    ? spectralDissolveMaterialTemplate
+                    : null;
+
                 var existing = SoulSpectralGhostVisual.Spawn(
                     ghostRoot.transform,
                     bodyLocomotion.transform,
@@ -320,7 +381,10 @@ namespace Geis.SoulRealm
                     ghostMotor,
                     inputReader,
                     bodyLocomotion,
-                    spectralMaterial);
+                    spectralMaterial,
+                    dissolveTpl,
+                    spectralDissolveEnterDuration,
+                    spectralDissolveInvertForShader);
                 _spectralVisualInstance = existing;
             }
 
@@ -335,7 +399,16 @@ namespace Geis.SoulRealm
             ApplyFreezeToWorld(true);
 
             if (visuals != null)
+            {
                 visuals.SetSoulRealmBlend(1f);
+                Transform shockwaveAnchor = bodyLookAtTransform != null
+                    ? bodyLookAtTransform
+                    : bodyLocomotion != null
+                        ? bodyLocomotion.transform
+                        : null;
+                Camera shockwaveCam = cameraController != null ? cameraController.MainCamera : null;
+                visuals.PulseEntryShockwave(shockwaveAnchor, shockwaveCam);
+            }
 
             SoulRealmStateChanged?.Invoke();
         }
@@ -348,6 +421,7 @@ namespace Geis.SoulRealm
         {
             if (!_isSoulRealm) return;
             _exitHoldTimer = 0f;
+            _exitHoldHeld = false;
             if (cameraController != null)
                 cameraController.EndSoulRealmExitHoldRotationLerp();
             CompleteExitSoulRealm();
@@ -355,7 +429,10 @@ namespace Geis.SoulRealm
 
         private void CompleteExitSoulRealm()
         {
+            if (exitHoldVfx != null)
+                exitHoldVfx.End();
             _exitHoldTimer = 0f;
+            _exitHoldHeld = false;
             _isSoulRealm = false;
 
             if (bodyLocomotion != null)

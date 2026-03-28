@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -7,6 +8,7 @@ namespace Geis.SoulRealm
     /// <summary>
     /// Drives URP post via a global <see cref="Volume"/> (saturation / hue) for soul realm. Creates a runtime volume if none assigned.
     /// Requires URP cameras to have Post Processing enabled (this script turns it on when blend &gt; 0).
+    /// Also drives globals for the optional fullscreen <c>Geis/Hidden/SoulRealmScreen</c> shockwave (see <see cref="PulseEntryShockwave"/>).
     /// </summary>
     public sealed class SoulRealmVisuals : MonoBehaviour
     {
@@ -19,12 +21,20 @@ namespace Geis.SoulRealm
         [Tooltip("When soul realm is active, force Post Processing on and include this layer in volume masks.")]
         [SerializeField] private bool autoEnablePostProcessingOnCameras = true;
 
+        [Header("Entry shockwave (fullscreen SoulRealmScreen)")]
+        [Tooltip("Duration of the radial screen distortion pulse when entering soul realm.")]
+        [SerializeField] private float entryShockwaveDuration = 0.38f;
+
         private ColorAdjustments _colorAdjustments;
+        private Coroutine _entryShockwaveRoutine;
         private static readonly int SoulRealmBlendGlobalId = Shader.PropertyToID("_GeisSoulRealmBlend");
+        private static readonly int ShockwaveCenterUVId = Shader.PropertyToID("_GeisShockwaveCenterUV");
+        private static readonly int ShockwaveDataId = Shader.PropertyToID("_GeisShockwaveData");
         private static bool _loggedPostProcessingHint;
 
         private void Awake()
         {
+            ClearEntryShockwaveGlobals();
             EnsureVolume();
         }
 
@@ -87,6 +97,71 @@ namespace Geis.SoulRealm
             _colorAdjustments.colorFilter.Override(Color.Lerp(Color.white, soulColorFilter, blend));
 
             Shader.SetGlobalFloat(SoulRealmBlendGlobalId, blend);
+        }
+
+        /// <summary>
+        /// Starts a short screen-space shockwave centered on the anchor’s projected position (requires
+        /// <c>Geis/Hidden/SoulRealmScreen</c> on the URP renderer feature material).
+        /// </summary>
+        public void PulseEntryShockwave(Transform worldAnchor, Camera camera)
+        {
+            if (worldAnchor == null)
+                return;
+
+            if (_entryShockwaveRoutine != null)
+                StopCoroutine(_entryShockwaveRoutine);
+            _entryShockwaveRoutine = StartCoroutine(EntryShockwaveRoutine(worldAnchor, camera));
+        }
+
+        private IEnumerator EntryShockwaveRoutine(Transform anchor, Camera camera)
+        {
+            Camera cam = camera != null ? camera : Camera.main;
+            if (cam == null)
+                yield break;
+
+            float duration = Mathf.Max(0.05f, entryShockwaveDuration);
+            float elapsed = 0f;
+
+            while (elapsed < duration)
+            {
+                elapsed += Time.deltaTime;
+                float t = Mathf.Clamp01(elapsed / duration);
+                float phase = t;
+                float intensity = Mathf.Sin(t * Mathf.PI);
+
+                Vector3 vp = cam.WorldToViewportPoint(anchor.position);
+                float cx = 0.5f;
+                float cy = 0.5f;
+                if (vp.z > 0f)
+                {
+                    cx = Mathf.Clamp01(vp.x);
+                    cy = Mathf.Clamp01(vp.y);
+                }
+
+                Shader.SetGlobalVector(ShockwaveCenterUVId, new Vector4(cx, cy, 0f, 0f));
+                Shader.SetGlobalVector(ShockwaveDataId, new Vector4(phase, intensity, 0f, 0f));
+                yield return null;
+            }
+
+            ClearEntryShockwaveGlobals();
+            _entryShockwaveRoutine = null;
+        }
+
+        private static void ClearEntryShockwaveGlobals()
+        {
+            Shader.SetGlobalVector(ShockwaveCenterUVId, Vector4.zero);
+            Shader.SetGlobalVector(ShockwaveDataId, Vector4.zero);
+        }
+
+        private void OnDestroy()
+        {
+            if (_entryShockwaveRoutine != null)
+            {
+                StopCoroutine(_entryShockwaveRoutine);
+                _entryShockwaveRoutine = null;
+            }
+
+            ClearEntryShockwaveGlobals();
         }
 
         /// <summary>

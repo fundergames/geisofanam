@@ -305,6 +305,9 @@ namespace Geis.Locomotion
             }
         }
 
+        /// <summary>Gameplay camera used for screen-space VFX (e.g. soul-realm exit hold).</summary>
+        public Camera MainCamera => _mainCamera;
+
         /// <summary>
         /// Gets the position of the camera.
         /// </summary>

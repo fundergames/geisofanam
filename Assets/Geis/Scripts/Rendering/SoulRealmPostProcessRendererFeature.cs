@@ -5,7 +5,8 @@ using UnityEngine.Rendering.Universal;
 namespace Geis.Rendering
 {
     /// <summary>
-    /// Optional fullscreen pass after post-processing; uses global <c>_GeisSoulRealmBlend</c> (set by <see cref="SoulRealm.SoulRealmVisuals"/>).
+    /// Optional fullscreen pass after post-processing; uses globals set by <see cref="SoulRealm.SoulRealmVisuals"/>:
+    /// <c>_GeisSoulRealmBlend</c>, and during entry <c>_GeisShockwaveCenterUV</c> / <c>_GeisShockwaveData</c> for the radial pulse.
     /// Add to the URP Renderer asset (e.g. PC_Renderer) and assign a material using shader <c>Geis/Hidden/SoulRealmScreen</c>.
     /// </summary>
     public sealed class SoulRealmPostProcessRendererFeature : ScriptableRendererFeature

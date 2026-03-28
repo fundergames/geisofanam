@@ -33,7 +33,10 @@ namespace Geis.SoulRealm
             SoulGhostMotor ghostMotor,
             GeisInputReader inputReader,
             GeisPlayerAnimationController bodyLocomotion,
-            Material spectralMaterialOverride)
+            Material spectralMaterialOverride,
+            Material spectralDissolveMaterialTemplate,
+            float spectralEnterDissolveDuration,
+            bool invertDissolveForShader)
         {
             var source = explicitVisualRoot != null ? explicitVisualRoot : FindDefaultVisualRoot(bodyRoot);
             if (source == null || ghostRoot == null)
@@ -67,10 +70,21 @@ namespace Geis.SoulRealm
                 anim.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             }
 
-            var mat = spectralMaterialOverride != null
-                ? spectralMaterialOverride
-                : CreateDefaultSpectralMaterial();
-            ApplySpectralMaterials(instance, mat);
+            if (spectralMaterialOverride != null)
+            {
+                ApplySpectralMaterials(instance, spectralMaterialOverride);
+            }
+            else if (spectralDissolveMaterialTemplate != null)
+            {
+                ApplySpectralDissolveMaterials(instance, spectralDissolveMaterialTemplate, invertDissolveForShader);
+                var dissolveDriver = instance.AddComponent<SoulSpectralDissolveDriver>();
+                dissolveDriver.Configure(spectralEnterDissolveDuration, invertDissolveForShader);
+            }
+            else
+            {
+                var mat = CreateDefaultSpectralMaterial();
+                ApplySpectralMaterials(instance, mat);
+            }
 
             var driver = instance.AddComponent<SoulSpectralAnimatorDriver>();
             driver.Configure(ghostMotor, inputReader, bodyLocomotion);
@@ -101,6 +115,46 @@ namespace Geis.SoulRealm
                 Object.Destroy(r);
             foreach (var c in root.GetComponentsInChildren<Collider>(true))
                 Object.Destroy(c);
+        }
+
+        private static void ApplySpectralDissolveMaterials(GameObject root, Material dissolveTemplate, bool invertDissolveForShader)
+        {
+            if (dissolveTemplate == null)
+                return;
+
+            void ApplyToRenderer(Renderer r)
+            {
+                if (r == null) return;
+                var orig = r.sharedMaterials;
+                var mats = new Material[orig.Length];
+                for (var i = 0; i < orig.Length; i++)
+                {
+                    var m = new Material(dissolveTemplate);
+                    if (orig[i] != null)
+                        m.CopyPropertiesFromMaterial(orig[i]);
+                    ApplySpectralTintToDissolveMaterial(m);
+                    m.SetFloat("_Dissolve", SoulSpectralDissolveDriver.ToShaderDissolve(1f, invertDissolveForShader));
+                    mats[i] = m;
+                }
+
+                r.sharedMaterials = mats;
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            }
+
+            foreach (var r in root.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+                ApplyToRenderer(r);
+            foreach (var r in root.GetComponentsInChildren<MeshRenderer>(true))
+                ApplyToRenderer(r);
+        }
+
+        private static void ApplySpectralTintToDissolveMaterial(Material m)
+        {
+            if (m == null) return;
+            var c = new Color(0.35f, 0.95f, 0.6f, 0.48f);
+            if (m.HasProperty("_BaseColor"))
+                m.SetColor("_BaseColor", c);
+            else if (m.HasProperty("_Color"))
+                m.SetColor("_Color", c);
         }
 
         private static void ApplySpectralMaterials(GameObject root, Material template)
