@@ -348,6 +348,7 @@ namespace Geis.SoulRealm
             {
                 _bodyPositionAtEntry = bodyLocomotion.transform.position;
                 _bodyRotationAtEntry = bodyLocomotion.transform.rotation;
+                bodyLocomotion.SetWalkLocomotionForSoulRealm(false);
             }
 
             if (bodyAnimator != null)

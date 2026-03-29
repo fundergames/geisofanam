@@ -302,11 +302,10 @@ namespace Geis.SoulRealm
             }
             else if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive && inputReader != null)
             {
-                // Body gait/sprint flags freeze while soul realm suppresses locomotion — use live sprint input.
+                // Walk toggle still updates GeisPlayerAnimationController._isWalking via ToggleWalk (input callback).
+                // Do not mirror walk here — a second subscriber that flipped a local bool fought EnableWalk(!_isWalking).
                 if (b.LocomotionIsCrouching)
                     _targetMaxSpeed = b.LocomotionWalkSpeed;
-                else if (inputReader.IsSprintHeldOrToggled)
-                    _targetMaxSpeed = b.LocomotionSprintSpeed;
                 else if (b.LocomotionIsWalking)
                     _targetMaxSpeed = b.LocomotionWalkSpeed;
                 else
@@ -375,12 +374,20 @@ namespace Geis.SoulRealm
             float rotSmooth = _bodyLocomotion.LocomotionRotationSmoothing;
             Vector3 direction = new Vector3(_moveDirection.x, 0f, _moveDirection.z);
 
-            // Body strafe flag freezes in soul realm. Move-relative facing yaws the ghost with the left stick, which
-            // swings the follow LookAt in world space and feels like the camera is turning. While moving in soul realm,
-            // face camera forward (strafe-style) so only the right stick orbits the view.
-            bool strafe = _bodyLocomotion.LocomotionIsStrafing;
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
-                strafe = direction.sqrMagnitude > 0.01f;
+            {
+                // Face movement direction so camera-relative stick input does not leave the ghost facing camera
+                // forward (strafe-style), which reads as sideways sliding.
+                if (direction.sqrMagnitude > 0.01f)
+                {
+                    Quaternion targetRot = Quaternion.LookRotation(direction.normalized);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotSmooth * Time.deltaTime);
+                }
+
+                return;
+            }
+
+            bool strafe = _bodyLocomotion.LocomotionIsStrafing;
 
             if (strafe && direction.sqrMagnitude > 0.01f)
             {

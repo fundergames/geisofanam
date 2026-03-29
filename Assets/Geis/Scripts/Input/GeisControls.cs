@@ -192,6 +192,15 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""initialStateCheck"": false
                 },
                 {
+                    ""name"": ""ToggleWalk"",
+                    ""type"": ""Button"",
+                    ""id"": ""f1a2b3c4-d5e6-7890-abcd-ef012345678b"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
                     ""name"": ""SoulRealm"",
                     ""type"": ""Button"",
                     ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef012345678a"",
@@ -556,6 +565,28 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
+                    ""id"": ""e1f2a3b4-c5d6-7890-abcd-ef1111111111"",
+                    ""path"": ""<Keyboard>/slash"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard and Mouse"",
+                    ""action"": ""ToggleWalk"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e2f3a4b5-c6d7-8901-bcde-ef2222222222"",
+                    ""path"": ""<Gamepad>/dpad/up"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""ToggleWalk"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
                     ""id"": ""1a2b3c4d-5e6f-7890-abcd-ef1234567891"",
                     ""path"": ""<Keyboard>/tab"",
                     ""interactions"": """",
@@ -627,6 +658,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         m_Player_HeavyAttack = m_Player.FindAction("HeavyAttack", throwIfNotFound: true);
         m_Player_Dodge = m_Player.FindAction("Dodge", throwIfNotFound: true);
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
+        m_Player_ToggleWalk = m_Player.FindAction("ToggleWalk", throwIfNotFound: true);
         m_Player_SoulRealm = m_Player.FindAction("SoulRealm", throwIfNotFound: true);
     }
 
@@ -719,6 +751,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_HeavyAttack;
     private readonly InputAction m_Player_Dodge;
     private readonly InputAction m_Player_Pause;
+    private readonly InputAction m_Player_ToggleWalk;
     private readonly InputAction m_Player_SoulRealm;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
@@ -775,6 +808,10 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/Pause".
         /// </summary>
         public InputAction @Pause => m_Wrapper.m_Player_Pause;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/ToggleWalk".
+        /// </summary>
+        public InputAction @ToggleWalk => m_Wrapper.m_Player_ToggleWalk;
         /// <summary>
         /// Provides access to the underlying input action "Player/SoulRealm".
         /// </summary>
@@ -838,6 +875,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @Pause.started += instance.OnPause;
             @Pause.performed += instance.OnPause;
             @Pause.canceled += instance.OnPause;
+            @ToggleWalk.started += instance.OnToggleWalk;
+            @ToggleWalk.performed += instance.OnToggleWalk;
+            @ToggleWalk.canceled += instance.OnToggleWalk;
             @SoulRealm.started += instance.OnSoulRealm;
             @SoulRealm.performed += instance.OnSoulRealm;
             @SoulRealm.canceled += instance.OnSoulRealm;
@@ -885,6 +925,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @Pause.started -= instance.OnPause;
             @Pause.performed -= instance.OnPause;
             @Pause.canceled -= instance.OnPause;
+            @ToggleWalk.started -= instance.OnToggleWalk;
+            @ToggleWalk.performed -= instance.OnToggleWalk;
+            @ToggleWalk.canceled -= instance.OnToggleWalk;
             @SoulRealm.started -= instance.OnSoulRealm;
             @SoulRealm.performed -= instance.OnSoulRealm;
             @SoulRealm.canceled -= instance.OnSoulRealm;
@@ -1031,6 +1074,13 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnPause(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "ToggleWalk" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnToggleWalk(InputAction.CallbackContext context);
         /// <summary>
         /// Method invoked when associated input action "SoulRealm" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
         /// </summary>

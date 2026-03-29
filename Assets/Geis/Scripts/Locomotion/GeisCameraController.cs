@@ -62,9 +62,18 @@ namespace Geis.Locomotion
         private Transform _syntyCamera;
 
         // Soul realm: baseline captured at entry; rotation lerps during hold-to-exit; snap pivot/angles on exit complete.
+        [SerializeField]
+        [Tooltip("Seconds to ease camera yaw/pitch back to the orientation when exit hold started, after releasing bumper early.")]
+        private float _soulRealmExitHoldReleaseSmoothTime = 0.22f;
+
         private bool _soulRealmBaselineCaptured;
         private bool _soulRealmExitHoldActive;
         private float _soulRealmExitHoldProgress;
+        private bool _soulRealmExitHoldReleaseRecovering;
+        private float _soulRealmExitHoldRecoverVelCurX;
+        private float _soulRealmExitHoldRecoverVelCurY;
+        private float _soulRealmExitHoldRecoverVelTgtX;
+        private float _soulRealmExitHoldRecoverVelTgtY;
 
         private Vector3 _soulRealmBaselinePivotPosition;
         private float _soulRealmBaselineTargetAngleX;
@@ -104,6 +113,9 @@ namespace Geis.Locomotion
             _soulRealmHoldStartCurrentAngleY = _currentAngleY;
             _soulRealmExitHoldActive = true;
             _soulRealmExitHoldProgress = 0f;
+            _soulRealmExitHoldReleaseRecovering = false;
+            _soulRealmExitHoldRecoverVelCurX = _soulRealmExitHoldRecoverVelCurY = 0f;
+            _soulRealmExitHoldRecoverVelTgtX = _soulRealmExitHoldRecoverVelTgtY = 0f;
         }
 
         /// <summary>0–1 progress parallel to SoulRealmManager exit hold (ghost → body).</summary>
@@ -112,10 +124,16 @@ namespace Geis.Locomotion
             _soulRealmExitHoldProgress = Mathf.Clamp01(holdProgress01);
         }
 
-        /// <summary>Released hold before completion — resume normal mouse look from current angles.</summary>
+        /// <summary>Released hold before completion — ease back to the yaw/pitch from when hold started, then mouse look resumes.</summary>
         public void EndSoulRealmExitHoldRotationLerp()
         {
             _soulRealmExitHoldActive = false;
+            if (_soulRealmBaselineCaptured)
+            {
+                _soulRealmExitHoldReleaseRecovering = true;
+                _soulRealmExitHoldRecoverVelCurX = _soulRealmExitHoldRecoverVelCurY = 0f;
+                _soulRealmExitHoldRecoverVelTgtX = _soulRealmExitHoldRecoverVelTgtY = 0f;
+            }
         }
 
         /// <summary>
@@ -127,6 +145,7 @@ namespace Geis.Locomotion
                 return;
 
             _soulRealmExitHoldActive = false;
+            _soulRealmExitHoldReleaseRecovering = false;
             transform.position = _soulRealmBaselinePivotPosition;
             _targetAngleX = _soulRealmBaselineTargetAngleX;
             _targetAngleY = _soulRealmBaselineTargetAngleY;
@@ -238,10 +257,49 @@ namespace Geis.Locomotion
 
             bool lockLook = _soulRealmExitHoldActive;
 
-            if (!lockLook && _inputReader != null)
+            if (lockLook && _soulRealmBaselineCaptured)
             {
-                float rotationX = _inputReader._mouseDelta.y * _cameraInversion * _mouseSensitivity;
-                float rotationY = _inputReader._mouseDelta.x * _mouseSensitivity;
+                float t = Mathf.SmoothStep(0f, 1f, _soulRealmExitHoldProgress);
+                _targetAngleX = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleX, _soulRealmBaselineTargetAngleX, t);
+                _targetAngleY = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleY, _soulRealmBaselineTargetAngleY, t);
+                _currentAngleX = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleX, _soulRealmBaselineCurrentAngleX, t);
+                _currentAngleY = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleY, _soulRealmBaselineCurrentAngleY, t);
+                _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+                _currentAngleX = Mathf.Clamp(_currentAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+            }
+            else if (_soulRealmExitHoldReleaseRecovering && _soulRealmBaselineCaptured)
+            {
+                float st = Mathf.Max(0.01f, _soulRealmExitHoldReleaseSmoothTime);
+                _currentAngleX = Mathf.SmoothDampAngle(_currentAngleX, _soulRealmHoldStartCurrentAngleX,
+                    ref _soulRealmExitHoldRecoverVelCurX, st);
+                _currentAngleY = Mathf.SmoothDampAngle(_currentAngleY, _soulRealmHoldStartCurrentAngleY,
+                    ref _soulRealmExitHoldRecoverVelCurY, st);
+                _targetAngleX = Mathf.SmoothDampAngle(_targetAngleX, _soulRealmHoldStartTargetAngleX,
+                    ref _soulRealmExitHoldRecoverVelTgtX, st);
+                _targetAngleY = Mathf.SmoothDampAngle(_targetAngleY, _soulRealmHoldStartTargetAngleY,
+                    ref _soulRealmExitHoldRecoverVelTgtY, st);
+                _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+                _currentAngleX = Mathf.Clamp(_currentAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
+
+                const float snapThr = 0.08f;
+                if (Mathf.Abs(Mathf.DeltaAngle(_currentAngleX, _soulRealmHoldStartCurrentAngleX)) < snapThr &&
+                    Mathf.Abs(Mathf.DeltaAngle(_currentAngleY, _soulRealmHoldStartCurrentAngleY)) < snapThr &&
+                    Mathf.Abs(Mathf.DeltaAngle(_targetAngleX, _soulRealmHoldStartTargetAngleX)) < snapThr &&
+                    Mathf.Abs(Mathf.DeltaAngle(_targetAngleY, _soulRealmHoldStartTargetAngleY)) < snapThr)
+                {
+                    _currentAngleX = _soulRealmHoldStartCurrentAngleX;
+                    _currentAngleY = _soulRealmHoldStartCurrentAngleY;
+                    _targetAngleX = _soulRealmHoldStartTargetAngleX;
+                    _targetAngleY = _soulRealmHoldStartTargetAngleY;
+                    _soulRealmExitHoldReleaseRecovering = false;
+                }
+            }
+            else if (!lockLook && !_soulRealmExitHoldReleaseRecovering && _inputReader != null)
+            {
+                // Read Look action directly so gamepad right stick works reliably (callbacks do not always fire every frame).
+                Vector2 look = _inputReader.LookInput;
+                float rotationX = look.y * _cameraInversion * _mouseSensitivity;
+                float rotationY = look.x * _mouseSensitivity;
 
                 if (_wasLockedOn && !_isLockedOn)
                     _targetAngleY = _currentAngleY;
@@ -264,16 +322,6 @@ namespace Geis.Locomotion
                 }
 
                 _currentAngleX = Mathf.Lerp(_currentAngleX, _targetAngleX, rotSmooth);
-            }
-            else if (lockLook && _soulRealmBaselineCaptured)
-            {
-                float t = Mathf.SmoothStep(0f, 1f, _soulRealmExitHoldProgress);
-                _targetAngleX = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleX, _soulRealmBaselineTargetAngleX, t);
-                _targetAngleY = Mathf.LerpAngle(_soulRealmHoldStartTargetAngleY, _soulRealmBaselineTargetAngleY, t);
-                _currentAngleX = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleX, _soulRealmBaselineCurrentAngleX, t);
-                _currentAngleY = Mathf.LerpAngle(_soulRealmHoldStartCurrentAngleY, _soulRealmBaselineCurrentAngleY, t);
-                _targetAngleX = Mathf.Clamp(_targetAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
-                _currentAngleX = Mathf.Clamp(_currentAngleX, _cameraTiltBounds.x, _cameraTiltBounds.y);
             }
 
             _newPosition = _playerTarget.position;

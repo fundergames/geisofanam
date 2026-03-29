@@ -6,6 +6,7 @@
 // Sample scripts are included only as examples and are not intended as production-ready.
 
 using System;
+using Geis.SoulRealm;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -16,6 +17,13 @@ namespace Geis.InputSystem
     {
         public Vector2 _mouseDelta;
         public Vector2 _moveComposite;
+
+        /// <summary>
+        /// Read from <c>Player/Look</c> (mouse delta + gamepad right stick). Use for camera rotation in
+        /// <see cref="MonoBehaviour.LateUpdate"/> so look is correct every frame — callback-driven
+        /// <see cref="_mouseDelta"/> alone can miss gamepad updates when the stick value is steady.
+        /// </summary>
+        public Vector2 LookInput => _controls != null ? _controls.Player.Look.ReadValue<Vector2>() : Vector2.zero;
 
         public float _movementInputDuration;
         public bool _movementInputDetected;
@@ -191,7 +199,7 @@ namespace Geis.InputSystem
         }
 
         /// <summary>
-        ///     Defines the action to perform when the OnToggleWalk callback is called.
+        ///     Player/ToggleWalk (keyboard /, gamepad D-pad Up). In soul realm, L3 also invokes this instead of sprint (see <see cref="OnSprint"/>).
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnToggleWalk(InputAction.CallbackContext context)
@@ -206,7 +214,8 @@ namespace Geis.InputSystem
 
         /// <summary>
         ///     Defines the action to perform when the OnSprint callback is called.
-        ///     Gamepad L3 (left stick press) toggles sprint; keyboard Shift remains hold-to-sprint.
+        ///     Gamepad L3 toggles sprint in the physical realm; while soul realm (ghost) is active, L3 toggles walk instead (ghost does not use sprint speed).
+        ///     Keyboard Shift remains hold-to-sprint.
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnSprint(InputAction.CallbackContext context)
@@ -218,6 +227,12 @@ namespace Geis.InputSystem
             {
                 if (!context.performed)
                     return;
+
+                if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                {
+                    onWalkToggled?.Invoke();
+                    return;
+                }
 
                 _l3SprintToggledOn = !_l3SprintToggledOn;
                 SyncSprintOutput();

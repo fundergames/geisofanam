@@ -469,7 +469,26 @@ namespace Geis.Locomotion
         public bool LocomotionIsWalking => _isWalking;
         public bool LocomotionIsSprinting => _isSprinting;
         public bool LocomotionIsCrouching => _isCrouching;
+
+        /// <summary>
+        /// Called when entering soul realm: locomotion <see cref="Update"/> is suppressed, but walk toggles
+        /// still call <see cref="ToggleWalk"/> and update <see cref="_isWalking"/>. Use this so the ghost reads
+        /// a defined run/walk state (e.g. default run) instead of a stale frozen flag.
+        /// </summary>
+        public void SetWalkLocomotionForSoulRealm(bool walkEnabled)
+        {
+            EnableWalk(walkEnabled);
+        }
         public bool LocomotionIsStrafing => _isStrafing;
+
+        /// <summary>
+        /// Strafe-style facing (camera-forward) vs velocity-facing. Run gait uses forward run like sprint unless aim/lock-on needs strafe.
+        /// </summary>
+        private bool UseStrafeStyleLocomotionFacing =>
+            _isStrafing && !(_currentGait == GaitState.Run && !_isLockedOn && !_isAiming);
+
+        /// <summary>Same value as the <c>IsStrafing</c> animator float — for spectral mirror / tooling.</summary>
+        public bool LocomotionAnimatorUsesStrafeStyle => UseStrafeStyleLocomotionFacing;
         /// <summary>True while aim (LT) is held — used by bow / ranged.</summary>
         public bool IsAiming => _isAiming;
 
@@ -669,7 +688,10 @@ namespace Geis.Locomotion
         /// </summary>
         private void ToggleWalk()
         {
-            EnableWalk(!_isWalking);
+            bool wantWalk = !_isWalking;
+            if (wantWalk && _isSprinting)
+                DeactivateSprint();
+            EnableWalk(wantWalk);
         }
 
         /// <summary>
@@ -1283,7 +1305,7 @@ namespace Geis.Locomotion
             _animator.SetFloat(_bodyLookXHash, _bodyLookX);
             _animator.SetFloat(_bodyLookYHash, _bodyLookY);
 
-            _animator.SetFloat(_isStrafingHash, _isStrafing ? 1.0f : 0.0f);
+            _animator.SetFloat(_isStrafingHash, UseStrafeStyleLocomotionFacing ? 1.0f : 0.0f);
 
             _animator.SetFloat(_inclineAngleHash, _inclineAngle);
 
@@ -1515,7 +1537,7 @@ namespace Geis.Locomotion
             _isTurningInPlace = false;
             _isIdleLooking = false;
 
-            if (_isStrafing)
+            if (UseStrafeStyleLocomotionFacing)
             {
                 if (_moveDirection.magnitude > 0.01)
                 {

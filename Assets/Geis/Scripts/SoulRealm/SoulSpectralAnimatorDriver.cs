@@ -85,7 +85,7 @@ namespace Geis.SoulRealm
 
             float speed2D = motor.MirrorSpeed2D;
 
-            bool isStrafingAnim = bodyLocomotion.LocomotionIsStrafing;
+            bool isStrafingAnim = bodyLocomotion.LocomotionAnimatorUsesStrafeStyle;
             FaceMoveDirection(cam, isStrafingAnim);
             CalculateGait(speed2D);
             bool isStopped = moveDirection.magnitude < 0.01f && speed2D < 0.5f;
