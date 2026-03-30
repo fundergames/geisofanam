@@ -387,6 +387,14 @@ namespace Geis.Locomotion
         [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
         [SerializeField]
         private bool _requireMovementInputForDodge;
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("Soul-ghost scripted dodge planar speed; physical dodge uses animation clips.")]
+        [SerializeField]
+        private float _dodgeScriptedPlaneSpeed = 7f;
+        [FoldoutGroup("Dodge Roll")]
+        [Tooltip("Soul-ghost scripted dodge duration in seconds.")]
+        [SerializeField]
+        private float _dodgeScriptedDuration = 0.35f;
 
         #endregion
 
@@ -470,6 +478,9 @@ namespace Geis.Locomotion
         public bool LocomotionIsSprinting => _isSprinting;
         public bool LocomotionIsCrouching => _isCrouching;
 
+        /// <summary>Planar velocity from last locomotion tick (used to sync soul ghost on realm entry).</summary>
+        public Vector3 LocomotionPlanarVelocity => new Vector3(_velocity.x, 0f, _velocity.z);
+
         /// <summary>
         /// Called when entering soul realm: locomotion <see cref="Update"/> is suppressed, but walk toggles
         /// still call <see cref="ToggleWalk"/> and update <see cref="_isWalking"/>. Use this so the ghost reads
@@ -510,6 +521,15 @@ namespace Geis.Locomotion
 
         /// <summary>Stick magnitude below this counts as neutral for dodge direction (mirrors body for soul ghost).</summary>
         public float LocomotionDodgeDeadzone => _dodgeInputDeadzone;
+
+        /// <summary>Soul-ghost scripted dodge (physical dodge uses animator root motion).</summary>
+        public float LocomotionDodgeScriptedPlaneSpeed => _dodgeScriptedPlaneSpeed;
+
+        /// <summary>Soul-ghost scripted dodge duration.</summary>
+        public float LocomotionDodgeScriptedDuration => _dodgeScriptedDuration;
+
+        /// <summary>When true, dodge only if move stick exceeds <see cref="LocomotionDodgeDeadzone"/> (spectral ghost mirrors this).</summary>
+        public bool LocomotionDodgeRequiresMovementInput => _requireMovementInputForDodge;
 
         public float LocomotionJumpForce => _jumpForce;
         public float LocomotionGravityMultiplier => _gravityMultiplier;
@@ -910,6 +930,8 @@ namespace Geis.Locomotion
 
         private void OnDodgeRequested()
         {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                return;
             if (_currentState != AnimationState.Locomotion || !_isGrounded || _isCrouching)
                 return;
             if (_animator == null || !HasAnimatorParameter("Dodge") || !HasAnimatorParameter("DodgeDirection"))

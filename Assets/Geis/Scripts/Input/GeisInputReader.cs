@@ -6,7 +6,6 @@
 // Sample scripts are included only as examples and are not intended as production-ready.
 
 using System;
-using Geis.SoulRealm;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -199,7 +198,7 @@ namespace Geis.InputSystem
         }
 
         /// <summary>
-        ///     Player/ToggleWalk (keyboard /, gamepad D-pad Up). In soul realm, L3 also invokes this instead of sprint (see <see cref="OnSprint"/>).
+        ///     Player/ToggleWalk (keyboard /, gamepad D-pad Up).
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnToggleWalk(InputAction.CallbackContext context)
@@ -214,8 +213,7 @@ namespace Geis.InputSystem
 
         /// <summary>
         ///     Defines the action to perform when the OnSprint callback is called.
-        ///     Gamepad L3 toggles sprint in the physical realm; while soul realm (ghost) is active, L3 toggles walk instead (ghost does not use sprint speed).
-        ///     Keyboard Shift remains hold-to-sprint.
+        ///     Gamepad L3 toggles sprint on/off; keyboard Shift is hold-to-sprint. Same behavior in physical and soul realm.
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnSprint(InputAction.CallbackContext context)
@@ -227,12 +225,6 @@ namespace Geis.InputSystem
             {
                 if (!context.performed)
                     return;
-
-                if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
-                {
-                    onWalkToggled?.Invoke();
-                    return;
-                }
 
                 _l3SprintToggledOn = !_l3SprintToggledOn;
                 SyncSprintOutput();

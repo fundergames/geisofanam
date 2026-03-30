@@ -17,3 +17,6 @@ MonoBehaviour:
   comboData: {fileID: 11400000, guid: 152df7c52a7054f19836066791e4750a, type: 2}
   weaponStats: {fileID: 11400000, guid: a056960da19c44eeaa4bf3de6822db90, type: 2}
   combatAction: {fileID: 11400000, guid: d24304a3a411c1a429ccb86d94d8ffff, type: 2}
+  soulAbilityPrimary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c103, type: 2}
+  soulAbilitySecondary: {fileID: 0}
+  buildsLyreResonance: 1

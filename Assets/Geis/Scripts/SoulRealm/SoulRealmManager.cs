@@ -351,6 +351,9 @@ namespace Geis.SoulRealm
                 bodyLocomotion.SetWalkLocomotionForSoulRealm(false);
             }
 
+            if (ghostMotor != null && bodyLocomotion != null)
+                ghostMotor.SyncFromBodyForSoulRealm(bodyLocomotion);
+
             if (bodyAnimator != null)
                 bodyAnimator.speed = 0f;
             // Leave body CharacterController enabled so ground ride can move it with platforms.

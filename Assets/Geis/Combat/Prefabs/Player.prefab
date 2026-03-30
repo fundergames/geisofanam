@@ -1135,6 +1135,8 @@ GameObject:
   - component: {fileID: 8377337675178507505}
   - component: {fileID: 8613945141036088760}
   - component: {fileID: 8092402105320207194}
+  - component: {fileID: 7711223344556677889}
+  - component: {fileID: 8822334455667788001}
   m_Layer: 3
   m_Name: Player
   m_TagString: Untagged
@@ -1281,6 +1283,38 @@ MonoBehaviour:
   _arrowRange: 80
   _maxChargeTime: 1.5
   _chargedSpeedMultiplier: 1.75
+--- !u!114 &7711223344556677889
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b1c1d1e1f11111a1b1c1d1e1f11116, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.WeaponAbilities.LyreResonanceMeter
+  weaponSwitcher: {fileID: 1386048861169640747}
+  combatEntity: {fileID: 1210455581438556543}
+  maxResonance: 100
+  resonancePerDamagePoint: 1
+--- !u!114 &8822334455667788001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e1732c65d6020b4f93e786be61f8606, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.WeaponAbilities.SoulRealmWeaponAbilityController
+  weaponSwitcher: {fileID: 1386048861169640747}
+  soulAbilityActions: {fileID: 11400000, guid: e3001ef70850f81438de182289004428, type: 2}
+  abilityOrigin: {fileID: 0}
+  cameraController: {fileID: 9185949923837509450}
 --- !u!1 &3759892831401217738
 GameObject:
   m_ObjectHideFlags: 0

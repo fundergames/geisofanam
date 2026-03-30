@@ -3,6 +3,7 @@
 
 using UnityEngine;
 using RogueDeal.Combat.Core.Data;
+using Geis.SoulRealm.WeaponAbilities;
 
 namespace Geis.Combat
 {
@@ -28,6 +29,20 @@ namespace Geis.Combat
         public Weapon weaponStats;
         [Tooltip("Effects to apply on hit. Uses weaponStats for scaling. Null = no damage.")]
         public CombatAction combatAction;
+
+        [Header("Soul realm")]
+        [Tooltip("Spectral ability 1 (e.g. Q / D-pad Left). Only used while Soul Realm is active.")]
+        [SerializeField] private SoulWeaponAbilityAsset soulAbilityPrimary;
+        [Tooltip("Spectral ability 2 (e.g. F / D-pad Right). Only used while Soul Realm is active.")]
+        [SerializeField] private SoulWeaponAbilityAsset soulAbilitySecondary;
+        [Tooltip("If true, successful hits with this weapon build Lyre resonance (see LyreResonanceMeter on player).")]
+        [SerializeField] private bool buildsLyreResonance;
+
+        public SoulWeaponAbilityAsset PrimarySoulAbility => soulAbilityPrimary;
+        public SoulWeaponAbilityAsset SecondarySoulAbility => soulAbilitySecondary;
+
+        /// <summary>When true, Lyre resonance meter on the player adds charge on damaging hits.</summary>
+        public bool BuildsLyreResonance => buildsLyreResonance;
 
         /// <summary>
         /// Gets the Weapon for damage calculation. Returns weaponStats, or null if unarmed.

@@ -6,7 +6,7 @@ namespace Geis.SoulRealm
 {
     /// <summary>
     /// Soul avatar locomotion: mirrors <see cref="GeisPlayerAnimationController"/> move direction,
-    /// speed/acceleration, jump, gravity, grounded check, and capsule size from the same serialized values.
+    /// walk/run/sprint, dodge tuning, jump, gravity, grounded check, and capsule size from the same values.
     /// </summary>
     [RequireComponent(typeof(CharacterController))]
     public sealed class SoulGhostMotor : MonoBehaviour
@@ -20,7 +20,7 @@ namespace Geis.SoulRealm
         [SerializeField] private float fallbackJumpForce = 10f;
         [SerializeField] private float fallbackGravityMultiplier = 2f;
 
-        [Header("Dodge (soul realm)")]
+        [Header("Dodge (fallback if no body reference)")]
         [SerializeField] private float ghostDodgeDuration = 0.35f;
         [SerializeField] private float ghostDodgeSpeed = 7f;
         [Tooltip("Stick magnitude below this uses camera-forward dodge (avoids drift steering dodges forward).")]
@@ -95,10 +95,17 @@ namespace Geis.SoulRealm
             if (!GroundedCheck())
                 return;
 
-            // Soul-realm dodge: default to camera-forward if no stick (body can require move input; ghost should not).
+            if (_bodyLocomotion != null && _bodyLocomotion.LocomotionDodgeRequiresMovementInput && inputReader != null)
+            {
+                float dz = _bodyLocomotion.LocomotionDodgeDeadzone;
+                if (inputReader._moveComposite.sqrMagnitude < dz * dz)
+                    return;
+            }
 
             _dodgePlanarDir = ComputeGhostDodgePlanarDirection();
-            _dodgeTimeRemaining = ghostDodgeDuration;
+            _dodgeTimeRemaining = _bodyLocomotion != null
+                ? _bodyLocomotion.LocomotionDodgeScriptedDuration
+                : ghostDodgeDuration;
         }
 
         private Vector3 ComputeGhostDodgePlanarDirection()
@@ -149,6 +156,43 @@ namespace Geis.SoulRealm
                 RefreshInputSubscriptions();
         }
 
+        /// <summary>
+        /// Call when entering soul realm so max speed and planar velocity match the body (same walk/run/sprint caps as physical).
+        /// Avoids stale ghost lerp state after realm swap.
+        /// </summary>
+        public void SyncFromBodyForSoulRealm(GeisPlayerAnimationController body)
+        {
+            if (body == null)
+                return;
+
+            float targetMaxSpeed;
+            if (body.LocomotionIsCrouching)
+                targetMaxSpeed = body.LocomotionWalkSpeed;
+            else if (body.LocomotionIsSprinting)
+                targetMaxSpeed = body.LocomotionSprintSpeed;
+            else if (body.LocomotionIsWalking)
+                targetMaxSpeed = body.LocomotionWalkSpeed;
+            else
+                targetMaxSpeed = body.LocomotionRunSpeed;
+
+            _currentMaxSpeed = targetMaxSpeed;
+
+            Vector3 planar = body.LocomotionPlanarVelocity;
+            float mag = planar.magnitude;
+            if (mag > 0.0001f)
+            {
+                Vector3 dir = planar / mag;
+                float v = Mathf.Min(mag, targetMaxSpeed);
+                _velocity.x = dir.x * v;
+                _velocity.z = dir.z * v;
+            }
+            else
+            {
+                _velocity.x = 0f;
+                _velocity.z = 0f;
+            }
+        }
+
         /// <summary>Horizontal movement speed (matches player <c>_speed2D</c> calculation).</summary>
         public float MirrorSpeed2D
         {
@@ -187,12 +231,15 @@ namespace Geis.SoulRealm
                 _dodgeTimeRemaining -= Time.deltaTime;
                 Vector3 d = _dodgePlanarDir;
                 d.y = 0f;
+                float dodgeSpeed = _bodyLocomotion != null
+                    ? _bodyLocomotion.LocomotionDodgeScriptedPlaneSpeed
+                    : ghostDodgeSpeed;
                 if (d.sqrMagnitude < 0.0001f)
                     d = new Vector3(transform.forward.x, 0f, transform.forward.z).normalized;
                 else
                     d.Normalize();
-                _velocity.x = d.x * ghostDodgeSpeed;
-                _velocity.z = d.z * ghostDodgeSpeed;
+                _velocity.x = d.x * dodgeSpeed;
+                _velocity.z = d.z * dodgeSpeed;
             }
             else if (_bodyLocomotion != null)
                 CalculateMoveDirection(groundedBeforeMove);
@@ -300,17 +347,6 @@ namespace Geis.SoulRealm
             {
                 _targetMaxSpeed = _currentMaxSpeed;
             }
-            else if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive && inputReader != null)
-            {
-                // Walk toggle still updates GeisPlayerAnimationController._isWalking via ToggleWalk (input callback).
-                // Do not mirror walk here — a second subscriber that flipped a local bool fought EnableWalk(!_isWalking).
-                if (b.LocomotionIsCrouching)
-                    _targetMaxSpeed = b.LocomotionWalkSpeed;
-                else if (b.LocomotionIsWalking)
-                    _targetMaxSpeed = b.LocomotionWalkSpeed;
-                else
-                    _targetMaxSpeed = b.LocomotionRunSpeed;
-            }
             else if (b.LocomotionIsCrouching)
             {
                 _targetMaxSpeed = b.LocomotionWalkSpeed;
@@ -373,19 +409,6 @@ namespace Geis.SoulRealm
 
             float rotSmooth = _bodyLocomotion.LocomotionRotationSmoothing;
             Vector3 direction = new Vector3(_moveDirection.x, 0f, _moveDirection.z);
-
-            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
-            {
-                // Face movement direction so camera-relative stick input does not leave the ghost facing camera
-                // forward (strafe-style), which reads as sideways sliding.
-                if (direction.sqrMagnitude > 0.01f)
-                {
-                    Quaternion targetRot = Quaternion.LookRotation(direction.normalized);
-                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotSmooth * Time.deltaTime);
-                }
-
-                return;
-            }
 
             bool strafe = _bodyLocomotion.LocomotionIsStrafing;
 
