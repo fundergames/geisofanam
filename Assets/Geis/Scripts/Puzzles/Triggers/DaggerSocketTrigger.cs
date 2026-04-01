@@ -8,8 +8,9 @@ namespace Geis.Puzzles
     /// <see cref="acceptedTag"/> ("DaggerMovable") is inside this socket zone.
     ///
     /// When the dagger transposition system is built, it tags moved objects as
-    /// "DaggerMovable" before placing them. No coupling to the dagger controller
-    /// is needed here — this trigger responds purely to the tag.
+    /// "DaggerMovable" before placing them. This is object placement in a socket (trigger overlap),
+    /// not a melee hit from <see cref="RogueDeal.Combat.SimpleAttackHitDetector"/> — use
+    /// <see cref="SwordHitTrigger"/> with accepted weapon slot 1 if you need knife-hit-to-break puzzles.
     ///
     /// Soul-realm behaviour: optionally shows a <see cref="slotIndicatorPrefab"/>
     /// only in the soul realm to teach the player where objects belong ("true position

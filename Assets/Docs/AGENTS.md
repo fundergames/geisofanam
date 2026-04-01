@@ -142,6 +142,7 @@ Discord coordination is supported via `Tools/discord_agent_bot`. Discord is sign
 ## Quick Reference
 
 - **Project context**: `Assets/Docs/PROJECT.md`
+- **System docs (how each system works + rules)**: `Assets/Docs/Systems/README.md` and `Assets/Docs/Systems/*.md`
 - **Art direction**: `Assets/Docs/VisualStyleGuide.md`
 - **Feature template**: `Assets/Docs/Features/_template.md`
 - **Asset templates**: `Assets/Docs/Features/_enemy_template.md`, `_weapon_template.md`, `_character_template.md`, `_environment_template.md`

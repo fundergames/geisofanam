@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponDefinition
   weaponPrefab: {fileID: 1218206468385280803, guid: 583d1dc9b6f67f549a61d72471d123d5, type: 3}
   displayName: Aetherstorm
+  attachmentHand: 0
   comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
   weaponStats: {fileID: 11400000, guid: 2d79439bc3ae645158f4a2afd68b619c, type: 2}
   combatAction: {fileID: 11400000, guid: 6e5c519dc3e4d4d3a9d79894423be967, type: 2}
-  soulAbilityPrimary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c104, type: 2}
-  soulAbilitySecondary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c105, type: 2}
+  soulAbilityPrimary: {fileID: 11400000, guid: a1a404c02fdade54380adebc9f749cc7, type: 2}
+  soulAbilitySecondary: {fileID: 11400000, guid: 74aea82553a20664096f5323d27b3e3a, type: 2}
   buildsLyreResonance: 0

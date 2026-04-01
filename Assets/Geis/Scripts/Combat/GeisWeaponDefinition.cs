@@ -7,6 +7,13 @@ using Geis.SoulRealm.WeaponAbilities;
 
 namespace Geis.Combat
 {
+    /// <summary>Which hand the weapon prefab parents under (resolved by <see cref="GeisWeaponSwitcher"/>).</summary>
+    public enum WeaponAttachmentHand
+    {
+        RightHand = 0,
+        LeftHand = 1
+    }
+
     /// <summary>
     /// Unified weapon data: prefab, combo animations, and damage config.
     /// Assign per slot on GeisWeaponSwitcher (replaces separate Weapon/ComboData arrays on other components).
@@ -19,6 +26,11 @@ namespace Geis.Combat
         public GameObject weaponPrefab;
         [Tooltip("Display name")]
         public string displayName;
+        [Tooltip("Hand bone used when equipping this weapon (e.g. bow on left).")]
+        [SerializeField] private WeaponAttachmentHand attachmentHand = WeaponAttachmentHand.RightHand;
+
+        /// <summary>Animator hand this weapon’s prefab should parent to.</summary>
+        public WeaponAttachmentHand AttachmentHand => attachmentHand;
 
         [Header("Combo Animations")]
         [Tooltip("Combo graph and clips. Per-state CombatAction / multi-hit times live on this asset (State Combat Bindings).")]
@@ -31,11 +43,11 @@ namespace Geis.Combat
         public CombatAction combatAction;
 
         [Header("Soul realm")]
-        [Tooltip("Spectral ability 1 (e.g. Q / D-pad Left). Only used while Soul Realm is active.")]
+        [Tooltip("Ability slot 1 (e.g. Q). Some abilities use Soul Realm only; others (e.g. True Strike) use the physical realm.")]
         [SerializeField] private SoulWeaponAbilityAsset soulAbilityPrimary;
-        [Tooltip("Spectral ability 2 (e.g. F / D-pad Right). Only used while Soul Realm is active.")]
+        [Tooltip("Ability slot 2 (e.g. F). Realm depends on the assigned ability asset.")]
         [SerializeField] private SoulWeaponAbilityAsset soulAbilitySecondary;
-        [Tooltip("If true, successful hits with this weapon build Lyre resonance (see LyreResonanceMeter on player).")]
+        [Tooltip("If true, successful hits with this weapon build Lyre resonance (Emberblade Wave Release optional cost).")]
         [SerializeField] private bool buildsLyreResonance;
 
         public SoulWeaponAbilityAsset PrimarySoulAbility => soulAbilityPrimary;

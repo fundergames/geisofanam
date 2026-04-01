@@ -1,4 +1,5 @@
 using Geis.Animation;
+using Geis.InteractInput;
 using Geis.InputSystem;
 using Geis.Locomotion;
 using UnityEngine;
@@ -74,8 +75,9 @@ namespace Geis.SoulRealm
                 return;
 
             UpdateMovementInputFlags();
-            moveDirection = cam.GetCameraForwardZeroedYNormalised() * inputReader._moveComposite.y
-                + cam.GetCameraRightZeroedYNormalised() * inputReader._moveComposite.x;
+            Vector2 composite = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite);
+            moveDirection = cam.GetCameraForwardZeroedYNormalised() * composite.y
+                + cam.GetCameraRightZeroedYNormalised() * composite.x;
 
             bool grounded = motor.IsGroundedPublic;
             if (!grounded)
@@ -139,7 +141,8 @@ namespace Geis.SoulRealm
         private void UpdateMovementInputFlags()
         {
             float hold = bodyLocomotion.LocomotionButtonHoldThreshold;
-            if (inputReader._movementInputDetected)
+            bool movementDetected = !GeisInteractInput.IsMovementFrozenForInteraction && inputReader._movementInputDetected;
+            if (movementDetected)
             {
                 if (movementInputDuration == 0f)
                     movementInputTapped = true;

@@ -1,5 +1,5 @@
 // Geis of Anam - Weapon equipping via keys 1-4 (Unarmed, Knife, Sword, Bow).
-// Gamepad: Y (north face) cycles to the next weapon.
+// Gamepad: D-pad up cycles to the next weapon.
 // Uses GeisWeaponDefinition[] as the single source for prefab, combo, and damage.
 
 using UnityEngine;
@@ -12,7 +12,7 @@ namespace Geis.Combat
 {
     /// <summary>
     /// Switches between weapons using keys 1-4. Slot 0=Unarmed, 1=Knife, 2=Sword, 3=Bow.
-    /// Controller Y cycles forward through equipped slots.
+    /// Controller D-pad up cycles forward through equipped slots.
     /// Assign GeisWeaponDefinition per slot (prefab + combo + damage).
     /// </summary>
     public class GeisWeaponSwitcher : MonoBehaviour
@@ -24,22 +24,33 @@ namespace Geis.Combat
         private GeisWeaponDefinition[] weaponSlots = new GeisWeaponDefinition[4];
 
         [Header("Attachment")]
-        [Tooltip("Optional: assign manually if auto-detect fails")]
+        [Tooltip("Optional: overrides auto-detect for the right-hand weapon socket")]
         [SerializeField]
         private Transform manualAttachmentPoint;
+
+        [Tooltip("Optional: overrides auto-detect for the left-hand weapon socket")]
+        [SerializeField]
+        private Transform manualLeftAttachmentPoint;
 
         [Tooltip("Optional: assign Animator manually if on different branch of hierarchy")]
         [SerializeField]
         private Animator manualAnimator;
 
-        [Tooltip("Bone names to search for weapon attachment")]
+        [Tooltip("Bone names to search for right-hand weapon attachment")]
+        [FormerlySerializedAs("attachmentBoneNames")]
         [SerializeField]
-        private string[] attachmentBoneNames = { "weapon_r", "hand_r", "Hand_R", "Weapon" };
+        private string[] rightHandBoneNames = { "weapon_r", "hand_r", "Hand_R", "Weapon" };
 
+        [Tooltip("Bone names to search for left-hand weapon attachment")]
         [SerializeField]
-        private bool useAnimatorRightHandFallback = true;
+        private string[] leftHandBoneNames = { "weapon_l", "hand_l", "Hand_L", "Weapon_L" };
 
-        private Transform _attachmentPoint;
+        [FormerlySerializedAs("useAnimatorRightHandFallback")]
+        [SerializeField]
+        private bool useAnimatorHandFallback = true;
+
+        private Transform _rightHandAttachment;
+        private Transform _leftHandAttachment;
         private GameObject _currentWeaponInstance;
         private int _currentWeaponIndex = -1;
         private Animator _animator;
@@ -83,13 +94,13 @@ namespace Geis.Combat
         {
             _animator = manualAnimator ?? GetComponent<Animator>() ?? GetComponentInChildren<Animator>() ?? GetComponentInParent<Animator>();
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
-            FindAttachmentPoint();
+            FindAttachmentPoints();
         }
 
         private void Start()
         {
-            if (_attachmentPoint == null && _animator != null)
-                FindAttachmentPoint();
+            if ((_rightHandAttachment == null || _leftHandAttachment == null) && _animator != null)
+                FindAttachmentPoints();
 
             var slotCount = weaponSlots != null ? weaponSlots.Length : 0;
             if (_currentWeaponIndex < 0 && slotCount > 0)
@@ -136,7 +147,7 @@ namespace Geis.Combat
         }
 
         /// <summary>
-        /// Y on Xbox / Triangle on PlayStation (north face). Uses same gamepad fallback as <see cref="RogueDeal.Combat.CombatInputReader"/>.
+        /// D-pad up (gamepad). Uses same gamepad resolution as <see cref="RogueDeal.Combat.CombatInputReader"/>.
         /// </summary>
         private bool WasCycleWeaponPressed()
         {
@@ -144,7 +155,7 @@ namespace Geis.Combat
             var gamepad = UnityEngine.InputSystem.Gamepad.current;
             if (gamepad == null && UnityEngine.InputSystem.Gamepad.all.Count > 0)
                 gamepad = UnityEngine.InputSystem.Gamepad.all[0];
-            if (gamepad != null && gamepad.buttonNorth.wasPressedThisFrame)
+            if (gamepad != null && gamepad.dpad.up.wasPressedThisFrame)
                 return true;
 #else
             if (Input.GetKeyDown(KeyCode.JoystickButton3))
@@ -153,41 +164,63 @@ namespace Geis.Combat
             return false;
         }
 
-        private void FindAttachmentPoint()
+        private void FindAttachmentPoints()
         {
-            if (manualAttachmentPoint != null)
-            {
-                _attachmentPoint = manualAttachmentPoint;
-                return;
-            }
-
             if (_animator == null)
             {
                 Debug.LogWarning("[GeisWeaponSwitcher] No Animator found.");
                 return;
             }
 
-            foreach (var name in attachmentBoneNames)
+            if (manualAttachmentPoint != null)
+                _rightHandAttachment = manualAttachmentPoint;
+            else
             {
-                var t = FindTransformRecursive(_animator.transform, name);
+                _rightHandAttachment = FindHandByBoneNames(_animator, rightHandBoneNames);
+                if (_rightHandAttachment == null && useAnimatorHandFallback && _animator.avatar != null)
+                    _rightHandAttachment = _animator.GetBoneTransform(HumanBodyBones.RightHand);
+                if (_rightHandAttachment == null)
+                    _rightHandAttachment = _animator.transform;
+            }
+
+            if (manualLeftAttachmentPoint != null)
+                _leftHandAttachment = manualLeftAttachmentPoint;
+            else
+            {
+                _leftHandAttachment = FindHandByBoneNames(_animator, leftHandBoneNames);
+                if (_leftHandAttachment == null && useAnimatorHandFallback && _animator.avatar != null)
+                    _leftHandAttachment = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
+                if (_leftHandAttachment == null)
+                    _leftHandAttachment = _rightHandAttachment;
+            }
+        }
+
+        private static Transform FindHandByBoneNames(Animator animator, string[] boneNames)
+        {
+            if (boneNames == null)
+                return null;
+            foreach (var name in boneNames)
+            {
+                var t = FindTransformRecursive(animator.transform, name);
                 if (t != null)
-                {
-                    _attachmentPoint = t;
-                    return;
-                }
+                    return t;
             }
 
-            if (useAnimatorRightHandFallback && _animator.avatar != null)
+            return null;
+        }
+
+        private Transform GetAttachmentParent(GeisWeaponDefinition def)
+        {
+            if (def != null && def.AttachmentHand == WeaponAttachmentHand.LeftHand)
             {
-                var rightHand = _animator.GetBoneTransform(HumanBodyBones.RightHand);
-                if (rightHand != null)
-                {
-                    _attachmentPoint = rightHand;
-                    return;
-                }
+                if (_leftHandAttachment != null)
+                    return _leftHandAttachment;
+                Debug.LogWarning(
+                    "[GeisWeaponSwitcher] Left-hand attachment not found; using right-hand socket.",
+                    this);
             }
 
-            _attachmentPoint = _animator.transform;
+            return _rightHandAttachment != null ? _rightHandAttachment : transform;
         }
 
         private static Transform FindTransformRecursive(Transform parent, string name)
@@ -206,13 +239,13 @@ namespace Geis.Combat
         /// </summary>
         public void EquipWeapon(int slotIndex)
         {
-            Transform parent = _attachmentPoint != null ? _attachmentPoint : transform;
-            GameObject prefab = null;
-
             if (weaponSlots == null || slotIndex < 0 || slotIndex >= weaponSlots.Length)
                 return;
 
             var def = weaponSlots[slotIndex];
+            Transform parent = GetAttachmentParent(def);
+            GameObject prefab = null;
+
             if (def != null)
                 prefab = def.weaponPrefab;
 

@@ -9,7 +9,7 @@
 ## Integration
 
 - Ability assets: `Assets/Geis/SoulRealm/Abilities/`.
-- `Player` prefab: `LyreResonanceMeter`, `SoulRealmWeaponAbilityController` (wired to `SoulRealmWeaponAbilities` input asset and `GeisCameraController`).
+- `Player` prefab: `LyreResonanceMeter`, `SoulRealmWeaponAbilityController` (wired to `GeisControls` input asset for the `SoulRealmWeapon` map and `GeisCameraController`).
 - Weapon definitions reference soul abilities and `buildsLyreResonance` on Emberblade only.
 
 ## Scene setup

@@ -2,6 +2,7 @@
     "name": "RogueDeal",
     "rootNamespace": "RogueDeal",
     "references": [
+        "Geis.InteractInput",
         "Geis.Animation",
         "Funder.Core.Runtime",
         "Unity.InputSystem",

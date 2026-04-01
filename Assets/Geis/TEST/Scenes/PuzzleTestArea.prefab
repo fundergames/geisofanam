@@ -6568,6 +6568,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DualRealmTrigger
   realmMode: 2
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   soulTrigger: {fileID: 7015091568463603980}
   physicalTrigger: {fileID: 1068629574786829082}
 --- !u!1 &488065872742506264
@@ -12707,6 +12713,118 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &928940047595317794
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5995498720282937051}
+  - component: {fileID: 4547750260706884543}
+  - component: {fileID: 1227243150672213760}
+  - component: {fileID: 7622924173984472544}
+  m_Layer: 0
+  m_Name: Cube (1)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5995498720282937051
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928940047595317794}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0.87999725, y: 1.5, z: 6.300001}
+  m_LocalScale: {x: 0.1883, y: 3, z: 4.7442}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5557098013836591687}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &4547750260706884543
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928940047595317794}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &1227243150672213760
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928940047595317794}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &7622924173984472544
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 928940047595317794}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &950263662226757686
 GameObject:
   m_ObjectHideFlags: 0
@@ -13657,10 +13775,19 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SequenceTrigger
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   steps:
   - {fileID: 7533830510241369054}
   - {fileID: 8827727497788653640}
   - {fileID: 3859631948333457407}
+  sequenceOrder: 
+  resetOnWrong: 1
+  sequenceTimeLimitSeconds: 2
   stepActiveColors: []
   stepDefaultColor: {r: 1, g: 1, b: 1, a: 1}
   stepSounds: []
@@ -18431,6 +18558,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DoorOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   door: {fileID: 0}
   mode: 1
@@ -27305,7 +27436,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -27359,8 +27490,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d95232c6d8e09b6419ef75515b16d8d6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.MovingPlatformOutput
-  realmMode: 1
+  realmMode: 2
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   platformMover: {fileID: 2304112595366431551}
   invertBehaviour: 0
@@ -28552,9 +28687,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.BowMarkTargetTrigger
   realmMode: 2
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   markRange: 4
+  markPromptRange: -1
   markDuration: 12
-  markKey: 19
+  markPromptPrefab: {fileID: 0}
+  markPromptOffset: {x: 0, y: 1.8, z: 0}
   markVFXPrefab: {fileID: 0}
   markVFXOffset: {x: 0, y: 0.5, z: 0}
   markSound: {fileID: 0}
@@ -32229,9 +32372,12 @@ GameObject:
   m_Component:
   - component: {fileID: 7828133286330714495}
   - component: {fileID: 1692248047111925149}
+  - component: {fileID: 3367287372781384975}
   - component: {fileID: 8344825111491253646}
   - component: {fileID: 1489814376433118661}
   - component: {fileID: 3848918382099818406}
+  - component: {fileID: 7671079601998058163}
+  - component: {fileID: 3930309444593859278}
   m_Layer: 0
   m_Name: DialBase
   m_TagString: Untagged
@@ -32263,6 +32409,27 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2333885714966863269}
   m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!135 &3367287372781384975
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333885714966863269}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.5
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!65 &8344825111491253646
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -32278,7 +32445,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -32309,7 +32476,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -32347,17 +32514,55 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.AlignmentDialTrigger
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
+  interactTrigger: {fileID: 3367287372781384975}
+  promptTrigger: {fileID: 3367287372781384975}
+  interactionRange: 3
+  promptRange: 3
+  dialMovement: {fileID: 0}
   rotationAxis: {x: 0, y: 1, z: 0}
   targetAngle: 90
-  rotationSpeed: 90
   snapThreshold: 15
-  interactionRange: 3
-  holdKey: 19
   promptPrefab: {fileID: 0}
   promptOffset: {x: 0, y: 1.8, z: 0}
+  promptAnchor: {fileID: 0}
   dialVisual: {fileID: 7447680064387815445}
   snapSound: {fileID: 0}
   audioSource: {fileID: 0}
+--- !u!114 &7671079601998058163
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333885714966863269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45346222026c6904ba584854898e86cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchProximityRelay
+--- !u!114 &3930309444593859278
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2333885714966863269}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bcc4c1ce911c886448bb86ce15ac81bf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.GeisDialIncrementalStickMovement
+  degreesPerStep: 15
+  pauseBetweenSteps: 0.25
+  stickDeadzone: 0.25
+  allowKeyboardStepWhenNoGamepad: 1
+  invertStepSign: 0
 --- !u!1 &2338216481756377637
 GameObject:
   m_ObjectHideFlags: 0
@@ -33610,10 +33815,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3441373698822586046}
+  - component: {fileID: 6111153462820464197}
   - component: {fileID: 1467076396058401981}
   - component: {fileID: 3147640291158795567}
   - component: {fileID: 1135757918793543358}
-  - component: {fileID: 1884655281202196168}
   m_Layer: 0
   m_Name: PulseNode
   m_TagString: Untagged
@@ -33636,6 +33841,22 @@ Transform:
   m_Children: []
   m_Father: {fileID: 3987471831459672714}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6111153462820464197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2440282160198970081}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a1b1c1d1e1f11111a1b1c1d1e1f11119, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.WeaponAbilities.SoulPathRevealElement
+  revealRenderers:
+  - {fileID: 1135757918793543358}
+  revealColliders:
+  - {fileID: 3147640291158795567}
 --- !u!33 &1467076396058401981
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -33659,7 +33880,7 @@ SphereCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 0
+  m_IsTrigger: 1
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -33690,7 +33911,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -33714,24 +33935,6 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &1884655281202196168
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2440282160198970081}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7eafa6687667fb94694c881f531b1784, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulPulseReceptorTrigger
-  realmMode: 0
-  tintRealmMaterials: 1
-  detectionRadius: 2
-  resonateSound: {fileID: 0}
-  audioSource: {fileID: 0}
-  activeVFX: {fileID: 0}
 --- !u!1 &2443289694396567150
 GameObject:
   m_ObjectHideFlags: 0
@@ -37403,6 +37606,118 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &2708204261544373224
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7347440707878105382}
+  - component: {fileID: 3999752205701109251}
+  - component: {fileID: 6745565790938939980}
+  - component: {fileID: 5837628821320629782}
+  m_Layer: 0
+  m_Name: Cube (2)
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7347440707878105382
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2708204261544373224}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: 0.7071068, z: -0, w: 0.7071068}
+  m_LocalPosition: {x: 0.0399971, y: 1.5, z: 8.804001}
+  m_LocalScale: {x: 0.18830001, y: 3, z: 2}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5557098013836591687}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
+--- !u!33 &3999752205701109251
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2708204261544373224}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &6745565790938939980
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2708204261544373224}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &5837628821320629782
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2708204261544373224}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &2723638159934531984
 GameObject:
   m_ObjectHideFlags: 0
@@ -38249,12 +38564,125 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
   onReset:
     m_PersistentCalls:
       m_Calls: []
+--- !u!1 &2755916358528243453
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7988976313400782753}
+  - component: {fileID: 9112732002100115508}
+  - component: {fileID: 7213631659282899587}
+  - component: {fileID: 1821020905089763481}
+  m_Layer: 0
+  m_Name: DoorMesh
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &7988976313400782753
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2755916358528243453}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2719898635917923911}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &9112732002100115508
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2755916358528243453}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!65 &7213631659282899587
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2755916358528243453}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
+--- !u!23 &1821020905089763481
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2755916358528243453}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 1
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &2756224234732584752
 GameObject:
   m_ObjectHideFlags: 0
@@ -38796,7 +39224,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -38834,6 +39262,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.RaiseLowerBlockOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   block: {fileID: 6609344374384671628}
   raisedOffset: {x: 0, y: 3, z: 0}
@@ -39079,6 +39511,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.BarrierOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   barrierRenderer: {fileID: 8217585457735602089}
   barrierCollider: {fileID: 7943515041216369101}
@@ -41517,7 +41953,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -41555,6 +41991,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.EchoImprintTrigger
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   echoDuration: 8
   echoPrefab: {fileID: 0}
   echoTag: SoulEcho
@@ -45741,6 +46183,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -47569,9 +48012,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DoorOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 0
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
-  door: {fileID: 0}
-  mode: 1
+  door: {fileID: 3373610733553957694}
+  mode: 0
   openRotationOffset: {x: 0, y: 90, z: 0}
   openPositionOffset: {x: 0, y: 3.5, z: 0}
   duration: 1
@@ -48082,9 +48529,10 @@ MonoBehaviour:
   - {fileID: 2899134363942851835}
   outputs:
   - {fileID: 8552429387575590341}
-  logicMode: 0
+  logicMode: 3
   oneShot: 1
-  timedWindowSeconds: 3
+  timedWindowSeconds: 0
+  sequenceTimeLimitSeconds: 5
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -50816,6 +51264,96 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &3647409346193217673
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 7949241982915980140}
+  - component: {fileID: 3608187889666179103}
+  - component: {fileID: 2545901016932125489}
+  m_Layer: 0
+  m_Name: Cylinder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 0
+--- !u!4 &7949241982915980140
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3647409346193217673}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 4.08, z: 0}
+  m_LocalScale: {x: 1, y: 3.82, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 6714225224154869476}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &3608187889666179103
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3647409346193217673}
+  m_Mesh: {fileID: 10206, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &2545901016932125489
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3647409346193217673}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &3648585832369121340
 GameObject:
   m_ObjectHideFlags: 0
@@ -52399,9 +52937,10 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 2, y: 0.05, z: 1}
-  m_LocalScale: {x: 1.5, y: 0.1, z: 1.5}
+  m_LocalScale: {x: 1.5, y: 0.5, z: 1.5}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 7949241982915980140}
   m_Father: {fileID: 6150298724947998112}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &7678728118148805462
@@ -52431,8 +52970,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.12, y: 1.55, z: 1.12}
+  m_Center: {x: 0, y: 0.275, z: 0}
 --- !u!23 &4994298025853931243
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -52458,7 +52997,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -52496,8 +53035,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PressurePlateTrigger
   realmMode: 1
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 3647409346193217673}
+  visualWhenInactive: {fileID: 0}
   activatorTag: Player
   secondaryTag: 
+  overlapQueryPadding: {x: 0.35, y: 0.85, z: 0.35}
+  inflateBoxColliderOnAwake: 1
+  boxColliderInflate: {x: 0.12, y: 0.55, z: 0.12}
+  _boxBaseCaptured: 1
+  _storedBaseBoxSize: {x: 1, y: 1, z: 1}
+  _storedBaseBoxCenter: {x: 0, y: 0, z: 0}
   plateVisual: {fileID: 0}
   pressedScale: {x: 1, y: 0.5, z: 1}
   releasedScale: {x: 1, y: 1, z: 1}
@@ -53350,6 +53901,7 @@ GameObject:
   - component: {fileID: 8947630231066428703}
   - component: {fileID: 6658941044789324977}
   - component: {fileID: 2066999070063534084}
+  - component: {fileID: 9035703462529094200}
   m_Layer: 0
   m_Name: DialArrow
   m_TagString: Untagged
@@ -53426,7 +53978,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -53450,6 +54002,24 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &9035703462529094200
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3876178280688377381}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &3881742606938790948
 GameObject:
   m_ObjectHideFlags: 0
@@ -54625,6 +55195,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -57205,6 +57776,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -58932,6 +59504,8 @@ GameObject:
   - component: {fileID: 2437622825664552583}
   - component: {fileID: 6845793426910305926}
   - component: {fileID: 7533830510241369054}
+  - component: {fileID: 9035685830202417303}
+  - component: {fileID: 2211806177040550306}
   m_Layer: 0
   m_Name: Step_1
   m_TagString: Untagged
@@ -58948,11 +59522,13 @@ Transform:
   m_GameObject: {fileID: 4201066216797554429}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -1.25, y: 1, z: 2.1650634}
+  m_LocalPosition: {x: -2.75, y: 1, z: 2.1650634}
   m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 5793629468770208679}
+  - {fileID: 391557120398708976}
+  - {fileID: 1872215890343258101}
   m_Father: {fileID: 1482472956836294412}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &1330296181744549577
@@ -58978,7 +59554,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -59009,7 +59585,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -59047,11 +59623,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchTrigger
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 4319564469423539498}
+  visualWhenInactive: {fileID: 4707891383071502719}
+  interactTrigger: {fileID: 9035685830202417303}
+  promptTrigger: {fileID: 9035685830202417303}
+  interactionRange: 1.5
+  promptRange: 1.5
   isToggle: 1
-  interactionRange: 3
-  interactionKey: 19
   promptPrefab: {fileID: 0}
   promptOffset: {x: 0, y: 1.8, z: 0}
+  promptAnchor: {fileID: 0}
+--- !u!135 &9035685830202417303
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4201066216797554429}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.5
+  m_Center: {x: 0, y: 0, z: 0.00000023841858}
+--- !u!114 &2211806177040550306
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4201066216797554429}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45346222026c6904ba584854898e86cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchProximityRelay
 --- !u!1 &4209129430874375068
 GameObject:
   m_ObjectHideFlags: 0
@@ -63812,7 +64430,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0.05, z: 0}
-  m_LocalScale: {x: 2, y: 0.1, z: 2}
+  m_LocalScale: {x: 2, y: 0.2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 8585282900761507701}
@@ -63844,8 +64462,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.12, y: 1.55, z: 1.12}
+  m_Center: {x: 0, y: 0.275, z: 0}
 --- !u!23 &734392117476698621
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -63871,7 +64489,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -63907,10 +64525,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7257e8528a6e4fa4faadebe5100f2320, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PressurePlateTrigger
-  realmMode: 2
+  realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   activatorTag: Player
   secondaryTag: 
+  overlapQueryPadding: {x: 0.35, y: 0.85, z: 0.35}
+  inflateBoxColliderOnAwake: 1
+  boxColliderInflate: {x: 0.12, y: 0.55, z: 0.12}
+  _boxBaseCaptured: 1
+  _storedBaseBoxSize: {x: 1, y: 1, z: 1}
+  _storedBaseBoxCenter: {x: 0, y: 0, z: 0}
   plateVisual: {fileID: 5057830662448019329}
   pressedScale: {x: 1, y: 0.5, z: 1}
   releasedScale: {x: 1, y: 1, z: 1}
@@ -68434,6 +69064,8 @@ GameObject:
   - component: {fileID: 2999972415703939171}
   - component: {fileID: 6369172550812166763}
   - component: {fileID: 3859631948333457407}
+  - component: {fileID: 1167236378501986314}
+  - component: {fileID: 5388873904007768045}
   m_Layer: 0
   m_Name: Step_3
   m_TagString: Untagged
@@ -68450,11 +69082,13 @@ Transform:
   m_GameObject: {fileID: 4921041663102495837}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1.25, y: 1, z: 2.1650634}
+  m_LocalPosition: {x: 2.765, y: 1, z: 2.1650634}
   m_LocalScale: {x: 0.8, y: 0.8, z: 0.8}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 3290957863922623248}
+  - {fileID: 3597622286239189177}
+  - {fileID: 5303867213913527757}
   m_Father: {fileID: 1482472956836294412}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &4022315870314864026
@@ -68480,7 +69114,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -68511,7 +69145,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -68549,11 +69183,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchTrigger
   realmMode: 0
   tintRealmMaterials: 1
-  isToggle: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 1112505344297311587}
+  visualWhenInactive: {fileID: 1240080940025316167}
+  interactTrigger: {fileID: 1167236378501986314}
+  promptTrigger: {fileID: 1167236378501986314}
   interactionRange: 3
-  interactionKey: 19
+  promptRange: 3
+  isToggle: 1
   promptPrefab: {fileID: 0}
   promptOffset: {x: 0, y: 1.8, z: 0}
+  promptAnchor: {fileID: 0}
+--- !u!135 &1167236378501986314
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4921041663102495837}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.5
+  m_Center: {x: 0.0000038146973, y: 0, z: 0.00000023841858}
+--- !u!114 &5388873904007768045
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4921041663102495837}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45346222026c6904ba584854898e86cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchProximityRelay
 --- !u!1 &4923738556331518458
 GameObject:
   m_ObjectHideFlags: 0
@@ -69287,6 +69963,8 @@ GameObject:
   - component: {fileID: 6236497720617164548}
   - component: {fileID: 7636590392092550742}
   - component: {fileID: 8827727497788653640}
+  - component: {fileID: 1464299364685398258}
+  - component: {fileID: 8821027032001602298}
   m_Layer: 0
   m_Name: Step_2
   m_TagString: Untagged
@@ -69308,6 +69986,8 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 7493803657674538062}
+  - {fileID: 1603451228378189913}
+  - {fileID: 8167111736501731661}
   m_Father: {fileID: 1482472956836294412}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!33 &5785660570983354134
@@ -69333,7 +70013,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -69364,7 +70044,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -69402,11 +70082,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchTrigger
   realmMode: 0
   tintRealmMaterials: 1
-  isToggle: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 2944687553567327619}
+  visualWhenInactive: {fileID: 3024678355321821127}
+  interactTrigger: {fileID: 1464299364685398258}
+  promptTrigger: {fileID: 1464299364685398258}
   interactionRange: 3
-  interactionKey: 19
+  promptRange: 3
+  isToggle: 1
   promptPrefab: {fileID: 0}
   promptOffset: {x: 0, y: 1.8, z: 0}
+  promptAnchor: {fileID: 0}
+--- !u!135 &1464299364685398258
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5038369874046036719}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.5
+  m_Center: {x: 0, y: 0, z: -0.00000023841858}
+--- !u!114 &8821027032001602298
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5038369874046036719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45346222026c6904ba584854898e86cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchProximityRelay
 --- !u!1 &5040219402361716643
 GameObject:
   m_ObjectHideFlags: 0
@@ -69496,7 +70218,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -69534,9 +70256,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DoorOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
-  door: {fileID: 0}
-  mode: 1
+  door: {fileID: 7879679759141742946}
+  mode: 0
   openRotationOffset: {x: 0, y: 90, z: 0}
   openPositionOffset: {x: 0, y: 3.5, z: 0}
   duration: 1
@@ -72466,7 +73192,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 10100, guid: 0000000000000000e000000000000000, type: 0}
+  - {fileID: 2100000, guid: e3265ab4bf004d28a9537516768c1c75, type: 3}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -74187,7 +74913,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -74225,9 +74951,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DoorOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
-  door: {fileID: 0}
-  mode: 1
+  door: {fileID: 937127345865050217}
+  mode: 0
   openRotationOffset: {x: 0, y: 90, z: 0}
   openPositionOffset: {x: 0, y: 3.5, z: 0}
   duration: 1
@@ -74345,6 +75075,118 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &5436377554194350786
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2549032656834171904}
+  - component: {fileID: 7739867201054337227}
+  - component: {fileID: 7769984666163467789}
+  - component: {fileID: 2875766199650631193}
+  m_Layer: 0
+  m_Name: Cube
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2549032656834171904
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436377554194350786}
+  serializedVersion: 2
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: -0.87000275, y: 1.5, z: 6.300001}
+  m_LocalScale: {x: 0.1883, y: 3, z: 4.7442}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 5557098013836591687}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &7739867201054337227
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436377554194350786}
+  m_Mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!23 &7769984666163467789
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436377554194350786}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
+--- !u!65 &2875766199650631193
+BoxCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5436377554194350786}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Size: {x: 1, y: 1, z: 1}
+  m_Center: {x: 0, y: 0, z: 0}
 --- !u!1 &5439438522380589814
 GameObject:
   m_ObjectHideFlags: 0
@@ -75404,6 +76246,57 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &5505606860037608961
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2719898635917923911}
+  - component: {fileID: 6927180151947482494}
+  m_Layer: 0
+  m_Name: PhysicalDoor
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2719898635917923911
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5505606860037608961}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 1.5, z: 4}
+  m_LocalScale: {x: 1.5, y: 3, z: 0.2}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 7988976313400782753}
+  m_Father: {fileID: 5557098013836591687}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &6927180151947482494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5505606860037608961}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 1
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &5510220329291419267
 GameObject:
   m_ObjectHideFlags: 0
@@ -76510,7 +77403,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -76548,6 +77441,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DoorOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   door: {fileID: 0}
   mode: 1
@@ -77858,7 +78755,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -77896,6 +78793,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.BowTargetTrigger
   realmMode: 1
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   detectionRadius: 0.9
   hitSound: {fileID: 0}
   audioSource: {fileID: 0}
@@ -84030,7 +84933,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -84068,6 +84971,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.RaiseLowerBlockOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   block: {fileID: 9057472291927199924}
   raisedOffset: {x: 0, y: 3, z: 0}
@@ -90246,6 +91153,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -96594,12 +97502,13 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleGroup
   triggers:
-  - {fileID: 1884655281202196168}
+  - {fileID: 0}
   outputs:
   - {fileID: 7008384119141764901}
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -96695,7 +97604,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -96733,6 +97642,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.DaggerSocketTrigger
   realmMode: 1
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   acceptedTag: DaggerMovable
   slotIndicatorPrefab: {fileID: 0}
   showIndicatorInSoulRealm: 1
@@ -98170,6 +99085,10 @@ Transform:
   - {fileID: 2461266178035779235}
   - {fileID: 3373610733553957694}
   - {fileID: 188512000657033901}
+  - {fileID: 2719898635917923911}
+  - {fileID: 2549032656834171904}
+  - {fileID: 5995498720282937051}
+  - {fileID: 7347440707878105382}
   m_Father: {fileID: 451746307427820962}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4921335870133459632
@@ -98191,6 +99110,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -99043,6 +99963,8 @@ GameObject:
   - component: {fileID: 9209506227951811401}
   - component: {fileID: 5519927462092794544}
   - component: {fileID: 7015091568463603980}
+  - component: {fileID: 7470186952284409349}
+  - component: {fileID: 520990738825227548}
   m_Layer: 0
   m_Name: 'SoulSwitch [soul realm]'
   m_TagString: Untagged
@@ -99088,7 +100010,7 @@ BoxCollider:
     serializedVersion: 2
     m_Bits: 0
   m_LayerOverridePriority: 0
-  m_IsTrigger: 1
+  m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
@@ -99119,7 +100041,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -99157,11 +100079,53 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchTrigger
   realmMode: 0
   tintRealmMaterials: 1
-  isToggle: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
+  interactTrigger: {fileID: 7470186952284409349}
+  promptTrigger: {fileID: 7470186952284409349}
   interactionRange: 3
-  interactionKey: 19
+  promptRange: -1
+  isToggle: 1
   promptPrefab: {fileID: 0}
   promptOffset: {x: 0, y: 1.8, z: 0}
+  promptAnchor: {fileID: 0}
+--- !u!135 &7470186952284409349
+SphereCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7573749552321976481}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 1
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Radius: 1.5
+  m_Center: {x: 0, y: 0, z: -0.00000023841858}
+--- !u!114 &520990738825227548
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7573749552321976481}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 45346222026c6904ba584854898e86cf, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SoulSwitchProximityRelay
 --- !u!1 &7601497627956339135
 GameObject:
   m_ObjectHideFlags: 0
@@ -102011,6 +102975,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 1
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -115485,6 +116450,7 @@ MonoBehaviour:
   logicMode: 0
   oneShot: 0
   timedWindowSeconds: 3
+  sequenceTimeLimitSeconds: 0
   onSolved:
     m_PersistentCalls:
       m_Calls: []
@@ -115819,8 +116785,8 @@ Transform:
   m_GameObject: {fileID: 8947854396789071762}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.05, z: 0}
-  m_LocalScale: {x: 2, y: 0.1, z: 2}
+  m_LocalPosition: {x: 0, y: 0.825, z: 0}
+  m_LocalScale: {x: 2, y: 1.65, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 5557098013836591687}
@@ -115852,8 +116818,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1.15, y: 1.5, z: 1.15}
+  m_Center: {x: 0, y: 0.25, z: 0}
 --- !u!23 &9110603751105737655
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -115879,7 +116845,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -115917,7 +116883,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.SwordHitTrigger
   realmMode: 1
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+  visualWhenActivated: {fileID: 0}
+  visualWhenInactive: {fileID: 0}
   hitsRequired: 1
+  acceptedWeaponSlots: 02000000
+  acceptedActionNames: []
+  actionNameMatchIgnoreCase: 1
+  acceptedWeaponTypes: 
+  legacyWeaponHitboxCollider: 0
+  inflateBoxColliderOnAwake: 1
+  boxColliderInflate: {x: 0.15, y: 0.5, z: 0.15}
+  _boxBaseCaptured: 1
+  _storedBaseBoxSize: {x: 1, y: 1, z: 1}
+  _storedBaseBoxCenter: {x: 0, y: 0, z: 0}
   targetRenderer: {fileID: 0}
   damageStageMaterials: []
   hitSound: {fileID: 0}
@@ -116012,7 +116994,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -116050,6 +117032,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.BarrierOutput
   realmMode: 0
   tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
   activationDelay: 0
   barrierRenderer: {fileID: 568076104175137305}
   barrierCollider: {fileID: 7354315644810662698}
@@ -118973,3 +119959,571 @@ MeshCollider:
   m_Convex: 0
   m_CookingOptions: 30
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1001 &620225879743813472
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 242112470279159297}
+    m_Modifications:
+    - target: {fileID: 2323517244156346251, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_Name
+      value: Inactive_VFX
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 649038555240169416}
+  m_SourcePrefab: {fileID: 100100000, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+--- !u!1 &3024678355321821127 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 620225879743813472}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &649038555240169416
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3024678355321821127}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+--- !u!4 &8167111736501731661 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 620225879743813472}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &738831105585832212
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4813149751972434070}
+    m_Modifications:
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_Name
+      value: Active_VF
+      objectReference: {fileID: 0}
+    - target: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3608255154925490245, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 150511312536390576}
+  m_SourcePrefab: {fileID: 100100000, guid: 67452440612eb1f48afe53a763118435, type: 3}
+--- !u!4 &391557120398708976 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 738831105585832212}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4319564469423539498 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 738831105585832212}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &150511312536390576
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4319564469423539498}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+--- !u!1001 &1832780038629843389
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 242112470279159297}
+    m_Modifications:
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_Name
+      value: Active_VF
+      objectReference: {fileID: 0}
+    - target: {fileID: 3608255154925490245, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 693943362095370457}
+  m_SourcePrefab: {fileID: 100100000, guid: 67452440612eb1f48afe53a763118435, type: 3}
+--- !u!4 &1603451228378189913 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 1832780038629843389}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &2944687553567327619 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 1832780038629843389}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &693943362095370457
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2944687553567327619}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+--- !u!1001 &3483265884512207840
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7434254447815918416}
+    m_Modifications:
+    - target: {fileID: 2323517244156346251, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_Name
+      value: Inactive_VFX
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6511636570482344028}
+  m_SourcePrefab: {fileID: 100100000, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+--- !u!1 &1240080940025316167 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 3483265884512207840}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6511636570482344028
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1240080940025316167}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+--- !u!4 &5303867213913527757 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 3483265884512207840}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &4522352558466988381
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 7434254447815918416}
+    m_Modifications:
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: m_Name
+      value: Active_VF
+      objectReference: {fileID: 0}
+    - target: {fileID: 3608255154925490245, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2679404746977383084}
+  m_SourcePrefab: {fileID: 100100000, guid: 67452440612eb1f48afe53a763118435, type: 3}
+--- !u!1 &1112505344297311587 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3581195161038775358, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 4522352558466988381}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &2679404746977383084
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1112505344297311587}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
+--- !u!4 &3597622286239189177 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1094319568577376740, guid: 67452440612eb1f48afe53a763118435, type: 3}
+  m_PrefabInstance: {fileID: 4522352558466988381}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1001 &6933122930280640984
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 4813149751972434070}
+    m_Modifications:
+    - target: {fileID: 2323517244156346251, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_Name
+      value: Inactive_VFX
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 0.25
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0.35742283
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0.897
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -0.0048178434
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 6307076405812967064}
+  m_SourcePrefab: {fileID: 100100000, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+--- !u!4 &1872215890343258101 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8776412849317500461, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 6933122930280640984}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &4707891383071502719 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2405675188682703015, guid: e52dee273aa6e1e4f9b97d69977da988, type: 3}
+  m_PrefabInstance: {fileID: 6933122930280640984}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &6307076405812967064
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4707891383071502719}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}

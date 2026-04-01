@@ -7,9 +7,12 @@ namespace Geis.Puzzles
     /// Bow puzzle trigger. Activates when an arrow (<see cref="Projectile"/>) arrives
     /// within <see cref="detectionRadius"/> of this target.
     ///
-    /// Uses <c>Physics.OverlapSphere</c> instead of <c>OnTriggerEnter</c> because
+    /// Uses <c>Physics.OverlapSphere</c> (same probe style as <see cref="RogueDeal.Combat.SimpleAttackHitDetector"/> melee)
+    /// instead of relying on <c>OnTriggerEnter</c> alone because
     /// <see cref="Projectile"/> moves via <c>transform.position</c> on a kinematic
     /// Rigidbody, which can miss physics trigger callbacks on fast-moving objects.
+    /// Arrows must have a <see cref="Collider"/> on the projectile (see arrow prefab). Detection runs in <c>LateUpdate</c>
+    /// after movement and before deferred despawn.
     ///
     /// This is the simple "shoot the distant node" mechanic. For the full
     /// mark-then-shoot mechanic see <see cref="BowMarkTargetTrigger"/>.
@@ -17,6 +20,7 @@ namespace Geis.Puzzles
     /// Default realm: PhysicalOnly.
     /// </summary>
     [RequireComponent(typeof(Collider))]
+    [DefaultExecutionOrder(-50)]
     public class BowTargetTrigger : PuzzleTriggerBase
     {
         [Header("Detection")]
@@ -33,9 +37,6 @@ namespace Geis.Puzzles
         [Tooltip("Optional object shown after being hit.")]
         [SerializeField] private GameObject hitVFX;
 
-        private float _scanTimer;
-        private const float ScanInterval = 1f / 30f; // ~30 Hz
-
         private void Awake()
         {
             if (audioSource == null)
@@ -47,19 +48,19 @@ namespace Geis.Puzzles
             SetVFX(false);
         }
 
-        private void Update()
+        /// <summary>
+        /// LateUpdate: runs after <see cref="Projectile"/> movement in Update but before its deferred despawn,
+        /// so the arrow still exists when we overlap-test.
+        /// </summary>
+        private void LateUpdate()
         {
             if (IsActivated) return;
             if (!IsAccessibleInCurrentRealm()) return;
 
-            _scanTimer += Time.deltaTime;
-            if (_scanTimer < ScanInterval) return;
-            _scanTimer = 0f;
-
-            Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius);
+            Collider[] hits = Physics.OverlapSphere(transform.position, detectionRadius, ~0, QueryTriggerInteraction.Collide);
             foreach (var col in hits)
             {
-                if (col.GetComponent<Projectile>() != null)
+                if (col.GetComponentInParent<Projectile>() != null)
                 {
                     RegisterHit();
                     return;

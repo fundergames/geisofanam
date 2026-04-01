@@ -1,4 +1,5 @@
 using Geis.InputSystem;
+using Geis.InteractInput;
 using Geis.Locomotion;
 using UnityEngine;
 
@@ -86,6 +87,8 @@ namespace Geis.SoulRealm
 
         private void OnDodgePerformed()
         {
+            if (GeisInteractInput.IsMovementFrozenForInteraction)
+                return;
             if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.AllowGhostMovement)
                 return;
             if (_dodgeTimeRemaining > 0f)
@@ -98,7 +101,8 @@ namespace Geis.SoulRealm
             if (_bodyLocomotion != null && _bodyLocomotion.LocomotionDodgeRequiresMovementInput && inputReader != null)
             {
                 float dz = _bodyLocomotion.LocomotionDodgeDeadzone;
-                if (inputReader._moveComposite.sqrMagnitude < dz * dz)
+                Vector2 m = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite);
+                if (m.sqrMagnitude < dz * dz)
                     return;
             }
 
@@ -113,7 +117,9 @@ namespace Geis.SoulRealm
             float dz = Mathf.Max(
                 ghostDodgeDirectionDeadzone,
                 _bodyLocomotion != null ? _bodyLocomotion.LocomotionDodgeDeadzone : 0.05f);
-            Vector2 m = inputReader != null ? inputReader._moveComposite : Vector2.zero;
+            Vector2 m = inputReader != null
+                ? GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite)
+                : Vector2.zero;
             if (_cameraController != null)
             {
                 Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
@@ -315,8 +321,9 @@ namespace Geis.SoulRealm
                 return;
             }
 
-            _moveDirection = _cameraController.GetCameraForwardZeroedYNormalised() * inputReader._moveComposite.y
-                + _cameraController.GetCameraRightZeroedYNormalised() * inputReader._moveComposite.x;
+            Vector2 composite = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite);
+            _moveDirection = _cameraController.GetCameraForwardZeroedYNormalised() * composite.y
+                + _cameraController.GetCameraRightZeroedYNormalised() * composite.x;
         }
 
         private void FallbackMoveDirection()
@@ -334,7 +341,9 @@ namespace Geis.SoulRealm
                 camRight = transform.right;
             }
 
-            Vector2 move = inputReader != null ? inputReader._moveComposite : Vector2.zero;
+            Vector2 move = inputReader != null
+                ? GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite)
+                : Vector2.zero;
             _moveDirection = camRight * move.x + camForward * move.y;
         }
 

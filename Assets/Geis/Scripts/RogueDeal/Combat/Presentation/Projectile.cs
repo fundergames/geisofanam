@@ -9,6 +9,7 @@ namespace RogueDeal.Combat.Presentation
     /// Uses predicted collision (no physics) to avoid tunneling issues.
     /// </summary>
     [RequireComponent(typeof(Rigidbody))]
+    [DefaultExecutionOrder(50)]
     public class Projectile : MonoBehaviour
     {
         [Header("Projectile Settings")]
@@ -28,7 +29,8 @@ namespace RogueDeal.Combat.Presentation
         private bool hasArrived = false;
         private Rigidbody rb;
         private GameObject _aimMarker;
-        
+        private bool _deferredDespawn;
+
         private void Awake()
         {
             rb = GetComponent<Rigidbody>();
@@ -94,21 +96,24 @@ namespace RogueDeal.Combat.Presentation
             }
             
             // Move toward target
-            Vector3 direction = (target.position - transform.position).normalized;
-            float distance = Vector3.Distance(transform.position, target.position);
-            
+            Vector3 toTarget = target.position - transform.position;
+            float distance = toTarget.magnitude;
+            Vector3 direction = distance > 1e-6f ? toTarget / distance : Vector3.forward;
+
+            if (direction.sqrMagnitude > 1e-6f)
+                transform.rotation = Quaternion.LookRotation(direction);
+
             // Check if we've arrived
             if (distance <= arrivalThreshold)
             {
                 OnArrival();
                 return;
             }
-            
+
             // Move
             float moveDistance = speed * Time.deltaTime;
             if (moveDistance > distance)
             {
-                // Would overshoot, just move to target
                 transform.position = target.position;
                 OnArrival();
             }
@@ -145,10 +150,18 @@ namespace RogueDeal.Combat.Presentation
             
             // Spawn impact effect (optional)
             // TODO: Add impact VFX
-            
+
+            // Defer destroy to LateUpdate so bow puzzle triggers can OverlapSphere the same frame.
+            _deferredDespawn = true;
+        }
+
+        private void LateUpdate()
+        {
+            if (!_deferredDespawn) return;
+            _deferredDespawn = false;
             Despawn();
         }
-        
+
         private void Despawn()
         {
             if (_aimMarker != null)

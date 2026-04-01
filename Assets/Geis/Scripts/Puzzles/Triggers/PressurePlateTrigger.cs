@@ -6,7 +6,8 @@ namespace Geis.Puzzles
     /// <summary>
     /// Activates while one or more colliders with the target tag are overlapping it.
     /// <see cref="PuzzleElementBase"/> realm mode gates when overlaps count (e.g. SoulOnly = soul realm only).
-    /// The tag is checked on the <b>same GameObject as the collider</b> (usually the CharacterController root), not the prefab root.
+    /// New plates default to <see cref="PuzzleRealmMode.BothRealms"/> (see <see cref="Reset"/>); SoulOnly plates are hidden in the physical world.
+    /// The tag may be on the collider&apos;s GameObject or any parent (e.g. CharacterController on a child mesh).
     /// </summary>
     [RequireComponent(typeof(Collider))]
     public class PressurePlateTrigger : PuzzleTriggerBase
@@ -16,6 +17,19 @@ namespace Geis.Puzzles
         [SerializeField] private string activatorTag = "Player";
         [Tooltip("Optional second tag (e.g. both ghost and player can activate).")]
         [SerializeField] private string secondaryTag = "";
+
+        [Tooltip("Extra half-extents added to physics overlap queries (soul-realm refresh). Match ~CharacterController radius + a bit of vertical slack so thin plates still register.")]
+        [SerializeField] private Vector3 overlapQueryPadding = new Vector3(0.35f, 0.85f, 0.35f);
+
+        [Tooltip("If true, BoxCollider size is expanded once from a captured base so the trigger volume is taller/wider than a thin mesh without scaling the mesh. Use Recapture Collider Base after you resize the collider in the editor.")]
+        [SerializeField] private bool inflateBoxColliderOnAwake = true;
+
+        [Tooltip("Added to captured BoxCollider size (Y is split above/below center). Ignored if zero.")]
+        [SerializeField] private Vector3 boxColliderInflate = new Vector3(0.12f, 0.55f, 0.12f);
+
+        [SerializeField] private bool _boxBaseCaptured;
+        [SerializeField] private Vector3 _storedBaseBoxSize;
+        [SerializeField] private Vector3 _storedBaseBoxCenter;
 
         [Header("Visuals")]
         [Tooltip("Transform to scale when pressed (the plate mesh).")]
@@ -37,10 +51,19 @@ namespace Geis.Puzzles
         private int _overlapCount;
         private MaterialPropertyBlock _mpb;
 
+        /// <summary>Unity calls this when the component is first added — use BothRealms so standing plates work in the physical world (base default is SoulOnly).</summary>
+        private void Reset()
+        {
+            realmMode = PuzzleRealmMode.BothRealms;
+        }
+
         private void Awake()
         {
             var col = GetComponent<Collider>();
             col.isTrigger = true;
+
+            PuzzleBoxColliderInflate.ApplyIfNeeded(col, inflateBoxColliderOnAwake, boxColliderInflate,
+                ref _boxBaseCaptured, ref _storedBaseBoxSize, ref _storedBaseBoxCenter);
 
             if (plateRenderer == null && plateVisual != null)
                 plateRenderer = plateVisual.GetComponent<Renderer>();
@@ -49,10 +72,24 @@ namespace Geis.Puzzles
                 ApplyVisual(false);
         }
 
+        /// <summary>Call after manually editing the BoxCollider size in the inspector so the next inflate uses your new footprint.</summary>
+        [ContextMenu("Recapture collider base (after resizing BoxCollider)")]
+        private void RecaptureColliderBase()
+        {
+            if (!TryGetComponent<BoxCollider>(out var box))
+                return;
+            _storedBaseBoxSize = box.size;
+            _storedBaseBoxCenter = box.center;
+            _boxBaseCaptured = true;
+            PuzzleBoxColliderInflate.ApplyIfNeeded(box, inflateBoxColliderOnAwake, boxColliderInflate,
+                ref _boxBaseCaptured, ref _storedBaseBoxSize, ref _storedBaseBoxCenter);
+        }
+
         private void OnTriggerEnter(Collider other)
         {
             if (!IsAccessibleInCurrentRealm()) return;
             if (!MatchesTag(other)) return;
+            if (!CountsActivatorForRealm(other)) return;
 
             _overlapCount++;
             if (_overlapCount == 1)
@@ -65,6 +102,7 @@ namespace Geis.Puzzles
         private void OnTriggerExit(Collider other)
         {
             if (!MatchesTag(other)) return;
+            if (!CountsActivatorForRealm(other)) return;
 
             _overlapCount = Mathf.Max(0, _overlapCount - 1);
             if (_overlapCount == 0)
@@ -72,6 +110,23 @@ namespace Geis.Puzzles
                 SetActivated(false);
                 ApplyVisual(false);
             }
+        }
+
+        /// <summary>
+        /// CharacterControllers can miss thin triggers for a frame (or longer). Stay recovers missed Enter.
+        /// Assumes a single overlapping activator for this recovery path (typical single-player).
+        /// </summary>
+        private void OnTriggerStay(Collider other)
+        {
+            if (!IsAccessibleInCurrentRealm()) return;
+            if (!MatchesTag(other)) return;
+            if (!CountsActivatorForRealm(other)) return;
+            if (IsActivated)
+                return;
+
+            _overlapCount = 1;
+            SetActivated(true);
+            ApplyVisual(true);
         }
 
         /// <summary>
@@ -107,7 +162,7 @@ namespace Geis.Puzzles
             }
 
             Bounds b = col.bounds;
-            Vector3 halfExtents = b.extents + new Vector3(0.03f, 0.08f, 0.03f);
+            Vector3 halfExtents = b.extents + overlapQueryPadding;
             Collider[] hits = Physics.OverlapBox(b.center, halfExtents, transform.rotation, ~0, QueryTriggerInteraction.Ignore);
 
             int n = 0;
@@ -153,8 +208,20 @@ namespace Geis.Puzzles
 
         private bool MatchesTag(Collider other)
         {
-            return other.CompareTag(activatorTag) ||
-                   (!string.IsNullOrEmpty(secondaryTag) && other.CompareTag(secondaryTag));
+            return TransformHasTag(other.transform, activatorTag) ||
+                   (!string.IsNullOrEmpty(secondaryTag) && TransformHasTag(other.transform, secondaryTag));
+        }
+
+        private static bool TransformHasTag(Transform t, string tag)
+        {
+            if (string.IsNullOrEmpty(tag)) return false;
+            for (; t != null; t = t.parent)
+            {
+                if (t.CompareTag(tag))
+                    return true;
+            }
+
+            return false;
         }
 
         private void ApplyVisual(bool pressed)

@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 909a13e8255193046b39de3003ad9476, type: 3}
   m_Name: Aetherstorm_Light_Attack
   m_EditorClassIdentifier: 
-  actionName: Unarmed Smash
+  actionName: Light Attack
   description: A simple melee attack
   icon: {fileID: 0}
   weaponType: 0

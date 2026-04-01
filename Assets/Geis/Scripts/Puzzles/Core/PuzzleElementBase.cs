@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Geis.InteractInput;
 using Geis.SoulRealm;
 using UnityEngine;
 
@@ -15,12 +16,12 @@ namespace Geis.Puzzles
 
         [Header("Realm")]
         [Tooltip("Which realm this element is accessible in.")]
-        [SerializeField] private PuzzleRealmMode realmMode = PuzzleRealmMode.SoulOnly;
+        [SerializeField] protected PuzzleRealmMode realmMode = PuzzleRealmMode.SoulOnly;
 
         [Tooltip("Tint child renderers with the realm palette via MaterialPropertyBlock (editor + play mode). Turn off to use authored materials only.")]
         [SerializeField] private bool tintRealmMaterials = true;
 
-        [Tooltip("Use noise dissolve (Shader Graph _Dissolve) instead of disabling renderers. Requires dissolve materials on child renderers. Physical-only fades out when entering soul realm; soul-only fades in.")]
+        [Tooltip("Use noise dissolve (Shader Graph _Dissolve) instead of disabling renderers. Child materials must expose _Dissolve, or assign Dissolve Material Template below (recommended for URP Lit). Physical-only fades out when entering soul realm; soul-only fades in.")]
         [SerializeField] private bool useRealmNoiseDissolve;
 
         [Tooltip("Seconds to go from full visibility to fully dissolved when entering soul realm or canceling exit hold (not used during exit hold — that matches the camera hold duration).")]
@@ -29,7 +30,8 @@ namespace Geis.Puzzles
         [Tooltip("If set, only these renderers receive _Dissolve. Use when meshes are not picked up by realm ownership (e.g. nested hierarchy).")]
         [SerializeField] private Renderer[] realmDissolveRenderersOverride;
 
-        [Tooltip("For Both Realms + Use Realm Noise Dissolve: replace child materials with copies of this dissolve shader, copying maps from the originals.")]
+        [Tooltip("Optional dissolve-capable material (e.g. Shader Graph with _Dissolve). At play, replaces child materials so realm dissolve works even on stock URP Lit. " +
+                 "Required for visible dissolve on Soul Only / Physical Only unless meshes already use a _Dissolve shader. For Both Realms without this, tint-only mode is used.")]
         [SerializeField] private Material bothRealmsDissolveMaterialTemplate;
 
         /// <summary>Effective realm for tint, accessibility, and visibility. Override when a type is always cross-realm.</summary>
@@ -96,6 +98,21 @@ namespace Geis.Puzzles
             ApplyRealmMaterialTint();
         }
 
+        /// <summary>
+        /// Call when something outside this component (e.g. soul path reveal permanent unlock) enables renderers
+        /// so hide/show or noise dissolve matches the current realm.
+        /// </summary>
+        public void ReapplyRealmPresentationAfterExternalVisibilityChange()
+        {
+            if (!Application.isPlaying)
+                return;
+            EnsureRealmPresentationCache();
+            ApplyRealmPresentation();
+            if (useRealmNoiseDissolve && RealmMode != PuzzleRealmMode.BothRealms)
+                _realmDissolveCurrent = _realmDissolveTarget;
+            ApplyRealmMaterialTint();
+        }
+
         private void InitRealmDissolveFromCurrentState()
         {
             EnsureRealmPresentationCache();
@@ -107,6 +124,14 @@ namespace Geis.Puzzles
 
         private void ApplyRealmMaterialTint()
         {
+            // Edit mode: Scene view should show authored materials (no realm tint/dissolve MPB). In play,
+            // SoulRealmManager and dissolve paths own presentation.
+            if (!Application.isPlaying)
+            {
+                PuzzleRealmColors.ClearTintFromRenderers(this);
+                return;
+            }
+
             if (useRealmNoiseDissolve)
             {
                 if (RealmMode == PuzzleRealmMode.BothRealms && bothRealmsDissolveMaterialTemplate == null)
@@ -250,6 +275,9 @@ namespace Geis.Puzzles
 
         /// <summary>
         /// Returns true when this element should be active based on the current realm state.
+        /// Uses <see cref="SoulRealmManager"/> only (authoritative for visuals and dissolve). Do not use
+        /// <see cref="GeisInteractInput.IsInteractRealmAllowed"/> here — that path depends on input bootstrap
+        /// and can desync from soul realm presentation.
         /// </summary>
         protected bool IsAccessibleInCurrentRealm()
         {
@@ -263,10 +291,34 @@ namespace Geis.Puzzles
             };
         }
 
+        /// <summary>Interact press only if this element’s realm mode allows it (matches <see cref="IsAccessibleInCurrentRealm"/>).</summary>
+        protected bool WasInteractPressedThisFrameForConfiguredRealm() =>
+            IsAccessibleInCurrentRealm() && GeisInteractInput.WasInteractPressedThisFrame();
+
+        /// <summary>Interact release only if this element’s realm mode allows it.</summary>
+        protected bool WasInteractReleasedThisFrameForConfiguredRealm() =>
+            IsAccessibleInCurrentRealm() && GeisInteractInput.WasInteractReleasedThisFrame();
+
+        /// <summary>Interact hold only if this element’s realm mode allows it.</summary>
+        protected bool IsInteractHeldForConfiguredRealm() =>
+            IsAccessibleInCurrentRealm() && GeisInteractInput.IsInteractHeld();
+
+        /// <summary>
+        /// Use for interact prompts: same rules as <see cref="IsAccessibleInCurrentRealm"/> —
+        /// SoulOnly → soul realm only, PhysicalOnly → physical only, BothRealms → both.
+        /// </summary>
+        protected bool ShouldShowInteractPrompt() => IsAccessibleInCurrentRealm();
+
+        /// <summary>
+        /// Called when soul realm toggles; hide proximity prompts that are wrong for the new realm.
+        /// </summary>
+        protected virtual void OnRealmStateChangedForInteractPrompt() { }
+
         private void OnSoulRealmStateChanged()
         {
             _realmDissolveSnapOnNextUpdate = false;
             ApplyRealmPresentation();
+            OnRealmStateChangedForInteractPrompt();
         }
 
         private void EnsureRealmPresentationCache()
@@ -319,14 +371,19 @@ namespace Geis.Puzzles
                 _realmColliderHiddenByRealm.Add(false);
             }
 
-            TryApplyBothRealmsDissolveMaterialSwap();
+            TryApplyDissolveMaterialTemplateSwap();
         }
 
-        private void TryApplyBothRealmsDissolveMaterialSwap()
+        /// <summary>
+        /// Replaces child materials with dissolve shader instances so <see cref="DissolveId"/> MPB updates are visible.
+        /// Previously ran only for <see cref="PuzzleRealmMode.BothRealms"/>; Soul/Physical props often use Lit without _Dissolve,
+        /// so colliders followed the dissolve value while meshes did not.
+        /// </summary>
+        private void TryApplyDissolveMaterialTemplateSwap()
         {
             if (!Application.isPlaying)
                 return;
-            if (!useRealmNoiseDissolve || RealmMode != PuzzleRealmMode.BothRealms || bothRealmsDissolveMaterialTemplate == null)
+            if (!useRealmNoiseDissolve || bothRealmsDissolveMaterialTemplate == null)
                 return;
             if (_bothRealmsMaterialSwapApplied)
                 return;
@@ -336,6 +393,8 @@ namespace Geis.Puzzles
             _bothRealmsSwappedRenderers = new List<Renderer>();
             _bothRealmsOriginalSharedMaterials = new List<Material[]>();
             _bothRealmsCreatedMaterials = new List<Material>();
+
+            Color realmTint = PuzzleRealmColors.ForMode(RealmMode);
 
             for (var i = 0; i < _realmRenderers.Count; i++)
             {
@@ -356,11 +415,10 @@ namespace Geis.Puzzles
                     m.SetFloat(DissolveId, 0f);
                     if (tintRealmMaterials)
                     {
-                        Color c = PuzzleRealmColors.ForMode(PuzzleRealmMode.BothRealms);
                         if (m.HasProperty("_BaseColor"))
-                            m.SetColor("_BaseColor", c);
+                            m.SetColor("_BaseColor", realmTint);
                         if (m.HasProperty("_Color"))
-                            m.SetColor("_Color", c);
+                            m.SetColor("_Color", realmTint);
                     }
 
                     _bothRealmsCreatedMaterials.Add(m);

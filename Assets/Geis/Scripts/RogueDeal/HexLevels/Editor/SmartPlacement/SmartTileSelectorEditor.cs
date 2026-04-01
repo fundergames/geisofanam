@@ -8,7 +8,9 @@ namespace RogueDeal.HexLevels.Editor
     /// Editor utilities for SmartTileSelector.
     /// Provides prefab lookup functionality using AssetDatabase.
     /// </summary>
+#if ROGUE_DEAL
     [InitializeOnLoad]
+#endif
     public static class SmartTileSelectorEditor
     {
         private const string DEFAULT_MAPPINGS_PATH = "Assets/RogueDeal/Resources/Data/HexLevels/ConnectionPatternMappings.asset";

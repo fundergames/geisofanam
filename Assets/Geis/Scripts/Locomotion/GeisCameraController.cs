@@ -44,7 +44,36 @@ namespace Geis.Locomotion
         private float _positionalCameraLag = 1f;
         [SerializeField]
         private float _rotationalCameraLag = 0.35f;
+
+        [Header("Aim mode (LT) — rig & FOV")]
+        [Tooltip("While Player/Aim is held: shoulder distance/offset, optional height & FOV. Works in physical and soul realm.")]
+        [SerializeField]
+        private bool _enableAimShoulderZoom = true;
+        [Tooltip("Optional. Auto-found on Synty character if unset.")]
+        [SerializeField]
+        private GeisPlayerAnimationController _playerAnimation;
+        [Tooltip("Rig distance from orbit pivot while aiming (default third-person distance is Camera Distance above).")]
+        [SerializeField]
+        private float _aimShoulderCameraDistance = 2.35f;
+        [Tooltip("Extra horizontal rig offset while aiming (positive = camera right / over right shoulder).")]
+        [SerializeField]
+        private float _aimShoulderHorizontalOffset = 0.35f;
+        [Tooltip("Extra local Y on the camera rig while aiming (added to Camera Height Offset).")]
+        [SerializeField]
+        private float _aimShoulderHeightOffset;
+        [Tooltip("Field of view while aiming (e.g. slightly narrower for ADS). Eased with Aim Zoom Smooth Time.")]
+        [SerializeField]
+        private float _aimFieldOfView = 52f;
+        [Tooltip("Seconds to ease in/out of aim zoom.")]
+        [SerializeField]
+        private float _aimZoomSmoothTime = 0.14f;
+
         private float _cameraInversion;
+        private float _rigDistanceSmoothed;
+        private float _rigHorizontalOffsetSmoothed;
+        private float _rigHeightSmoothed;
+        private float _defaultFieldOfView;
+        private float _fieldOfViewSmoothed;
 
         private GeisInputReader _inputReader;
         private float _lastAngleX;
@@ -163,6 +192,9 @@ namespace Geis.Locomotion
             _syntyCamera = gameObject.transform.GetChild(0);
 
             _inputReader = _syntyCharacter.GetComponent<GeisInputReader>();
+            if (_playerAnimation == null)
+                _playerAnimation = _syntyCharacter.GetComponent<GeisPlayerAnimationController>();
+
             if (_playerTarget == null)
                 _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
             _lockOnTarget = _syntyCharacter.transform.Find("TargetLockOnPos");
@@ -194,7 +226,13 @@ namespace Geis.Locomotion
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
 
-            _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
+            _rigDistanceSmoothed = _cameraDistance;
+            _rigHorizontalOffsetSmoothed = _cameraHorizontalOffset;
+            _rigHeightSmoothed = _cameraHeightOffset;
+            _defaultFieldOfView = _mainCamera != null ? _mainCamera.fieldOfView : 60f;
+            _fieldOfViewSmoothed = _defaultFieldOfView;
+
+            _syntyCamera.localPosition = new Vector3(_rigHorizontalOffsetSmoothed, _rigHeightSmoothed, _rigDistanceSmoothed * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
         }
 
@@ -330,8 +368,29 @@ namespace Geis.Locomotion
             transform.position = _newPosition;
             transform.eulerAngles = new Vector3(_currentAngleX, _currentAngleY, 0);
 
-            _syntyCamera.localPosition = new Vector3(_cameraHorizontalOffset, _cameraHeightOffset, _cameraDistance * -1);
+            float targetRigDist = _cameraDistance;
+            float targetH = _cameraHorizontalOffset;
+            float targetHeight = _cameraHeightOffset;
+            float targetFov = _defaultFieldOfView;
+            if (_enableAimShoulderZoom && _playerAnimation != null && _playerAnimation.IsAiming)
+            {
+                targetRigDist = Mathf.Max(0.35f, _aimShoulderCameraDistance);
+                targetH = _cameraHorizontalOffset + _aimShoulderHorizontalOffset;
+                targetHeight = _cameraHeightOffset + _aimShoulderHeightOffset;
+                targetFov = _aimFieldOfView;
+            }
+
+            float zoomSmooth = 1f - Mathf.Exp(-Time.deltaTime / Mathf.Max(0.01f, _aimZoomSmoothTime));
+            _rigDistanceSmoothed = Mathf.Lerp(_rigDistanceSmoothed, targetRigDist, zoomSmooth);
+            _rigHorizontalOffsetSmoothed = Mathf.Lerp(_rigHorizontalOffsetSmoothed, targetH, zoomSmooth);
+            _rigHeightSmoothed = Mathf.Lerp(_rigHeightSmoothed, targetHeight, zoomSmooth);
+            _fieldOfViewSmoothed = Mathf.Lerp(_fieldOfViewSmoothed, targetFov, zoomSmooth);
+
+            _syntyCamera.localPosition = new Vector3(_rigHorizontalOffsetSmoothed, _rigHeightSmoothed, _rigDistanceSmoothed * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
+
+            if (_mainCamera != null)
+                _mainCamera.fieldOfView = _fieldOfViewSmoothed;
 
             _lastPosition = _newPosition;
             _lastAngleX = _currentAngleX;
@@ -372,6 +431,23 @@ namespace Geis.Locomotion
         public Vector3 GetCameraForward()
         {
             return _mainCamera.transform.forward;
+        }
+
+        /// <summary>
+        /// Unit camera forward including pitch (look up/down). Use for bow aim body tilt; prefer
+        /// <see cref="GetCameraForwardZeroedYNormalised"/> for planar locomotion facing only.
+        /// </summary>
+        public Vector3 GetCameraForwardNormalized()
+        {
+            return _mainCamera.transform.forward.normalized;
+        }
+
+        /// <summary>
+        /// Unit camera right in full 3D (follows camera pitch). Use with bow sideways stance so the body tilts with vertical aim.
+        /// </summary>
+        public Vector3 GetCameraRightNormalized()
+        {
+            return _mainCamera.transform.right.normalized;
         }
 
         /// <summary>

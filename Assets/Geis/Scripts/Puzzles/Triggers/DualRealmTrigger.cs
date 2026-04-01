@@ -33,6 +33,9 @@ namespace Geis.Puzzles
                 physicalTrigger.OnTriggerActivated   += OnSubChanged;
                 physicalTrigger.OnTriggerDeactivated += OnSubChanged;
             }
+            // Subs may already be active (e.g. player on plate) before we subscribe — sync composite
+            // so IsActivated and listeners (e.g. PuzzleGroup) see the correct state.
+            RefreshCompositeFromSubs();
         }
 
         private void OnDisable()
@@ -49,10 +52,12 @@ namespace Geis.Puzzles
             }
         }
 
-        private void OnSubChanged(PuzzleTriggerBase _)
+        private void OnSubChanged(PuzzleTriggerBase _) => RefreshCompositeFromSubs();
+
+        private void RefreshCompositeFromSubs()
         {
-            bool bothActive = (soulTrigger     != null && soulTrigger.IsActivated) &&
-                              (physicalTrigger  != null && physicalTrigger.IsActivated);
+            bool bothActive = (soulTrigger != null && soulTrigger.IsActivated) &&
+                              (physicalTrigger != null && physicalTrigger.IsActivated);
             SetActivated(bothActive);
         }
 

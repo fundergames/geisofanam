@@ -14,8 +14,14 @@ namespace Geis.SoulRealm.WeaponAbilities
 
         public override string AbilityDisplayName => string.IsNullOrEmpty(abilityLabel) ? name : abilityLabel;
 
+        public override bool AllowActivationInSoulRealm => true;
+
+        public override bool AllowActivationInPhysicalRealm => true;
+
         public override void Activate(in SoulWeaponAbilityContext context)
         {
+            PlayDefaultActivationVfx(context);
+
             var defName = context.WeaponDefinition != null ? context.WeaponDefinition.displayName : "(no definition)";
             Debug.Log(
                 $"[SoulWeaponAbility] {AbilityDisplayName} | slot={context.WeaponSlotIndex} weapon=\"{defName}\"",

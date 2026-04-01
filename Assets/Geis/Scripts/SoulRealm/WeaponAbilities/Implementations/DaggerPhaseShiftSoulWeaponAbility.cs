@@ -32,6 +32,7 @@ namespace Geis.SoulRealm.WeaponAbilities
                 return;
 
             shift.BeginPhaseShift(phaseDurationSeconds);
+            PlayDefaultActivationVfxAt(context, hit.point);
         }
     }
 }

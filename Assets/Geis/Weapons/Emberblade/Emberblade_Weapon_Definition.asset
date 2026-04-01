@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponDefinition
   weaponPrefab: {fileID: 6803158973660620529, guid: 1ae3b741338cd4081a771f2082a5f9fe, type: 3}
   displayName: Emberblade
+  attachmentHand: 0
   comboData: {fileID: 11400000, guid: 152df7c52a7054f19836066791e4750a, type: 2}
   weaponStats: {fileID: 11400000, guid: a056960da19c44eeaa4bf3de6822db90, type: 2}
   combatAction: {fileID: 11400000, guid: d24304a3a411c1a429ccb86d94d8ffff, type: 2}
-  soulAbilityPrimary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c103, type: 2}
-  soulAbilitySecondary: {fileID: 0}
+  soulAbilityPrimary: {fileID: 11400000, guid: d9abc7dbb24697440a19cc5df1627fba, type: 2}
+  soulAbilitySecondary: {fileID: 11400000, guid: 3cf6e5f99d885234f9f012fd66c7c9f5, type: 2}
   buildsLyreResonance: 1

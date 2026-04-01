@@ -195,7 +195,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""name"": ""ToggleWalk"",
                     ""type"": ""Button"",
                     ""id"": ""f1a2b3c4-d5e6-7890-abcd-ef012345678b"",
-                    ""expectedControlType"": ""Button"",
+                    ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": false
@@ -204,6 +204,15 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""name"": ""SoulRealm"",
                     ""type"": ""Button"",
                     ""id"": ""a1b2c3d4-e5f6-7890-abcd-ef012345678a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Interact"",
+                    ""type"": ""Button"",
+                    ""id"": ""e1f2a3b4-c5d6-7890-abcd-ef012345678e"",
                     ""expectedControlType"": """",
                     ""processors"": """",
                     ""interactions"": """",
@@ -489,10 +498,10 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                 {
                     ""name"": """",
                     ""id"": ""b2772679-0dea-4863-a59d-cd6f67a9c19a"",
-                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""path"": ""<Gamepad>/dpad/left"",
                     ""interactions"": """",
                     ""processors"": """",
-                    ""groups"": """",
+                    ""groups"": ""Gamepad"",
                     ""action"": ""LightAttack"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
@@ -565,28 +574,6 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                 },
                 {
                     ""name"": """",
-                    ""id"": ""e1f2a3b4-c5d6-7890-abcd-ef1111111111"",
-                    ""path"": ""<Keyboard>/slash"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": ""Keyboard and Mouse"",
-                    ""action"": ""ToggleWalk"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
-                    ""id"": ""e2f3a4b5-c6d7-8901-bcde-ef2222222222"",
-                    ""path"": ""<Gamepad>/dpad/up"",
-                    ""interactions"": """",
-                    ""processors"": """",
-                    ""groups"": ""Gamepad"",
-                    ""action"": ""ToggleWalk"",
-                    ""isComposite"": false,
-                    ""isPartOfComposite"": false
-                },
-                {
-                    ""name"": """",
                     ""id"": ""1a2b3c4d-5e6f-7890-abcd-ef1234567891"",
                     ""path"": ""<Keyboard>/tab"",
                     ""interactions"": """",
@@ -604,6 +591,98 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""groups"": ""Gamepad"",
                     ""action"": ""SoulRealm"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f0e1d2c3-b4a5-6789-9012-abcdef012301"",
+                    ""path"": ""<Keyboard>/x"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard and Mouse"",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""f0e1d2c3-b4a5-6789-9012-abcdef012305"",
+                    ""path"": ""<Gamepad>/buttonWest"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Interact"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                }
+            ]
+        },
+        {
+            ""name"": ""SoulRealmWeapon"",
+            ""id"": ""073f9275-15e3-472f-8da8-1963d092866e"",
+            ""actions"": [
+                {
+                    ""name"": ""Ability1"",
+                    ""type"": ""Button"",
+                    ""id"": ""1ea1e290-fe45-4d83-9b99-e01d27ca8b8f"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                },
+                {
+                    ""name"": ""Ability2"",
+                    ""type"": ""Button"",
+                    ""id"": ""e12048aa-c724-4f32-9a16-b08580543d7a"",
+                    ""expectedControlType"": """",
+                    ""processors"": """",
+                    ""interactions"": """",
+                    ""initialStateCheck"": false
+                }
+            ],
+            ""bindings"": [
+                {
+                    ""name"": """",
+                    ""id"": ""2e2da889-d42c-4704-9ea1-948ef93e4bd4"",
+                    ""path"": ""<Keyboard>/q"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard and Mouse"",
+                    ""action"": ""Ability1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""a4fad05a-c8ae-4828-ba85-4a913715f631"",
+                    ""path"": ""<Gamepad>/buttonNorth"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Ability1"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""07b76c36-145a-4c69-8569-1e248a0ad924"",
+                    ""path"": ""<Keyboard>/f"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Keyboard and Mouse"",
+                    ""action"": ""Ability2"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""963ab353-cf1c-4f3b-85d9-2eb40f3f6c7d"",
+                    ""path"": ""<Gamepad>/rightShoulder"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""Gamepad"",
+                    ""action"": ""Ability2"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": false
                 }
@@ -660,11 +739,17 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         m_Player_Pause = m_Player.FindAction("Pause", throwIfNotFound: true);
         m_Player_ToggleWalk = m_Player.FindAction("ToggleWalk", throwIfNotFound: true);
         m_Player_SoulRealm = m_Player.FindAction("SoulRealm", throwIfNotFound: true);
+        m_Player_Interact = m_Player.FindAction("Interact", throwIfNotFound: true);
+        // SoulRealmWeapon
+        m_SoulRealmWeapon = asset.FindActionMap("SoulRealmWeapon", throwIfNotFound: true);
+        m_SoulRealmWeapon_Ability1 = m_SoulRealmWeapon.FindAction("Ability1", throwIfNotFound: true);
+        m_SoulRealmWeapon_Ability2 = m_SoulRealmWeapon.FindAction("Ability2", throwIfNotFound: true);
     }
 
     ~@GeisControls()
     {
         UnityEngine.Debug.Assert(!m_Player.enabled, "This will cause a leak and performance issues, GeisControls.Player.Disable() has not been called.");
+        UnityEngine.Debug.Assert(!m_SoulRealmWeapon.enabled, "This will cause a leak and performance issues, GeisControls.SoulRealmWeapon.Disable() has not been called.");
     }
 
     /// <summary>
@@ -753,6 +838,7 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Pause;
     private readonly InputAction m_Player_ToggleWalk;
     private readonly InputAction m_Player_SoulRealm;
+    private readonly InputAction m_Player_Interact;
     /// <summary>
     /// Provides access to input actions defined in input action map "Player".
     /// </summary>
@@ -816,6 +902,10 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// Provides access to the underlying input action "Player/SoulRealm".
         /// </summary>
         public InputAction @SoulRealm => m_Wrapper.m_Player_SoulRealm;
+        /// <summary>
+        /// Provides access to the underlying input action "Player/Interact".
+        /// </summary>
+        public InputAction @Interact => m_Wrapper.m_Player_Interact;
         /// <summary>
         /// Provides access to the underlying input action map instance.
         /// </summary>
@@ -881,6 +971,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @SoulRealm.started += instance.OnSoulRealm;
             @SoulRealm.performed += instance.OnSoulRealm;
             @SoulRealm.canceled += instance.OnSoulRealm;
+            @Interact.started += instance.OnInteract;
+            @Interact.performed += instance.OnInteract;
+            @Interact.canceled += instance.OnInteract;
         }
 
         /// <summary>
@@ -931,6 +1024,9 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
             @SoulRealm.started -= instance.OnSoulRealm;
             @SoulRealm.performed -= instance.OnSoulRealm;
             @SoulRealm.canceled -= instance.OnSoulRealm;
+            @Interact.started -= instance.OnInteract;
+            @Interact.performed -= instance.OnInteract;
+            @Interact.canceled -= instance.OnInteract;
         }
 
         /// <summary>
@@ -964,6 +1060,113 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
     /// Provides a new <see cref="PlayerActions" /> instance referencing this action map.
     /// </summary>
     public PlayerActions @Player => new PlayerActions(this);
+
+    // SoulRealmWeapon
+    private readonly InputActionMap m_SoulRealmWeapon;
+    private List<ISoulRealmWeaponActions> m_SoulRealmWeaponActionsCallbackInterfaces = new List<ISoulRealmWeaponActions>();
+    private readonly InputAction m_SoulRealmWeapon_Ability1;
+    private readonly InputAction m_SoulRealmWeapon_Ability2;
+    /// <summary>
+    /// Provides access to input actions defined in input action map "SoulRealmWeapon".
+    /// </summary>
+    public struct SoulRealmWeaponActions
+    {
+        private @GeisControls m_Wrapper;
+
+        /// <summary>
+        /// Construct a new instance of the input action map wrapper class.
+        /// </summary>
+        public SoulRealmWeaponActions(@GeisControls wrapper) { m_Wrapper = wrapper; }
+        /// <summary>
+        /// Provides access to the underlying input action "SoulRealmWeapon/Ability1".
+        /// </summary>
+        public InputAction @Ability1 => m_Wrapper.m_SoulRealmWeapon_Ability1;
+        /// <summary>
+        /// Provides access to the underlying input action "SoulRealmWeapon/Ability2".
+        /// </summary>
+        public InputAction @Ability2 => m_Wrapper.m_SoulRealmWeapon_Ability2;
+        /// <summary>
+        /// Provides access to the underlying input action map instance.
+        /// </summary>
+        public InputActionMap Get() { return m_Wrapper.m_SoulRealmWeapon; }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Enable()" />
+        public void Enable() { Get().Enable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.Disable()" />
+        public void Disable() { Get().Disable(); }
+        /// <inheritdoc cref="UnityEngine.InputSystem.InputActionMap.enabled" />
+        public bool enabled => Get().enabled;
+        /// <summary>
+        /// Implicitly converts an <see ref="SoulRealmWeaponActions" /> to an <see ref="InputActionMap" /> instance.
+        /// </summary>
+        public static implicit operator InputActionMap(SoulRealmWeaponActions set) { return set.Get(); }
+        /// <summary>
+        /// Adds <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <param name="instance">Callback instance.</param>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c> or <paramref name="instance"/> have already been added this method does nothing.
+        /// </remarks>
+        /// <seealso cref="SoulRealmWeaponActions" />
+        public void AddCallbacks(ISoulRealmWeaponActions instance)
+        {
+            if (instance == null || m_Wrapper.m_SoulRealmWeaponActionsCallbackInterfaces.Contains(instance)) return;
+            m_Wrapper.m_SoulRealmWeaponActionsCallbackInterfaces.Add(instance);
+            @Ability1.started += instance.OnAbility1;
+            @Ability1.performed += instance.OnAbility1;
+            @Ability1.canceled += instance.OnAbility1;
+            @Ability2.started += instance.OnAbility2;
+            @Ability2.performed += instance.OnAbility2;
+            @Ability2.canceled += instance.OnAbility2;
+        }
+
+        /// <summary>
+        /// Removes <see cref="InputAction.started"/>, <see cref="InputAction.performed"/> and <see cref="InputAction.canceled"/> callbacks provided via <param cref="instance" /> on all input actions contained in this map.
+        /// </summary>
+        /// <remarks>
+        /// Calling this method when <paramref name="instance" /> have not previously been registered has no side-effects.
+        /// </remarks>
+        /// <seealso cref="SoulRealmWeaponActions" />
+        private void UnregisterCallbacks(ISoulRealmWeaponActions instance)
+        {
+            @Ability1.started -= instance.OnAbility1;
+            @Ability1.performed -= instance.OnAbility1;
+            @Ability1.canceled -= instance.OnAbility1;
+            @Ability2.started -= instance.OnAbility2;
+            @Ability2.performed -= instance.OnAbility2;
+            @Ability2.canceled -= instance.OnAbility2;
+        }
+
+        /// <summary>
+        /// Unregisters <param cref="instance" /> and unregisters all input action callbacks via <see cref="SoulRealmWeaponActions.UnregisterCallbacks(ISoulRealmWeaponActions)" />.
+        /// </summary>
+        /// <seealso cref="SoulRealmWeaponActions.UnregisterCallbacks(ISoulRealmWeaponActions)" />
+        public void RemoveCallbacks(ISoulRealmWeaponActions instance)
+        {
+            if (m_Wrapper.m_SoulRealmWeaponActionsCallbackInterfaces.Remove(instance))
+                UnregisterCallbacks(instance);
+        }
+
+        /// <summary>
+        /// Replaces all existing callback instances and previously registered input action callbacks associated with them with callbacks provided via <param cref="instance" />.
+        /// </summary>
+        /// <remarks>
+        /// If <paramref name="instance" /> is <c>null</c>, calling this method will only unregister all existing callbacks but not register any new callbacks.
+        /// </remarks>
+        /// <seealso cref="SoulRealmWeaponActions.AddCallbacks(ISoulRealmWeaponActions)" />
+        /// <seealso cref="SoulRealmWeaponActions.RemoveCallbacks(ISoulRealmWeaponActions)" />
+        /// <seealso cref="SoulRealmWeaponActions.UnregisterCallbacks(ISoulRealmWeaponActions)" />
+        public void SetCallbacks(ISoulRealmWeaponActions instance)
+        {
+            foreach (var item in m_Wrapper.m_SoulRealmWeaponActionsCallbackInterfaces)
+                UnregisterCallbacks(item);
+            m_Wrapper.m_SoulRealmWeaponActionsCallbackInterfaces.Clear();
+            AddCallbacks(instance);
+        }
+    }
+    /// <summary>
+    /// Provides a new <see cref="SoulRealmWeaponActions" /> instance referencing this action map.
+    /// </summary>
+    public SoulRealmWeaponActions @SoulRealmWeapon => new SoulRealmWeaponActions(this);
     private int m_KeyboardandMouseSchemeIndex = -1;
     /// <summary>
     /// Provides access to the input control scheme.
@@ -1088,5 +1291,34 @@ public partial class @GeisControls: IInputActionCollection2, IDisposable
         /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
         /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
         void OnSoulRealm(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Interact" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnInteract(InputAction.CallbackContext context);
+    }
+    /// <summary>
+    /// Interface to implement callback methods for all input action callbacks associated with input actions defined by "SoulRealmWeapon" which allows adding and removing callbacks.
+    /// </summary>
+    /// <seealso cref="SoulRealmWeaponActions.AddCallbacks(ISoulRealmWeaponActions)" />
+    /// <seealso cref="SoulRealmWeaponActions.RemoveCallbacks(ISoulRealmWeaponActions)" />
+    public interface ISoulRealmWeaponActions
+    {
+        /// <summary>
+        /// Method invoked when associated input action "Ability1" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAbility1(InputAction.CallbackContext context);
+        /// <summary>
+        /// Method invoked when associated input action "Ability2" is either <see cref="UnityEngine.InputSystem.InputAction.started" />, <see cref="UnityEngine.InputSystem.InputAction.performed" /> or <see cref="UnityEngine.InputSystem.InputAction.canceled" />.
+        /// </summary>
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.started" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.performed" />
+        /// <seealso cref="UnityEngine.InputSystem.InputAction.canceled" />
+        void OnAbility2(InputAction.CallbackContext context);
     }
 }

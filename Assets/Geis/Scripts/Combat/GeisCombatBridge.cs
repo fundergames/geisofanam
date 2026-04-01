@@ -104,11 +104,11 @@ namespace Geis.Combat
             if (comboData != null && comboData.TryGetMultiHitTimesSeconds(comboState, out float[] geisTimes) &&
                 geisTimes != null && geisTimes.Length > 0)
             {
-                _hitDetector.PerformHitCheck(action, geisTimes);
+                _hitDetector.PerformHitCheck(action, geisTimes, weaponIndex);
             }
             else
             {
-                _hitDetector.PerformHitCheck(action);
+                _hitDetector.PerformHitCheck(action, null, weaponIndex);
             }
         }
 

@@ -6,6 +6,8 @@
 // Sample scripts are included only as examples and are not intended as production-ready.
 
 using System;
+using Geis.InteractInput;
+using Geis.SoulRealm;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Serialization;
@@ -45,7 +47,7 @@ namespace Geis.InputSystem
         public Action onSprintActivated;
         public Action onSprintDeactivated;
 
-        /// <summary>Shift (and similar hold bindings): sprint while held. L3 toggles sprint on/off.</summary>
+        /// <summary>Shift hold = sprint while held. L3 toggles jog (off) vs run/sprint (on).</summary>
         private bool _shiftSprintHeld;
 
         private bool _l3SprintToggledOn;
@@ -67,6 +69,9 @@ namespace Geis.InputSystem
         [Tooltip("Logs dodge-related input: raw gamepad east, Dodge action, and every OnDodge callback (Console).")]
         [SerializeField] private bool _debugDodgeInput;
 
+        [Tooltip("Logs when Interact is pressed via gamepad West (X / Square). Uses GeisInteractInput.WasGamepadWestInteractPressedThisFrame.")]
+        [SerializeField] private bool _debugInteractWest;
+
         [Header("Gamepad dodge")]
         [Tooltip(
             "If the Xbox/PS east face button registers in hardware but Player/Dodge does not (broken binding cache), fire dodge from raw <Gamepad>/buttonEast.")]
@@ -80,6 +85,18 @@ namespace Geis.InputSystem
                 _controls = new GeisControls();
                 _controls.Player.SetCallbacks(this);
             }
+
+            GeisInteractInput.SetInteractAction(_controls.Player.Interact);
+            GeisInteractInput.SetMoveAction(_controls.Player.Move);
+            GeisInteractInput.SoulRealmIsActiveProvider = () =>
+                SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+            GeisInteractInput.InteractionWorldPositionProvider = () =>
+            {
+                if (SoulRealmManager.Instance != null)
+                    return SoulRealmManager.Instance.GetInteractionProximityWorldPosition();
+                var go = GameObject.FindGameObjectWithTag("Player");
+                return go != null ? go.transform.position : Vector3.zero;
+            };
 
             if (Application.isFocused)
                 _controls.Player.Enable();
@@ -105,6 +122,9 @@ namespace Geis.InputSystem
         /// <inheritdoc cref="OnDisable" />
         public void OnDisable()
         {
+            GeisInteractInput.SetInteractAction(null);
+            GeisInteractInput.SoulRealmIsActiveProvider = null;
+            GeisInteractInput.InteractionWorldPositionProvider = null;
             _controls?.Player.Disable();
         }
 
@@ -145,6 +165,14 @@ namespace Geis.InputSystem
                     TryInvokeDodgeOnce();
                 }
             }
+
+            if (_debugInteractWest && GeisInteractInput.WasGamepadWestInteractPressedThisFrame())
+            {
+                var w = Gamepad.current;
+                Debug.Log(
+                    $"[GeisInputReader] Interact: gamepad West pressed (X/Square) — device={w?.displayName ?? "none"} id={w?.deviceId ?? -1}",
+                    this);
+            }
         }
 
         private void TryInvokeDodgeOnce()
@@ -161,7 +189,7 @@ namespace Geis.InputSystem
             return _controls != null && _controls.Player.SoulRealm.WasPressedThisFrame();
         }
 
-        /// <summary>Shift sprint held or L3 sprint toggled on (matches player sprint).</summary>
+        /// <summary>Shift held or L3 toggled to the faster gait (sprint speed / “run”).</summary>
         public bool IsSprintHeldOrToggled => _shiftSprintHeld || _l3SprintToggledOn;
 
         /// <summary>
@@ -198,7 +226,7 @@ namespace Geis.InputSystem
         }
 
         /// <summary>
-        ///     Player/ToggleWalk (keyboard /, gamepad D-pad Up).
+        ///     Player/ToggleWalk — no bindings (walk toggle disabled for now).
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnToggleWalk(InputAction.CallbackContext context)
@@ -212,8 +240,8 @@ namespace Geis.InputSystem
         }
 
         /// <summary>
-        ///     Defines the action to perform when the OnSprint callback is called.
-        ///     Gamepad L3 toggles sprint on/off; keyboard Shift is hold-to-sprint. Same behavior in physical and soul realm.
+        ///     Player/Sprint: keyboard Shift = hold to run (sprint speed). Gamepad L3 (left stick press) toggles
+        ///     jog (run speed) vs run (sprint speed); same in physical realm and soul realm ghost.
         /// </summary>
         /// <param name="context">The context of the callback.</param>
         public void OnSprint(InputAction.CallbackContext context)
@@ -351,6 +379,11 @@ namespace Geis.InputSystem
 
         /// <inheritdoc />
         public void OnSoulRealm(InputAction.CallbackContext context)
+        {
+        }
+
+        /// <inheritdoc />
+        public void OnInteract(InputAction.CallbackContext context)
         {
         }
     }

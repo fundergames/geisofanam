@@ -41,7 +41,7 @@ MonoBehaviour:
     inputType: 1
     toState: 0
   clips:
-  - {fileID: 7400000, guid: 68622a8549f13c449b002a4e5ce03261, type: 2}
+  - {fileID: 7400000, guid: 87feb4ffd2bcb224681d1a8fcdec164c, type: 2}
   fallbackClip: {fileID: 0}
   stateCombatBindings: []
   cancelWindowStart: 0.5

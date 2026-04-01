@@ -93,6 +93,27 @@ namespace Geis.SoulRealm
         public float SoulRealmBlend => _isSoulRealm ? 1f : 0f;
 
         /// <summary>
+        /// Owner transform and world origin for soul weapon abilities and VFX. In Soul Realm uses the ghost
+        /// (same chest-height anchor as bow projectiles); otherwise uses body locomotion and look-at.
+        /// </summary>
+        public void GetAbilityContextTransforms(out Transform ownerTransform, out Vector3 originWorld)
+        {
+            if (_isSoulRealm && ghostRoot != null && ghostRoot.activeInHierarchy)
+            {
+                ownerTransform = ghostRoot.transform;
+                originWorld = _ghostLookAt != null
+                    ? _ghostLookAt.position + Vector3.down * 0.35f
+                    : ghostRoot.transform.position + Vector3.up * 1.25f;
+                return;
+            }
+
+            ownerTransform = bodyLocomotion != null ? bodyLocomotion.transform : transform;
+            originWorld = bodyLookAtTransform != null
+                ? bodyLookAtTransform.position
+                : ownerTransform.position + Vector3.up * 1.25f;
+        }
+
+        /// <summary>
         /// Linear 0–1 while holding to exit soul realm (elapsed hold time / configured duration for this attempt).
         /// 0 if not in soul realm or not holding.
         /// </summary>
@@ -429,6 +450,51 @@ namespace Geis.SoulRealm
             if (cameraController != null)
                 cameraController.EndSoulRealmExitHoldRotationLerp();
             CompleteExitSoulRealm();
+        }
+
+        /// <summary>
+        /// World position for puzzle/NPC interaction range and prompts. In soul realm uses the moving ghost
+        /// (look-at); otherwise the body. Do not use <see cref="GameObject.FindGameObjectWithTag"/> with
+        /// <c>Player</c> while soul realm is active — both body and ghost can share that tag.
+        /// </summary>
+        public Vector3 GetInteractionProximityWorldPosition()
+        {
+            // Use feet/root (same as body locomotion) for 3D range checks — not chest look-at,
+            // so soul-realm proximity matches physical-realm distance to puzzle props.
+            if (_isSoulRealm && ghostRoot != null && ghostRoot.activeInHierarchy)
+                return ghostRoot.transform.position;
+
+            if (bodyLocomotion != null)
+                return bodyLocomotion.transform.position;
+
+            return transform.position;
+        }
+
+        /// <summary>
+        /// World position for bow projectiles in soul realm: uses the moving ghost and camera yaw, not the frozen body hand.
+        /// </summary>
+        public bool TryGetGhostBowProjectileSpawnWorldPosition(out Vector3 worldPosition)
+        {
+            worldPosition = default;
+            if (!_isSoulRealm || ghostRoot == null || !ghostRoot.activeInHierarchy)
+                return false;
+
+            Vector3 anchor = _ghostLookAt != null
+                ? _ghostLookAt.position + Vector3.down * 0.35f
+                : ghostRoot.transform.position + Vector3.up * 1.25f;
+
+            Vector3 fwd = cameraController != null
+                ? cameraController.GetCameraForwardZeroedYNormalised()
+                : ghostRoot.transform.forward;
+
+            Vector3 flatRight = Vector3.Cross(Vector3.up, fwd);
+            if (flatRight.sqrMagnitude > 1e-6f)
+                flatRight.Normalize();
+            else
+                flatRight = ghostRoot.transform.right;
+
+            worldPosition = anchor + fwd * 0.4f - flatRight * 0.25f;
+            return true;
         }
 
         private void CompleteExitSoulRealm()

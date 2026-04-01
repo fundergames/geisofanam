@@ -8,6 +8,7 @@ using UnityEngine;
 using Geis.Combat;
 using Geis.Combat.Music;
 using Geis.InputSystem;
+using Geis.InteractInput;
 using Geis.Attributes;
 using Geis.SoulRealm;
 
@@ -89,6 +90,10 @@ namespace Geis.Locomotion
         private readonly int _comboStateBlendHash = Animator.StringToHash("ComboStateBlend");
         private const int COMBO_BLEND_SLOTS = 32;
 
+        private readonly int _bowDrawingHash = Animator.StringToHash("BowDrawing");
+        private readonly int _bowDrawChargeHash = Animator.StringToHash("BowDrawCharge");
+        private readonly int _bowAimingHash = Animator.StringToHash("BowAiming");
+
         private readonly int _dodgeDirectionHash = Animator.StringToHash("DodgeDirection");
         private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
 
@@ -104,19 +109,15 @@ namespace Geis.Locomotion
 
         #region Scripts/Objects
 
-        [FoldoutGroup("External Components")]
         [Tooltip("Script controlling camera behavior")]
         [SerializeField]
         private GeisCameraController _cameraController;
-        [FoldoutGroup("External Components")]
         [Tooltip("InputReader handles player input")]
         [SerializeField]
         private GeisInputReader _inputReader;
-        [FoldoutGroup("External Components")]
         [Tooltip("Animator component for controlling player animations")]
         [SerializeField]
         private Animator _animator;
-        [FoldoutGroup("External Components")]
         [Tooltip("Character Controller component for controlling player movement")]
         [SerializeField]
         private CharacterController _controller;
@@ -125,48 +126,44 @@ namespace Geis.Locomotion
 
         #region Locomotion Settings
 
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Whether the character always faces the camera facing direction")]
         [SerializeField]
         private bool _alwaysStrafe = true;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Slowest movement speed of the player when set to a walk state or half press tick")]
         [SerializeField]
         private float _walkSpeed = 1.4f;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Default movement speed of the player")]
         [SerializeField]
         private float _runSpeed = 2.5f;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Top movement speed of the player")]
         [SerializeField]
         private float _sprintSpeed = 7f;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Damping factor for changing speed")]
         [SerializeField]
         private float _speedChangeDamping = 10f;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Rotation smoothing factor.")]
         [SerializeField]
         private float _rotationSmoothing = 10f;
-        [FoldoutGroup("Player Locomotion")]
         [Tooltip("Offset for camera rotation.")]
         [SerializeField]
         private float _cameraRotationOffset;
+        [Tooltip("Bow aim/draw: camera forward matches character left (-transform.right); body forward is camera right. If disabled, body uses camera forward like normal strafe.")]
+        [SerializeField]
+        private bool _bowArcherySidewaysFacing = true;
+        [Tooltip("Local euler offset (degrees) applied after the bow base facing. Tune in Play mode: Y = yaw (spin), X = pitch, Z = roll. Applied while bow is equipped and aim/draw is active.")]
+        [SerializeField]
+        private Vector3 _bowAimBodyEulerOffset;
 
         #endregion
 
         #region Shuffle Settings
 
-        [FoldoutGroup("Shuffles")]
         [Tooltip("Threshold for button hold duration.")]
         [SerializeField]
         private float _buttonHoldThreshold = 0.15f;
-        [FoldoutGroup("Shuffles")]
         [Tooltip("Direction of shuffling on the X-axis.")]
         [SerializeField]
         private float _shuffleDirectionX;
-        [FoldoutGroup("Shuffles")]
         [Tooltip("Direction of shuffling on the Z-axis.")]
         [SerializeField]
         private float _shuffleDirectionZ;
@@ -175,19 +172,15 @@ namespace Geis.Locomotion
 
         #region Capsule Settings
 
-        [FoldoutGroup("Capsule Values")]
         [Tooltip("Standing height of the player capsule.")]
         [SerializeField]
         private float _capsuleStandingHeight = 1.8f;
-        [FoldoutGroup("Capsule Values")]
         [Tooltip("Standing center of the player capsule.")]
         [SerializeField]
         private float _capsuleStandingCentre = 0.93f;
-        [FoldoutGroup("Capsule Values")]
         [Tooltip("Crouching height of the player capsule.")]
         [SerializeField]
         private float _capsuleCrouchingHeight = 1.2f;
-        [FoldoutGroup("Capsule Values")]
         [Tooltip("Crouching center of the player capsule.")]
         [SerializeField]
         private float _capsuleCrouchingCentre = 0.6f;
@@ -196,15 +189,12 @@ namespace Geis.Locomotion
 
         #region Strafing
 
-        [FoldoutGroup("Player Strafing")]
         [Tooltip("Minimum threshold for forward strafing angle.")]
         [SerializeField]
         private float _forwardStrafeMinThreshold = -55.0f;
-        [FoldoutGroup("Player Strafing")]
         [Tooltip("Maximum threshold for forward strafing angle.")]
         [SerializeField]
         private float _forwardStrafeMaxThreshold = 125.0f;
-        [FoldoutGroup("Player Strafing")]
         [Tooltip("Current forward strafing value.")]
         [SerializeField]
         private float _forwardStrafe = 1f;
@@ -213,23 +203,18 @@ namespace Geis.Locomotion
 
         #region Grounded Settings
 
-        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Position of the rear ray for grounded angle check.")]
         [SerializeField]
         private Transform _rearRayPos;
-        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Position of the front ray for grounded angle check.")]
         [SerializeField]
         private Transform _frontRayPos;
-        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Layer mask for checking ground. Default: all layers. If ground isn't detected, ensure your ground has a collider and is on a layer included here.")]
         [SerializeField]
         private LayerMask _groundLayerMask = ~0;
-        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Current incline angle.")]
         [SerializeField]
         private float _inclineAngle;
-        [FoldoutGroup("Grounded Angle")]
         [Tooltip("Offset below character center for ground check sphere. Positive = below feet for detection.")]
         [SerializeField]
         private float _groundedOffset = 0.14f;
@@ -238,15 +223,12 @@ namespace Geis.Locomotion
 
         #region In-Air Settings
 
-        [FoldoutGroup("Player In-Air")]
         [Tooltip("Force applied when the player jumps.")]
         [SerializeField]
         private float _jumpForce = 10f;
-        [FoldoutGroup("Player In-Air")]
         [Tooltip("Multiplier for gravity when in the air.")]
         [SerializeField]
         private float _gravityMultiplier = 2f;
-        [FoldoutGroup("Player In-Air")]
         [Tooltip("Duration of falling.")]
         [SerializeField]
         private float _fallingDuration;
@@ -255,27 +237,21 @@ namespace Geis.Locomotion
 
         #region Head Look Settings
 
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("Flag indicating if head turning is enabled.")]
         [SerializeField]
         private bool _enableHeadTurn = true;
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("Delay for head turning.")]
         [SerializeField]
         private float _headLookDelay;
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("X-axis value for head turning.")]
         [SerializeField]
         private float _headLookX;
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("Y-axis value for head turning.")]
         [SerializeField]
         private float _headLookY;
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("Curve for X-axis head turning.")]
         [SerializeField]
         private AnimationCurve _headLookXCurve;
-        [FoldoutGroup("Player Head Look")]
         [Tooltip("Degrees beyond which head/body look can't follow; character rotates in place instead. Tune to match animator head look limit.")]
         [SerializeField]
         private float _headLookLimitDegrees = 60f;
@@ -284,23 +260,18 @@ namespace Geis.Locomotion
 
         #region Body Look Settings
 
-        [FoldoutGroup("Player Body Look")]
         [Tooltip("Flag indicating if body turning is enabled.")]
         [SerializeField]
         private bool _enableBodyTurn = true;
-        [FoldoutGroup("Player Body Look")]
         [Tooltip("Delay for body turning.")]
         [SerializeField]
         private float _bodyLookDelay;
-        [FoldoutGroup("Player Body Look")]
         [Tooltip("X-axis value for body turning.")]
         [SerializeField]
         private float _bodyLookX;
-        [FoldoutGroup("Player Body Look")]
         [Tooltip("Y-axis value for body turning.")]
         [SerializeField]
         private float _bodyLookY;
-        [FoldoutGroup("Player Body Look")]
         [Tooltip("Curve for X-axis body turning.")]
         [SerializeField]
         private AnimationCurve _bodyLookXCurve;
@@ -309,27 +280,21 @@ namespace Geis.Locomotion
 
         #region Lean Settings
 
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Flag indicating if leaning is enabled.")]
         [SerializeField]
         private bool _enableLean = true;
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Delay for leaning.")]
         [SerializeField]
         private float _leanDelay;
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Current value for leaning.")]
         [SerializeField]
         private float _leanValue;
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Curve for leaning.")]
         [SerializeField]
         private AnimationCurve _leanCurve;
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Delay for head leaning looks.")]
         [SerializeField]
         private float _leansHeadLooksDelay;
-        [FoldoutGroup("Player Lean")]
         [Tooltip("Flag indicating if an animation clip has ended.")]
         [SerializeField]
         private bool _animationClipEnd;
@@ -349,49 +314,38 @@ namespace Geis.Locomotion
         /// </summary>
         public int CurrentComboState => _currentComboState;
 
-        [FoldoutGroup("Attack Root Motion")]
         [Tooltip("Apply animation root rotation during attacks. Disable if attacks drift left/right (baked rotation mismatch).")]
         [SerializeField]
         private bool _applyRootRotationDuringAttack;
 
-        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
         [SerializeField]
         private GeisComboData _comboData;
-        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: resolves combo by weapon index when set. Takes precedence over _comboData when both assigned.")]
         [SerializeField]
         private GeisWeaponComboData _weaponComboData;
-        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: provides current weapon index for _weaponComboData lookup.")]
         [SerializeField]
         private GeisWeaponSwitcher _weaponSwitcher;
-        [FoldoutGroup("Data-Driven Combo")]
         [Tooltip("Optional: placeholders for runtime override. Loaded from Resources/GeisComboPlaceholders if null.")]
         [SerializeField]
         private GeisComboPlaceholders _comboPlaceholders;
 
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("Apply animation root rotation during dodge clips.")]
         [SerializeField]
         private bool _applyRootRotationDuringDodge;
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("Stick magnitude below this counts as neutral (forward dodge).")]
         [SerializeField]
         private float _dodgeInputDeadzone = 0.05f;
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("Fallback seconds if clip length cannot be read.")]
         [SerializeField]
         private float _dodgeFallbackDuration = 1.2f;
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
         [SerializeField]
         private bool _requireMovementInputForDodge;
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("Soul-ghost scripted dodge planar speed; physical dodge uses animation clips.")]
         [SerializeField]
         private float _dodgeScriptedPlaneSpeed = 7f;
-        [FoldoutGroup("Dodge Roll")]
         [Tooltip("Soul-ghost scripted dodge duration in seconds.")]
         [SerializeField]
         private float _dodgeScriptedDuration = 0.35f;
@@ -407,6 +361,11 @@ namespace Geis.Locomotion
         private bool _cannotStandUp;
         private bool _crouchKeyPressed;
         private bool _isAiming;
+        private bool _isBowDrawing;
+        private float _bowDrawCharge;
+        private bool _animatorHasBowDrawing;
+        private bool _animatorHasBowDrawCharge;
+        private bool _animatorHasBowAiming;
         private bool _isCrouching;
         private bool _isGrounded = true;
         private Transform _groundRideSurface;
@@ -482,9 +441,8 @@ namespace Geis.Locomotion
         public Vector3 LocomotionPlanarVelocity => new Vector3(_velocity.x, 0f, _velocity.z);
 
         /// <summary>
-        /// Called when entering soul realm: locomotion <see cref="Update"/> is suppressed, but walk toggles
-        /// still call <see cref="ToggleWalk"/> and update <see cref="_isWalking"/>. Use this so the ghost reads
-        /// a defined run/walk state (e.g. default run) instead of a stale frozen flag.
+        /// Called when entering soul realm: locomotion <see cref="Update"/> is suppressed; use this so the ghost
+        /// reads a defined walk/run state via <see cref="EnableWalk"/> instead of a stale frozen flag.
         /// </summary>
         public void SetWalkLocomotionForSoulRealm(bool walkEnabled)
         {
@@ -494,14 +452,19 @@ namespace Geis.Locomotion
 
         /// <summary>
         /// Strafe-style facing (camera-forward) vs velocity-facing. Run gait uses forward run like sprint unless aim/lock-on needs strafe.
+        /// Aim/draw forces this path even when sprint left <see cref="_isStrafing"/> false so the body stays aligned with the crosshair.
         /// </summary>
         private bool UseStrafeStyleLocomotionFacing =>
-            _isStrafing && !(_currentGait == GaitState.Run && !_isLockedOn && !_isAiming);
+            (_isStrafing || _isAiming || _isBowDrawing)
+            && !(_currentGait == GaitState.Run && !_isLockedOn && !_isAiming && !_isBowDrawing);
 
         /// <summary>Same value as the <c>IsStrafing</c> animator float — for spectral mirror / tooling.</summary>
         public bool LocomotionAnimatorUsesStrafeStyle => UseStrafeStyleLocomotionFacing;
         /// <summary>True while aim (LT) is held — used by bow / ranged.</summary>
         public bool IsAiming => _isAiming;
+
+        /// <summary>True while bow RT is held (draw). Drives optional <c>BowDrawing</c> / <c>BowDrawCharge</c> animator parameters.</summary>
+        public bool IsBowDrawing => _isBowDrawing;
 
         /// <summary>When true, locomotion animator zeros MoveSpeed/gait in air (Jump/Fall states). Used by spectral mirror.</summary>
         public bool LocomotionAirGaitForAnimator =>
@@ -590,7 +553,6 @@ namespace Geis.Locomotion
             }
 
             _inputReader.onLockOnToggled += ToggleLockOn;
-            _inputReader.onWalkToggled += ToggleWalk;
             _inputReader.onSprintActivated += ActivateSprint;
             _inputReader.onSprintDeactivated += DeactivateSprint;
             _inputReader.onCrouchActivated += ActivateCrouch;
@@ -608,7 +570,24 @@ namespace Geis.Locomotion
 
             ApplyComboOverridesIfReady();
 
+            if (_animator != null)
+            {
+                _animatorHasBowDrawing = HasAnimatorParameter("BowDrawing");
+                _animatorHasBowDrawCharge = HasAnimatorParameter("BowDrawCharge");
+                _animatorHasBowAiming = HasAnimatorParameter("BowAiming");
+            }
+
             SwitchState(AnimationState.Locomotion);
+        }
+
+        /// <summary>
+        /// Called by <see cref="Geis.Combat.GeisBowController"/> while RT is held. Add Bool <c>BowDrawing</c> and optional Float <c>BowDrawCharge</c> (0–1) on the Animator for draw clips / blend trees.
+        /// Add Bool <c>BowAiming</c> for LT + bow equipped (Synty ToAiming / aim hold / ToBowDown on the Bow_Draw layer).
+        /// </summary>
+        public void SetBowDrawState(bool drawing, float chargeNormalized01 = 0f)
+        {
+            _isBowDrawing = drawing;
+            _bowDrawCharge = Mathf.Clamp01(chargeNormalized01);
         }
 
         private void OnDestroy()
@@ -916,6 +895,11 @@ namespace Geis.Locomotion
                 return;
             if (!_isGrounded || _isCrouching) return;
 
+            // Bow uses RT hold/release for draw + shot (GeisBowController); never start heavy melee while bow is equipped.
+            const int bowWeaponSlotIndex = 3;
+            if (_weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowWeaponSlotIndex)
+                return;
+
             if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
             {
                 _firstAttackInputType = GeisComboInputType.Heavy;
@@ -930,6 +914,8 @@ namespace Geis.Locomotion
 
         private void OnDodgeRequested()
         {
+            if (GeisInteractInput.IsMovementFrozenForInteraction)
+                return;
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
                 return;
             if (_currentState != AnimationState.Locomotion || !_isGrounded || _isCrouching)
@@ -947,7 +933,8 @@ namespace Geis.Locomotion
                 return;
             }
             if (_requireMovementInputForDodge &&
-                _inputReader._moveComposite.sqrMagnitude < _dodgeInputDeadzone * _dodgeInputDeadzone)
+                GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(_inputReader._moveComposite).sqrMagnitude <
+                _dodgeInputDeadzone * _dodgeInputDeadzone)
                 return;
 
             SwitchState(AnimationState.Dodge);
@@ -1355,6 +1342,17 @@ namespace Geis.Locomotion
             _animator.SetBool(_isStoppedHash, _isStopped);
 
             _animator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
+
+            if (_animatorHasBowDrawing)
+                _animator.SetBool(_bowDrawingHash, _isBowDrawing);
+            if (_animatorHasBowDrawCharge)
+                _animator.SetFloat(_bowDrawChargeHash, _bowDrawCharge);
+            if (_animatorHasBowAiming)
+            {
+                const int bowWeaponSlot = 3;
+                bool bowAiming = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowWeaponSlot && _isAiming;
+                _animator.SetBool(_bowAimingHash, bowAiming);
+            }
         }
 
         #endregion
@@ -1378,7 +1376,10 @@ namespace Geis.Locomotion
         /// </summary>
         private void CalculateInput()
         {
-            if (_inputReader._movementInputDetected)
+            bool moveFrozen = GeisInteractInput.IsMovementFrozenForInteraction;
+            bool movementDetected = !moveFrozen && _inputReader._movementInputDetected;
+
+            if (movementDetected)
             {
                 if (_inputReader._movementInputDuration == 0)
                 {
@@ -1407,8 +1408,9 @@ namespace Geis.Locomotion
                 _movementInputHeld = false;
             }
 
-            _moveDirection = (_cameraController.GetCameraForwardZeroedYNormalised() * _inputReader._moveComposite.y)
-                + (_cameraController.GetCameraRightZeroedYNormalised() * _inputReader._moveComposite.x);
+            Vector2 composite = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(_inputReader._moveComposite);
+            _moveDirection = (_cameraController.GetCameraForwardZeroedYNormalised() * composite.y)
+                + (_cameraController.GetCameraRightZeroedYNormalised() * composite.x);
         }
 
         #endregion
@@ -1552,7 +1554,7 @@ namespace Geis.Locomotion
             Vector3 directionForward = new Vector3(_moveDirection.x, 0f, _moveDirection.z).normalized;
 
             _cameraForward = _cameraController.GetCameraForwardZeroedYNormalised();
-            Quaternion strafingTargetRotation = Quaternion.LookRotation(_cameraForward);
+            Quaternion strafingTargetRotation = GetBowFacingQuaternion();
 
             _strafeAngle = characterForward != directionForward ? Vector3.SignedAngle(characterForward, directionForward, Vector3.up) : 0f;
 
@@ -1590,7 +1592,19 @@ namespace Geis.Locomotion
                         }
                     }
 
+                    // Strafe body faces camera forward. While aiming, that forward is updated only by look (right stick / mouse) via GeisCameraController —
+                    // left stick affects movement & strafe blend trees only, not yaw rotation.
                     transform.rotation = Quaternion.Slerp(transform.rotation, strafingTargetRotation, _rotationSmoothing * Time.deltaTime);
+                }
+                else if (_isAiming && (_cameraForward != Vector3.zero || Mathf.Abs(_cameraController.GetCameraForward().y) > 0.001f))
+                {
+                    // Aim idle: face camera (look-driven yaw/pitch for bow). Horizontal projection can be ~0 when looking straight up/down.
+                    transform.rotation = Quaternion.Slerp(transform.rotation, GetBowFacingQuaternion(), _rotationSmoothing * Time.deltaTime);
+                    _isIdleLooking = true;
+                    UpdateStrafeDirection(1f, 0f);
+                    _shuffleDirectionZ = 1;
+                    _shuffleDirectionX = 0;
+                    _cameraRotationOffset = Mathf.Lerp(_cameraRotationOffset, 0f, _rotationSmoothing * Time.deltaTime);
                 }
                 else
                 {
@@ -1632,6 +1646,52 @@ namespace Geis.Locomotion
                     _rotationSmoothing * Time.deltaTime
                 );
             }
+        }
+
+        /// <summary>
+        /// Bow aim rotation: uses full 3D camera axes so pitch (look up/down) tilts the body with the aim line.
+        /// Sideways stance uses <see cref="GeisCameraController.GetCameraRightNormalized"/> (not zeroed Y) so it follows vertical look.
+        /// </summary>
+        private Quaternion GetBowFacingQuaternion()
+        {
+            Vector3 camFwdFull = _cameraController.GetCameraForward();
+            if (camFwdFull.sqrMagnitude < 1e-8f)
+                return transform.rotation;
+
+            const int bowSlot = 3;
+            bool bowAimStance = _weaponSwitcher != null
+                && _weaponSwitcher.CurrentWeaponIndex == bowSlot
+                && (_isAiming || _isBowDrawing);
+
+            if (bowAimStance)
+            {
+                Vector3 camFwdUnit = camFwdFull.normalized;
+                Quaternion q;
+                if (_bowArcherySidewaysFacing)
+                {
+                    // Full camera.right tilts with pitch; horizontal-only right ignored vertical aim.
+                    Vector3 camRight = _cameraController.GetCameraRightNormalized();
+                    if (camRight.sqrMagnitude < 1e-8f)
+                    {
+                        Vector3 camFwdPlanar = _cameraController.GetCameraForwardZeroedYNormalised();
+                        q = camFwdPlanar.sqrMagnitude < 1e-8f
+                            ? Quaternion.LookRotation(camFwdUnit, Vector3.up)
+                            : Quaternion.LookRotation(Vector3.Cross(Vector3.up, camFwdPlanar).normalized);
+                    }
+                    else
+                        q = Quaternion.LookRotation(camRight);
+                }
+                else
+                    q = Quaternion.LookRotation(camFwdUnit, Vector3.up);
+
+                q *= Quaternion.Euler(_bowAimBodyEulerOffset);
+                return q;
+            }
+
+            if (_cameraForward.sqrMagnitude < 1e-8f)
+                return transform.rotation;
+
+            return Quaternion.LookRotation(_cameraForward);
         }
 
         /// <summary>

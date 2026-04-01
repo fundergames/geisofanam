@@ -14,9 +14,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisWeaponDefinition
   weaponPrefab: {fileID: 1218206468385280803, guid: b1f094a1cf8f9304d897a0dd0b29da00, type: 3}
   displayName: Bow
+  attachmentHand: 1
   comboData: {fileID: 11400000, guid: 311e5095fc3108e429dbb46d3b48d1cd, type: 2}
-  weaponStats: {fileID: 11400000, guid: 2d79439bc3ae645158f4a2afd68b619c, type: 2}
-  combatAction: {fileID: 11400000, guid: 6e5c519dc3e4d4d3a9d79894423be967, type: 2}
+  weaponStats: {fileID: 11400000, guid: 0144c3159863cb44e916cce601ac2dbc, type: 2}
+  combatAction: {fileID: 11400000, guid: edc249a7777bead4582839bb7fffaa03, type: 2}
   soulAbilityPrimary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c101, type: 2}
-  soulAbilitySecondary: {fileID: 11400000, guid: c1c1c1c1c1c1c1c1c1c1c1c1c1c1c102, type: 2}
+  soulAbilitySecondary: {fileID: 11400000, guid: bbe921b691b82e44daffe4a98f85db5d, type: 2}
   buildsLyreResonance: 0

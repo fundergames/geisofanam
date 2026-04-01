@@ -40,6 +40,13 @@ namespace RogueDeal.Combat
         [Tooltip("Tags that identify valid targets (empty = any)")]
         [SerializeField] private string[] validTargetTags = { "Enemy" };
 
+        [Header("Puzzle (Geis)")]
+        [Tooltip("When a weapon slot index is passed (e.g. from GeisCombatBridge), also notify IPuzzleMeleeHitSink zones overlapping the same melee probe spheres.")]
+        [SerializeField] private bool notifySwordPuzzleTriggers = true;
+
+        [Tooltip("Layers included when probing puzzle zones (Default + environment; exclude if needed).")]
+        [SerializeField] private LayerMask puzzleProbeLayers = ~0;
+
         private CombatExecutor _executor;
         private CombatEntity _combatEntity;
         private int _hitSequenceId;
@@ -55,7 +62,7 @@ namespace RogueDeal.Combat
         /// </summary>
         public void PerformHitCheck(CombatAction action)
         {
-            PerformHitCheck(action, null);
+            PerformHitCheck(action, null, -1);
         }
 
         /// <summary>
@@ -63,6 +70,15 @@ namespace RogueDeal.Combat
         /// Use when timings come from animation (e.g. GeisComboData normalized × clip length). Array length = hit count.
         /// </summary>
         public void PerformHitCheck(CombatAction action, float[] hitTimingsSecondsFromAttackStart)
+        {
+            PerformHitCheck(action, hitTimingsSecondsFromAttackStart, -1);
+        }
+
+        /// <summary>
+        /// Same as <see cref="PerformHitCheck(CombatAction, float[])"/> but passes Geis weapon slot index (0–3) so
+        /// <see cref="IPuzzleMeleeHitSink"/> implementations can filter (e.g. sword vs knife) using the same overlap spheres as combat.
+        /// </summary>
+        public void PerformHitCheck(CombatAction action, float[] hitTimingsSecondsFromAttackStart, int weaponSlotIndex)
         {
             if (action == null)
                 return;
@@ -84,12 +100,12 @@ namespace RogueDeal.Combat
             int sequenceId = _hitSequenceId;
 
             if (debugLog)
-                Debug.Log($"[SimpleAttackHitDetector] PerformHitCheck called for {action.actionName} (seq {sequenceId})");
+                Debug.Log($"[SimpleAttackHitDetector] PerformHitCheck called for {action.actionName} (seq {sequenceId}) weaponSlot={weaponSlotIndex}");
 
-            StartCoroutine(HitCheckCoroutine(action, sequenceId, hitTimingsSecondsFromAttackStart));
+            StartCoroutine(HitCheckCoroutine(action, sequenceId, hitTimingsSecondsFromAttackStart, weaponSlotIndex));
         }
 
-        private IEnumerator HitCheckCoroutine(CombatAction action, int sequenceId, float[] timesOverride)
+        private IEnumerator HitCheckCoroutine(CombatAction action, int sequenceId, float[] timesOverride, int weaponSlotIndex)
         {
             int hitCount;
             float[] times;
@@ -133,6 +149,45 @@ namespace RogueDeal.Combat
                     else
                         _executor.ApplyActionToTargets(action, targets);
                 }
+
+                NotifySwordPuzzleTriggers(action, i + 1, weaponSlotIndex);
+            }
+        }
+
+        /// <summary>
+        /// Uses the same sphere centers/radius as <see cref="FindTargetsInRange"/> so sword-break zones align with melee hits.
+        /// </summary>
+        private void NotifySwordPuzzleTriggers(CombatAction action, int hitWindowIndex, int weaponSlotIndex)
+        {
+            if (!notifySwordPuzzleTriggers || weaponSlotIndex < 0)
+                return;
+
+            var notified = new HashSet<IPuzzleMeleeHitSink>();
+
+            void CollectFromSphere(Vector3 center)
+            {
+                Collider[] cols = Physics.OverlapSphere(center, hitRadius, puzzleProbeLayers);
+                for (int c = 0; c < cols.Length; c++)
+                {
+                    var col = cols[c];
+                    if (col == null) continue;
+                    if (col.transform == transform || col.transform.IsChildOf(transform))
+                        continue;
+
+                    var sink = col.GetComponentInParent<IPuzzleMeleeHitSink>();
+                    if (sink == null || notified.Contains(sink))
+                        continue;
+                    notified.Add(sink);
+                    sink.OnMeleeHitFromSimpleAttack(this, action, weaponSlotIndex, hitWindowIndex);
+                }
+            }
+
+            Vector3 forwardCenter = transform.position + transform.forward * rangeOffset + Vector3.up * 0.5f;
+            CollectFromSphere(forwardCenter);
+            if (usePlayerCenterFallback)
+            {
+                Vector3 playerCenter = transform.position + Vector3.up * 0.5f;
+                CollectFromSphere(playerCenter);
             }
         }
 

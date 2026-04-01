@@ -1139,7 +1139,7 @@ GameObject:
   - component: {fileID: 8822334455667788001}
   m_Layer: 3
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -1312,7 +1312,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.WeaponAbilities.SoulRealmWeaponAbilityController
   weaponSwitcher: {fileID: 1386048861169640747}
-  soulAbilityActions: {fileID: 11400000, guid: e3001ef70850f81438de182289004428, type: 2}
+  soulAbilityActions: {fileID: 11400000, guid: 86b6199e25822e24397b95dc2a0bbff1, type: 2}
   abilityOrigin: {fileID: 0}
   cameraController: {fileID: 9185949923837509450}
 --- !u!1 &3759892831401217738

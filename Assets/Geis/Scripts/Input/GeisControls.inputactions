@@ -109,7 +109,7 @@
                     "name": "ToggleWalk",
                     "type": "Button",
                     "id": "f1a2b3c4-d5e6-7890-abcd-ef012345678b",
-                    "expectedControlType": "Button",
+                    "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
@@ -118,6 +118,15 @@
                     "name": "SoulRealm",
                     "type": "Button",
                     "id": "a1b2c3d4-e5f6-7890-abcd-ef012345678a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Interact",
+                    "type": "Button",
+                    "id": "e1f2a3b4-c5d6-7890-abcd-ef012345678e",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -403,10 +412,10 @@
                 {
                     "name": "",
                     "id": "b2772679-0dea-4863-a59d-cd6f67a9c19a",
-                    "path": "<Gamepad>/rightShoulder",
+                    "path": "<Gamepad>/dpad/left",
                     "interactions": "",
                     "processors": "",
-                    "groups": "",
+                    "groups": "Gamepad",
                     "action": "LightAttack",
                     "isComposite": false,
                     "isPartOfComposite": false
@@ -479,28 +488,6 @@
                 },
                 {
                     "name": "",
-                    "id": "e1f2a3b4-c5d6-7890-abcd-ef1111111111",
-                    "path": "<Keyboard>/slash",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Keyboard and Mouse",
-                    "action": "ToggleWalk",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "e2f3a4b5-c6d7-8901-bcde-ef2222222222",
-                    "path": "<Gamepad>/dpad/up",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "Gamepad",
-                    "action": "ToggleWalk",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "1a2b3c4d-5e6f-7890-abcd-ef1234567891",
                     "path": "<Keyboard>/tab",
                     "interactions": "",
@@ -518,6 +505,98 @@
                     "processors": "",
                     "groups": "Gamepad",
                     "action": "SoulRealm",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f0e1d2c3-b4a5-6789-9012-abcdef012301",
+                    "path": "<Keyboard>/x",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard and Mouse",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f0e1d2c3-b4a5-6789-9012-abcdef012305",
+                    "path": "<Gamepad>/buttonWest",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Interact",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        },
+        {
+            "name": "SoulRealmWeapon",
+            "id": "073f9275-15e3-472f-8da8-1963d092866e",
+            "actions": [
+                {
+                    "name": "Ability1",
+                    "type": "Button",
+                    "id": "1ea1e290-fe45-4d83-9b99-e01d27ca8b8f",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "Ability2",
+                    "type": "Button",
+                    "id": "e12048aa-c724-4f32-9a16-b08580543d7a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "2e2da889-d42c-4704-9ea1-948ef93e4bd4",
+                    "path": "<Keyboard>/q",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard and Mouse",
+                    "action": "Ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "a4fad05a-c8ae-4828-ba85-4a913715f631",
+                    "path": "<Gamepad>/buttonNorth",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Ability1",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "07b76c36-145a-4c69-8569-1e248a0ad924",
+                    "path": "<Keyboard>/f",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Keyboard and Mouse",
+                    "action": "Ability2",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "963ab353-cf1c-4f3b-85d9-2eb40f3f6c7d",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "Gamepad",
+                    "action": "Ability2",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }

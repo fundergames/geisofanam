@@ -1,9 +1,11 @@
+using Geis.SoulRealm;
 using UnityEngine;
 
 namespace Geis.SoulRealm.WeaponAbilities
 {
     /// <summary>
-    /// Harp-Bow primary: screen-center ray tags an <see cref="ISoulMarkable"/> in the soul realm.
+    /// Harp-Bow primary: screen-center ray tags an <see cref="ISoulMarkable"/> in the soul realm;
+    /// the next N physical-realm bow shots home toward that mark.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Harp_SoulMarking",
@@ -12,11 +14,20 @@ namespace Geis.SoulRealm.WeaponAbilities
     {
         [SerializeField] private float maxDistance = 40f;
         [SerializeField] private LayerMask hitLayers = ~0;
+        [Tooltip("Bow shots in the physical realm that steer toward the marked target after tagging.")]
+        [SerializeField] private int homingShotsAfterMark = 3;
 
         public override string AbilityDisplayName => "Soul Marking";
 
         public override void Activate(in SoulWeaponAbilityContext context)
         {
+            if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
+                return;
+
+            var tracker = context.Owner != null
+                ? context.Owner.GetComponentInParent<SoulMarkHomingTracker>()
+                : null;
+
             Ray ray;
             if (context.ViewCamera != null)
             {
@@ -36,9 +47,18 @@ namespace Geis.SoulRealm.WeaponAbilities
                 return;
 
             if (markable.IsSoulMarked)
+            {
                 markable.ClearSoulMark();
+                tracker?.ClearSoulMarkHoming();
+            }
             else
+            {
                 markable.ApplySoulMark();
+                if (tracker != null && markable.MarkTransform != null)
+                    tracker.RegisterSoulMark(markable.MarkTransform, homingShotsAfterMark);
+            }
+
+            PlayDefaultActivationVfxAt(context, hit.point);
         }
     }
 }

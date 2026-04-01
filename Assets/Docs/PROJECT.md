@@ -78,6 +78,7 @@ Assets/
 | `Assets/Docs/` | Agent coordination, project specs, feature files |
 | `Assets/Docs/Agents/` | Role agent definitions (Design, Modeler3D, Rigger, etc.) |
 | `Assets/Docs/Features/` | Feature specs and handoff documents |
+| `Assets/Docs/Systems/` | One `.md` per gameplay/engine system (behavior, integration, rules) |
 | `Assets/Editor/` | Editor scripts and tools |
 | `Assets/Art/` | Final validated art assets (promote from _Generated/Staging) |
 | `Assets/_Generated/Staging/` | Meshy output; validate before promote |
