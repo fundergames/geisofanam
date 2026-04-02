@@ -16,4 +16,4 @@ MonoBehaviour:
   hitLayers:
     serializedVersion: 2
     m_Bits: 4294967295
-  homingShotsAfterMark: 3
+  homingShotsAfterMark: 0

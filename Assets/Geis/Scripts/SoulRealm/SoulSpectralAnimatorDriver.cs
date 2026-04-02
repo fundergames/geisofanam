@@ -70,6 +70,24 @@ namespace Geis.SoulRealm
             if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
                 return;
 
+            if (!SoulRealmManager.Instance.AllowGhostMovement)
+            {
+                if (animator != null)
+                    animator.speed = 0f;
+                return;
+            }
+
+            if (animator != null && animator.speed < 1f)
+                animator.speed = 1f;
+
+            if (motor.TryConsumeSpectralDodgeAnimatorTrigger(out int dodgeDir))
+            {
+                if (AnimatorParameterGuard.HasParameter(animator, "DodgeDirection"))
+                    animator.SetInteger(LocomotionAnimatorIds.DodgeDirection, dodgeDir);
+                if (AnimatorParameterGuard.HasParameter(animator, "Dodge"))
+                    animator.SetTrigger(LocomotionAnimatorIds.Dodge);
+            }
+
             var cam = bodyLocomotion.CameraControllerRef;
             if (cam == null)
                 return;
@@ -92,7 +110,9 @@ namespace Geis.SoulRealm
             CalculateGait(speed2D);
             bool isStopped = moveDirection.magnitude < 0.01f && speed2D < 0.5f;
 
-            bool airGait = bodyLocomotion.LocomotionAirGaitForAnimator;
+            // Body Jump/Fall state never advances while soul realm suppresses locomotion Update, so
+            // LocomotionAirGaitForAnimator would stay true after landing and zero MoveSpeed while the motor still moves.
+            bool airGait = !grounded;
 
             var snap = new LocomotionPresentationSnapshot
             {

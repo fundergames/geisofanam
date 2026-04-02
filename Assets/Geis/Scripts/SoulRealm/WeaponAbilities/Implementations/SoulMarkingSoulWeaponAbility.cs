@@ -14,8 +14,8 @@ namespace Geis.SoulRealm.WeaponAbilities
     {
         [SerializeField] private float maxDistance = 40f;
         [SerializeField] private LayerMask hitLayers = ~0;
-        [Tooltip("Bow shots in the physical realm that steer toward the marked target after tagging.")]
-        [SerializeField] private int homingShotsAfterMark = 3;
+        [Tooltip("Bow shots that steer toward the mark after tagging. 0 = unlimited until the mark is cleared or you tag again.")]
+        [SerializeField] private int homingShotsAfterMark = 0;
 
         public override string AbilityDisplayName => "Soul Marking";
 

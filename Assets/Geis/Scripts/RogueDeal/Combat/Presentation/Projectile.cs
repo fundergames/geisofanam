@@ -21,6 +21,14 @@ namespace RogueDeal.Combat.Presentation
         
         [Tooltip("Maximum lifetime in seconds")]
         public float maxLifetime = 10f;
+
+        [Header("Soul mark homing (bow)")]
+        [Tooltip("Turn rate when the arrow is near the mark (degrees/sec). Blended up from the far rate by distance.")]
+        [SerializeField] private float soulMarkHomingTurnRateDegreesPerSecond = 520f;
+        [Tooltip("Turn rate when far from the mark — light steering that ramps up as the arrow closes in.")]
+        [SerializeField] private float soulMarkHomingTurnRateFarDegreesPerSecond = 96f;
+        [Tooltip(">1 keeps steering gentler for more of the flight; 1 = linear blend from far to close.")]
+        [SerializeField] private float soulMarkHomingSteerBlendExponent = 1.35f;
         
         private Transform target;
         private BaseEffect[] effects;
@@ -30,6 +38,9 @@ namespace RogueDeal.Combat.Presentation
         private Rigidbody rb;
         private GameObject _aimMarker;
         private bool _deferredDespawn;
+        private bool _soulMarkSteeringHoming;
+        private Vector3 _homingMoveDirection = Vector3.forward;
+        private float _homingDistanceReference = 1f;
 
         private void Awake()
         {
@@ -46,6 +57,7 @@ namespace RogueDeal.Combat.Presentation
         /// </summary>
         public void Initialize(Transform target, float speed, BaseEffect[] effects, CombatEntityData attackerData)
         {
+            _soulMarkSteeringHoming = false;
             this.target = target;
             this.speed = speed;
             this.effects = effects;
@@ -63,6 +75,33 @@ namespace RogueDeal.Combat.Presentation
                 }
             }
         }
+
+        /// <summary>
+        /// Bow soul-mark shot: starts along <paramref name="initialWorldDirection"/> then steers toward <paramref name="target"/>.
+        /// </summary>
+        public void InitializeSoulMarkHoming(
+            Transform target,
+            Vector3 initialWorldDirection,
+            float speed,
+            BaseEffect[] effects,
+            CombatEntityData attackerData)
+        {
+            _soulMarkSteeringHoming = true;
+            this.target = target;
+            this.speed = speed;
+            this.effects = effects;
+            this.attackerData = attackerData;
+            this.lifetime = 0f;
+            this.hasArrived = false;
+
+            _homingMoveDirection = initialWorldDirection.sqrMagnitude > 1e-6f
+                ? initialWorldDirection.normalized
+                : Vector3.forward;
+            transform.rotation = Quaternion.LookRotation(_homingMoveDirection);
+
+            Vector3 toMark = target.position - transform.position;
+            _homingDistanceReference = Mathf.Max(toMark.magnitude, arrivalThreshold + 0.05f);
+        }
         
         /// <summary>
         /// Fires the arrow toward a fixed world-space aim point (camera-forward raycast hit).
@@ -70,6 +109,7 @@ namespace RogueDeal.Combat.Presentation
         /// </summary>
         public void InitializeAimPoint(Vector3 aimWorldPoint, float speed, BaseEffect[] effects, CombatEntityData attackerData)
         {
+            _soulMarkSteeringHoming = false;
             _aimMarker = new GameObject("_ArrowAimMarker");
             _aimMarker.transform.position = aimWorldPoint;
             Initialize(_aimMarker.transform, speed, effects, attackerData);
@@ -95,13 +135,32 @@ namespace RogueDeal.Combat.Presentation
                 return;
             }
             
-            // Move toward target
             Vector3 toTarget = target.position - transform.position;
             float distance = toTarget.magnitude;
-            Vector3 direction = distance > 1e-6f ? toTarget / distance : Vector3.forward;
 
-            if (direction.sqrMagnitude > 1e-6f)
+            Vector3 direction;
+            if (_soulMarkSteeringHoming)
+            {
+                Vector3 desired = distance > 1e-6f ? toTarget / distance : _homingMoveDirection;
+                float farToClose = 1f - Mathf.Clamp01(distance / _homingDistanceReference);
+                float steerBlend = Mathf.Pow(Mathf.Clamp01(farToClose), Mathf.Max(0.01f, soulMarkHomingSteerBlendExponent));
+                float turnRateDeg = Mathf.Lerp(
+                    soulMarkHomingTurnRateFarDegreesPerSecond,
+                    soulMarkHomingTurnRateDegreesPerSecond,
+                    steerBlend);
+                float maxRad = turnRateDeg * Mathf.Deg2Rad * Time.deltaTime;
+                _homingMoveDirection = Vector3.RotateTowards(_homingMoveDirection, desired, maxRad, 0f);
+                if (_homingMoveDirection.sqrMagnitude < 1e-6f)
+                    _homingMoveDirection = desired;
+                direction = _homingMoveDirection;
                 transform.rotation = Quaternion.LookRotation(direction);
+            }
+            else
+            {
+                direction = distance > 1e-6f ? toTarget / distance : Vector3.forward;
+                if (direction.sqrMagnitude > 1e-6f)
+                    transform.rotation = Quaternion.LookRotation(direction);
+            }
 
             // Check if we've arrived
             if (distance <= arrivalThreshold)

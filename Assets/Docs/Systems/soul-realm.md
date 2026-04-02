@@ -75,4 +75,5 @@ Soul realm mode (ghost vs. frozen body), world freeze hooks, weapon-bound supern
 
 ## Changelog
 
+- **2026-04-02**: Spectral locomotion uses ghost grounded (not body’s frozen Jump/Fall state) for air vs ground animator blend; ghost syncs vertical velocity on entry; grounded refreshed after teleport to body.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.

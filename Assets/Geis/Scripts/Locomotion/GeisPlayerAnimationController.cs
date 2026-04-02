@@ -440,6 +440,9 @@ namespace Geis.Locomotion
         /// <summary>Planar velocity from last locomotion tick (used to sync soul ghost on realm entry).</summary>
         public Vector3 LocomotionPlanarVelocity => new Vector3(_velocity.x, 0f, _velocity.z);
 
+        /// <summary>Vertical velocity from last locomotion tick (sync soul ghost when entering mid-jump / fall).</summary>
+        public float LocomotionVerticalVelocity => _velocity.y;
+
         /// <summary>
         /// Called when entering soul realm: locomotion <see cref="Update"/> is suppressed; use this so the ghost
         /// reads a defined walk/run state via <see cref="EnableWalk"/> instead of a stale frozen flag.

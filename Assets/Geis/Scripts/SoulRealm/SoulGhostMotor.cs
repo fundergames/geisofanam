@@ -42,6 +42,8 @@ namespace Geis.SoulRealm
 
         private float _dodgeTimeRemaining;
         private Vector3 _dodgePlanarDir = Vector3.forward;
+        private bool _spectralDodgeAnimatorTriggerQueued;
+        private int _spectralDodgeAnimatorDirectionIndex;
 
         private Transform _groundRideSurface;
         private Vector3 _groundRideLastWorldPos;
@@ -59,6 +61,7 @@ namespace Geis.SoulRealm
         private void OnDisable()
         {
             UnsubscribeInput();
+            _spectralDodgeAnimatorTriggerQueued = false;
         }
 
         private void RefreshInputSubscriptions()
@@ -94,7 +97,10 @@ namespace Geis.SoulRealm
             if (_dodgeTimeRemaining > 0f)
                 return;
 
-            // Match body dodge: sphere grounded only. CC often false for the ghost capsule; requiring both blocked dodge.
+            if (_bodyLocomotion != null && _bodyLocomotion.LocomotionIsCrouching)
+                return;
+
+            // Match body dodge: sphere grounded only (same test as GeisPlayerAnimationController).
             if (!GroundedCheck())
                 return;
 
@@ -106,37 +112,127 @@ namespace Geis.SoulRealm
                     return;
             }
 
-            _dodgePlanarDir = ComputeGhostDodgePlanarDirection();
+            _dodgePlanarDir = ComputeSpectralDodgePlanarDirection(out int dirIndex);
+            _spectralDodgeAnimatorDirectionIndex = dirIndex;
+            _spectralDodgeAnimatorTriggerQueued = true;
             _dodgeTimeRemaining = _bodyLocomotion != null
                 ? _bodyLocomotion.LocomotionDodgeScriptedDuration
                 : ghostDodgeDuration;
+
+            // Match EnterDodgeState: zero planar velocity; snap yaw to dodge axis when not strafing.
+            _velocity.x = 0f;
+            _velocity.z = 0f;
+            if (_bodyLocomotion != null && !_bodyLocomotion.LocomotionIsStrafing)
+            {
+                Vector3 face = _dodgePlanarDir;
+                face.y = 0f;
+                if (face.sqrMagnitude > 0.0001f)
+                    transform.rotation = Quaternion.LookRotation(face.normalized);
+            }
         }
 
-        private Vector3 ComputeGhostDodgePlanarDirection()
+        /// <summary>
+        /// Same 4-way camera-relative dodge vector as <see cref="GeisPlayerAnimationController"/> root-motion dodge
+        /// (ComputeDodgeDirectionIndex + GetDodgeFacingWorld), not a blended stick direction.
+        /// </summary>
+        private Vector3 ComputeSpectralDodgePlanarDirection(out int dirIndex)
         {
-            float dz = Mathf.Max(
-                ghostDodgeDirectionDeadzone,
-                _bodyLocomotion != null ? _bodyLocomotion.LocomotionDodgeDeadzone : 0.05f);
-            Vector2 m = inputReader != null
-                ? GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(inputReader._moveComposite)
-                : Vector2.zero;
+            Vector2 m = inputReader != null ? inputReader._moveComposite : Vector2.zero;
+            float dz = _bodyLocomotion != null
+                ? _bodyLocomotion.LocomotionDodgeDeadzone
+                : ghostDodgeDirectionDeadzone;
+
             if (_cameraController != null)
             {
-                Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
-                Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
-                if (m.sqrMagnitude >= dz * dz)
-                    return (camFwd * m.y + camRight * m.x).normalized;
-                return camFwd.sqrMagnitude > 0.0001f ? camFwd : transform.forward;
+                dirIndex = ComputeDodgeDirectionIndex(m, dz);
+                return GetDodgeFacingWorldDiscrete(dirIndex);
             }
 
-            if (m.sqrMagnitude >= dz * dz && _cameraTransform != null)
+            if (_cameraTransform != null)
             {
                 Vector3 camFwd = Vector3.Scale(_cameraTransform.forward, new Vector3(1f, 0f, 1f)).normalized;
                 Vector3 camRight = Vector3.Scale(_cameraTransform.right, new Vector3(1f, 0f, 1f)).normalized;
-                return (camFwd * m.y + camRight * m.x).normalized;
+                dirIndex = ComputeDodgeDirectionIndexFromCameraAxes(m, dz, camFwd, camRight, transform);
+                return MapDodgeDirIndexToWorld(dirIndex, camFwd, camRight);
             }
 
+            dirIndex = 0;
             return transform.forward;
+        }
+
+        /// <summary>
+        /// Consumed by <see cref="SoulSpectralAnimatorDriver"/> to fire the same Dodge / DodgeDirection as the body.
+        /// </summary>
+        public bool TryConsumeSpectralDodgeAnimatorTrigger(out int dodgeDirectionIndex)
+        {
+            if (!_spectralDodgeAnimatorTriggerQueued)
+            {
+                dodgeDirectionIndex = 0;
+                return false;
+            }
+
+            _spectralDodgeAnimatorTriggerQueued = false;
+            dodgeDirectionIndex = _spectralDodgeAnimatorDirectionIndex;
+            return true;
+        }
+
+        private int ComputeDodgeDirectionIndex(Vector2 m, float deadzone)
+        {
+            if (m.sqrMagnitude < deadzone * deadzone)
+                return 0;
+
+            Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
+            Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
+            Vector3 world = (camFwd * m.y + camRight * m.x).normalized;
+            Vector3 local = transform.InverseTransformDirection(world);
+            float lx = local.x;
+            float lz = local.z;
+            if (Mathf.Abs(lz) >= Mathf.Abs(lx))
+                return lz >= 0f ? 0 : 1;
+            return lx >= 0f ? 3 : 2;
+        }
+
+        private static int ComputeDodgeDirectionIndexFromCameraAxes(
+            Vector2 m, float deadzone, Vector3 camFwd, Vector3 camRight, Transform characterTransform)
+        {
+            if (m.sqrMagnitude < deadzone * deadzone)
+                return 0;
+
+            Vector3 world = (camFwd * m.y + camRight * m.x).normalized;
+            Vector3 local = characterTransform.InverseTransformDirection(world);
+            float lx = local.x;
+            float lz = local.z;
+            if (Mathf.Abs(lz) >= Mathf.Abs(lx))
+                return lz >= 0f ? 0 : 1;
+            return lx >= 0f ? 3 : 2;
+        }
+
+        private Vector3 GetDodgeFacingWorldDiscrete(int dirIndex)
+        {
+            Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
+            Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
+            return MapDodgeDirIndexToWorld(dirIndex, camFwd, camRight);
+        }
+
+        private static Vector3 MapDodgeDirIndexToWorld(int dirIndex, Vector3 camFwd, Vector3 camRight)
+        {
+            switch (dirIndex)
+            {
+                case 0: return camFwd;
+                case 1: return -camFwd;
+                case 2: return -camRight;
+                case 3: return camRight;
+                default: return camFwd;
+            }
+        }
+
+        private Vector3 GetCameraForwardPlanar()
+        {
+            if (_cameraController != null)
+                return _cameraController.GetCameraForwardZeroedYNormalised();
+            if (_cameraTransform != null)
+                return Vector3.Scale(_cameraTransform.forward, new Vector3(1f, 0f, 1f)).normalized;
+            return Vector3.zero;
         }
 
         private void Start()
@@ -197,6 +293,17 @@ namespace Geis.SoulRealm
                 _velocity.x = 0f;
                 _velocity.z = 0f;
             }
+
+            _velocity.y = body.LocomotionVerticalVelocity;
+        }
+
+        /// <summary>
+        /// Call after the ghost root is snapped to the body on soul-realm entry so <see cref="IsGroundedPublic"/>
+        /// matches the new pose (avoids stale grounded from the disabled ghost).
+        /// </summary>
+        public void RefreshGroundedAfterSoulRealmTeleport()
+        {
+            _groundedAfterMove = GroundedCheck();
         }
 
         /// <summary>Horizontal movement speed (matches player <c>_speed2D</c> calculation).</summary>
@@ -285,13 +392,27 @@ namespace Geis.SoulRealm
 
         private void ApplyRotationDodge()
         {
+            // Match physical dodge: strafing keeps camera-forward facing; non-strafe snaps once in OnDodgePerformed.
+            if (_bodyLocomotion != null && _bodyLocomotion.LocomotionIsStrafing)
+            {
+                Vector3 cf = GetCameraForwardPlanar();
+                if (cf.sqrMagnitude > 0.01f)
+                {
+                    float rotSmooth = _bodyLocomotion.LocomotionRotationSmoothing;
+                    Quaternion targetRot = Quaternion.LookRotation(cf);
+                    transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, rotSmooth * Time.deltaTime);
+                }
+
+                return;
+            }
+
             Vector3 d = _dodgePlanarDir;
             d.y = 0f;
             if (d.sqrMagnitude < 0.0001f)
                 return;
-            Quaternion targetRot = Quaternion.LookRotation(d.normalized);
-            float t = (_bodyLocomotion != null ? _bodyLocomotion.LocomotionRotationSmoothing : 12f) * Time.deltaTime;
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRot, t);
+            Quaternion dodgeRot = Quaternion.LookRotation(d.normalized);
+            float s = (_bodyLocomotion != null ? _bodyLocomotion.LocomotionRotationSmoothing : 12f) * Time.deltaTime;
+            transform.rotation = Quaternion.Slerp(transform.rotation, dodgeRot, s);
         }
 
         private void ApplyCapsuleFromBody()

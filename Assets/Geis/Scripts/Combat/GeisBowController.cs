@@ -185,6 +185,14 @@ namespace Geis.Combat
 
             // Determine world-space aim point by raycasting from the camera forward.
             Vector3 aimPoint = GetCameraAimPoint();
+            Vector3 initialShotDirection = aimPoint - spawnPos;
+            if (initialShotDirection.sqrMagnitude < 1e-6f)
+            {
+                Camera cam = GetGameplayCamera();
+                initialShotDirection = cam != null ? cam.transform.forward : transform.forward;
+            }
+            else
+                initialShotDirection.Normalize();
 
             var arrow = Instantiate(_arrowPrefab, spawnPos, Quaternion.identity);
             var projectile = arrow.GetComponent<Projectile>();
@@ -203,7 +211,7 @@ namespace Geis.Combat
 
             if (_soulMarkHoming != null && _soulMarkHoming.TryConsumeHomingShot(out Transform homingTarget))
             {
-                projectile.Initialize(homingTarget, speed, effects, entityData);
+                projectile.InitializeSoulMarkHoming(homingTarget, initialShotDirection, speed, effects, entityData);
             }
             else
             {

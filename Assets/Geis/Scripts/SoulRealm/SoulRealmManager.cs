@@ -78,6 +78,8 @@ namespace Geis.SoulRealm
         private Transform _ghostLookAt;
         private GameObject _followPivot;
         private float _enterGrace;
+        /// <summary>Movement/ghost animator frozen until this elapses (covers dissolve-in, not only exit-input grace).</summary>
+        private float _enterMovementFreeze;
         private float _exitHoldTimer;
         private float _exitHoldDurationThisAttempt = 2f;
         /// <summary>True while exit input is held and exit is allowed (after grace). Do not use _exitHoldTimer &gt; 0 alone — timer is 0 on the first hold frame.</summary>
@@ -132,15 +134,15 @@ namespace Geis.SoulRealm
         /// <summary>True while the player is holding exit (after enter grace). Matches camera/pivot lerp; spectral dissolve should use this, not <c>_exitHoldTimer &gt; 0</c>.</summary>
         public bool IsSoulRealmExitHoldInProgress => _isSoulRealm && _exitHoldHeld;
 
-        /// <summary>True while the ghost motor should run (soul realm; disabled while holding exit).</summary>
+        /// <summary>True while the ghost motor should run (soul realm; disabled during enter transition and while holding exit).</summary>
         public bool AllowGhostMovement
         {
             get
             {
                 if (!_isSoulRealm || inputReader?.SoulRealm == null)
                     return false;
-                if (_enterGrace > 0f)
-                    return true;
+                if (_enterMovementFreeze > 0f)
+                    return false;
                 return !inputReader.SoulRealm.IsPressed();
             }
         }
@@ -289,6 +291,8 @@ namespace Geis.SoulRealm
 
             if (_enterGrace > 0f)
                 _enterGrace -= dt;
+            if (_enterMovementFreeze > 0f)
+                _enterMovementFreeze -= dt;
 
             if (inputReader != null && inputReader.SoulRealm != null)
             {
@@ -362,6 +366,8 @@ namespace Geis.SoulRealm
                 return;
             _isSoulRealm = true;
             _enterGrace = enterGraceSeconds;
+            float dissolveEnter = Mathf.Max(0.2f, spectralDissolveEnterDuration);
+            _enterMovementFreeze = Mathf.Max(enterGraceSeconds, dissolveEnter);
             _exitHoldTimer = 0f;
             _exitHoldHeld = false;
 
@@ -371,9 +377,6 @@ namespace Geis.SoulRealm
                 _bodyRotationAtEntry = bodyLocomotion.transform.rotation;
                 bodyLocomotion.SetWalkLocomotionForSoulRealm(false);
             }
-
-            if (ghostMotor != null && bodyLocomotion != null)
-                ghostMotor.SyncFromBodyForSoulRealm(bodyLocomotion);
 
             if (bodyAnimator != null)
                 bodyAnimator.speed = 0f;
@@ -387,6 +390,12 @@ namespace Geis.SoulRealm
             {
                 ghostRoot.transform.SetPositionAndRotation(_bodyPositionAtEntry, _bodyRotationAtEntry);
                 ghostRoot.SetActive(true);
+            }
+
+            if (ghostMotor != null && bodyLocomotion != null)
+            {
+                ghostMotor.SyncFromBodyForSoulRealm(bodyLocomotion);
+                ghostMotor.RefreshGroundedAfterSoulRealmTeleport();
             }
 
             if (ghostMotor != null)
