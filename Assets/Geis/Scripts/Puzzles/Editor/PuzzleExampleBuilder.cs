@@ -1,27 +1,28 @@
 using Geis.Puzzles;
+using Geis.SoulRealm.WeaponAbilities;
 using UnityEditor;
 using UnityEngine;
 
 namespace Geis.Puzzles.Editor
 {
     /// <summary>
-    /// Editor tool that builds one self-contained example group for every puzzle trigger type
-    /// in the currently open scene. Run via <c>Tools → Puzzles → Create All Examples</c>.
-    ///
-    /// Each example is a child of a "PuzzleExamples" parent at world origin, laid out in a 5×2
-    /// grid so you can see all of them at once in the Scene view.
-    ///
-    /// Every object created is registered with Undo so the whole set can be removed with Ctrl+Z.
+    /// Editor tool that builds self-contained example groups in the open scene.
+    /// Use <c>Tools → Puzzles → Examples → …</c> to add one type (including Phase Shift Object), or <c>Create All Examples</c> for the full grid.
+    /// Singles are parented under <c>PuzzleExamples</c> (created if missing) and placed on the next free grid slot.
     /// </summary>
     public static class PuzzleExampleBuilder
     {
         private const float ColSpacing = 14f;
         private const float RowSpacing = 16f;
 
-        [MenuItem("Tools/Puzzles/Create All Examples")]
+        private const string ExamplesMenu = "Tools/Puzzles/Examples/";
+
+        private const string PhaseShiftDissolveMaterialPath =
+            "Assets/Geis/Materials/GeisPhaseShiftDissolve_Default.mat";
+
+        [MenuItem(ExamplesMenu + "Create All Examples", false, -100)]
         public static void CreateAllExamples()
         {
-            // Container
             var root = new GameObject("PuzzleExamples");
             Undo.RegisterCreatedObjectUndo(root, "Create Puzzle Examples");
 
@@ -39,8 +40,77 @@ namespace Geis.Puzzles.Editor
             CreateDualRealm      (root, Col(3), Row(1));
             CreateEchoImprint    (root, Col(4), Row(1));
 
+            // Row 2 — dagger soul blink + socket, phase shift prop
+            CreateDaggerBlinkSocket(root, Col(0), Row(2));
+            CreatePhaseShiftObject(root, Col(1), Row(2));
+
             Selection.activeGameObject = root;
             SceneView.FrameLastActiveSceneView();
+        }
+
+        [MenuItem(ExamplesMenu + "Alignment Dial", false, 10)]
+        static void MenuCreateAlignmentDial() => CreateSingleExample(CreateAlignmentDial);
+
+        [MenuItem(ExamplesMenu + "Bow Mark + Shoot", false, 11)]
+        static void MenuCreateBowMarkShoot() => CreateSingleExample(CreateBowMarkShoot);
+
+        [MenuItem(ExamplesMenu + "Bow Target", false, 12)]
+        static void MenuCreateBowTarget() => CreateSingleExample(CreateBowTarget);
+
+        [MenuItem(ExamplesMenu + "Dagger Blink Socket", false, 13)]
+        static void MenuCreateDaggerBlinkSocket() => CreateSingleExample(CreateDaggerBlinkSocket);
+
+        [MenuItem(ExamplesMenu + "Phase Shift Object", false, 14)]
+        static void MenuCreatePhaseShiftObject() => CreateSingleExample(CreatePhaseShiftObject);
+
+        [MenuItem(ExamplesMenu + "Dagger Socket", false, 15)]
+        static void MenuCreateDaggerSocket() => CreateSingleExample(CreateDaggerSocket);
+
+        [MenuItem(ExamplesMenu + "Dual Realm", false, 16)]
+        static void MenuCreateDualRealm() => CreateSingleExample(CreateDualRealm);
+
+        [MenuItem(ExamplesMenu + "Echo Imprint", false, 17)]
+        static void MenuCreateEchoImprint() => CreateSingleExample(CreateEchoImprint);
+
+        [MenuItem(ExamplesMenu + "Pressure Plate", false, 18)]
+        static void MenuCreatePressurePlate() => CreateSingleExample(CreatePressurePlate);
+
+        [MenuItem(ExamplesMenu + "Sequence", false, 19)]
+        static void MenuCreateSequence() => CreateSingleExample(CreateSequence);
+
+        [MenuItem(ExamplesMenu + "Soul Pulse", false, 20)]
+        static void MenuCreateSoulPulse() => CreateSingleExample(CreateSoulPulse);
+
+        [MenuItem(ExamplesMenu + "Sword Break", false, 21)]
+        static void MenuCreateSwordBreak() => CreateSingleExample(CreateSwordBreak);
+
+        static void CreateSingleExample(System.Action<GameObject, float, float> build)
+        {
+            GameObject root = EnsurePuzzleExamplesRoot();
+            NextGridSlot(root.transform, out float x, out float z);
+            build(root, x, z);
+            Selection.activeGameObject = root;
+            SceneView.FrameLastActiveSceneView();
+        }
+
+        static GameObject EnsurePuzzleExamplesRoot()
+        {
+            var go = GameObject.Find("PuzzleExamples");
+            if (go != null)
+                return go;
+
+            go = new GameObject("PuzzleExamples");
+            Undo.RegisterCreatedObjectUndo(go, "Create Puzzle Example");
+            return go;
+        }
+
+        /// <summary>Places the next single example in row-major order on the same grid as <see cref="CreateAllExamples"/>.</summary>
+        static void NextGridSlot(Transform parent, out float x, out float z)
+        {
+            int i = parent.childCount;
+            const int columns = 5;
+            x = Col(i % columns);
+            z = Row(i / columns);
         }
 
         // ── Row 0 ────────────────────────────────────────────────────────────────
@@ -163,6 +233,81 @@ namespace Geis.Puzzles.Editor
             WireGroup(parent, new Component[] { trigger }, new Component[] { output });
             CreateWorldLabel(parent, "DAGGER SOCKET\nTag object 'DaggerMovable', place in socket\n[Physical Realm]",
                 new Vector3(0f, 4f, 0f), PuzzleRealmColors.PhysicalOnly);
+        }
+
+        /// <summary>
+        /// Soul Realm Object Blink: <see cref="SoulBlinkable"/> + <see cref="SoulBlinkSocket"/> on the floor socket.
+        /// Q targets the socket or the cube; cube needs tag <c>DaggerMovable</c> for <see cref="DaggerSocketTrigger"/>.
+        /// </summary>
+        static void CreateDaggerBlinkSocket(GameObject root, float x, float z)
+        {
+            var parent = CreateGroup(root, "Example_DaggerBlinkSocket [Soul Realm Q → blink into socket]", x, z);
+
+            var socket = CreateBox(parent, "Socket", new Vector3(0, 0.05f, 0),
+                new Vector3(1.5f, 0.1f, 1.5f), PuzzleRealmColors.SoulOnly);
+            var sockCol = socket.GetComponent<Collider>();
+            if (sockCol != null)
+                sockCol.isTrigger = true;
+
+            var snapAnchor = new GameObject("SnapAnchor");
+            snapAnchor.transform.SetParent(socket.transform, false);
+            snapAnchor.transform.localPosition = new Vector3(0f, 0.55f, 0f);
+            Undo.RegisterCreatedObjectUndo(snapAnchor, "Create Puzzle Examples");
+
+            var daggerTrig = socket.AddComponent<DaggerSocketTrigger>();
+            SetString(daggerTrig, "acceptedTag", "DaggerMovable");
+            SetEnum(daggerTrig, "realmMode", (int)PuzzleRealmMode.BothRealms);
+
+            var movable = CreateBox(parent, "MovableObject [SoulBlinkable + tag DaggerMovable]",
+                new Vector3(4f, 0.5f, 0f), new Vector3(1f, 1f, 1f),
+                new Color(0.95f, 0.55f, 0.28f));
+
+            var blink = movable.AddComponent<SoulBlinkable>();
+            var blinkSocket = socket.AddComponent<SoulBlinkSocket>();
+            SetComponent(blinkSocket, "blinkTarget", blink);
+            SetComponent(blinkSocket, "snapAnchor", snapAnchor.transform);
+            SetComponent(blink, "socketB", blinkSocket);
+
+            var block = CreateBox(parent, "Block", new Vector3(0, 0.5f, -4f),
+                new Vector3(1.5f, 1f, 1.5f), new Color(0.5f, 0.5f, 0.5f));
+            var output = block.AddComponent<RaiseLowerBlockOutput>();
+            SetComponent(output, "block", block.transform);
+            SetVector3(output, "raisedOffset", new Vector3(0f, 3f, 0f));
+
+            WireGroup(parent, new Component[] { daggerTrig }, new Component[] { output });
+            CreateWorldLabel(parent,
+                "BLINK SOCKET\nSoul Realm Q on socket or cube • tag 'DaggerMovable'\n[Both Realms trigger]",
+                new Vector3(0f, 4f, 0f), PuzzleRealmColors.SoulOnly);
+        }
+
+        /// <summary>
+        /// Dagger secondary: <see cref="SoulPhaseShiftable"/> + <see cref="SoulPhaseShiftPresentation"/> —
+        /// Soul Realm F tap starts timed phase-through; physical realm hold F pulls the prop solid.
+        /// </summary>
+        static void CreatePhaseShiftObject(GameObject root, float x, float z)
+        {
+            var parent = CreateGroup(root, "Example_PhaseShift [dagger F soul/physical]", x, z);
+
+            var cube = CreateBox(parent, "PhaseShiftBlock",
+                new Vector3(0f, 0.5f, 0f), new Vector3(1f, 1f, 1f),
+                new Color(0.42f, 0.78f, 0.98f));
+
+            var presentation = cube.AddComponent<SoulPhaseShiftPresentation>();
+            var shift = cube.AddComponent<SoulPhaseShiftable>();
+            SetComponent(shift, "presentation", presentation);
+
+            var rend = cube.GetComponent<Renderer>();
+            if (rend != null)
+            {
+                rend.SetPropertyBlock(null);
+                Material dissolveMat = AssetDatabase.LoadAssetAtPath<Material>(PhaseShiftDissolveMaterialPath);
+                if (dissolveMat != null)
+                    rend.sharedMaterial = dissolveMat;
+            }
+
+            CreateWorldLabel(parent,
+                "PHASE SHIFT\nSoul: F tap • Physical: hold F → solidify\nMat: Geis/SoulRealm/PhaseShiftDissolve",
+                new Vector3(0f, 3.5f, 0f), PuzzleRealmColors.BothRealms);
         }
 
         // ── Row 1 ────────────────────────────────────────────────────────────────

@@ -34,6 +34,11 @@ namespace Geis.SoulRealm.WeaponAbilities
         public abstract void Activate(in SoulWeaponAbilityContext context);
 
         /// <summary>
+        /// When false, <see cref="SoulRealmWeaponAbilityController"/> skips on-screen activation feedback (e.g. hold-only physical behavior).
+        /// </summary>
+        public virtual bool ShowActivationFeedback(in SoulWeaponAbilityContext context) => true;
+
+        /// <summary>
         /// Call when the ability actually commits (after early-out checks). Uses prefab if set, otherwise optional procedural burst.
         /// </summary>
         protected void PlayDefaultActivationVfx(in SoulWeaponAbilityContext context)

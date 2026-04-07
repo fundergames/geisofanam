@@ -81,9 +81,23 @@ namespace Geis.SoulRealm.WeaponAbilities
         {
             SyncActionMapWithRealm();
 
+            bool mapReady = _abilityMap != null && _abilityMap.enabled;
+            if (!mapReady || !TryBuildAbilityContext(out SoulWeaponAbilityContext holdCtx))
+                DaggerPhaseShiftSoulWeaponAbility.CancelOngoingPhysicalPullIfAny();
+            else
+            {
+                GeisWeaponDefinition holdDef =
+                    weaponSwitcher.GetWeaponDefinition(holdCtx.WeaponSlotIndex);
+                SoulWeaponAbilityAsset secondary = holdDef != null ? holdDef.SecondarySoulAbility : null;
+                if (secondary is ISoulWeaponSecondaryHoldTick holdTick)
+                    holdTick.TickSecondaryWhileAbilityMapEnabled(in holdCtx, IsAbility2Pressed());
+                else
+                    DaggerPhaseShiftSoulWeaponAbility.CancelOngoingPhysicalPullIfAny();
+            }
+
             PollAbilityButtons(out bool a1, out bool a2);
 
-            if (_abilityMap == null || !_abilityMap.enabled)
+            if (!mapReady)
             {
                 if ((a1 || a2) && feedback != null && Time.unscaledTime >= _nextAbilityMapHintTime)
                 {
@@ -124,6 +138,19 @@ namespace Geis.SoulRealm.WeaponAbilities
                         a2 = true;
                 }
             }
+        }
+
+        private bool IsAbility2Pressed()
+        {
+            if (_ability2 != null && _ability2.IsPressed())
+                return true;
+
+            Gamepad gp = ResolveGamepad();
+            if (gp != null && gp.rightShoulder.isPressed)
+                return true;
+
+            Keyboard kb = Keyboard.current;
+            return kb != null && kb.fKey.isPressed;
         }
 
         private string DescribeWhyAbilityMapIsOff()
@@ -232,6 +259,40 @@ namespace Geis.SoulRealm.WeaponAbilities
             return soulRealm ? ability.AllowActivationInSoulRealm : ability.AllowActivationInPhysicalRealm;
         }
 
+        private bool TryBuildAbilityContext(out SoulWeaponAbilityContext ctx)
+        {
+            ctx = default;
+            if (weaponSwitcher == null)
+                return false;
+
+            int weaponIndex = weaponSwitcher.CurrentWeaponIndex;
+            if (weaponIndex < 0)
+                return false;
+
+            GeisWeaponDefinition def = weaponSwitcher.GetWeaponDefinition(weaponIndex);
+            if (def == null)
+                return false;
+
+            Transform ownerTransform;
+            Vector3 originWorld;
+            SoulRealmManager mgr = SoulRealmManager.Instance;
+            if (mgr != null)
+                mgr.GetAbilityContextTransforms(out ownerTransform, out originWorld);
+            else
+            {
+                ownerTransform = abilityOrigin != null ? abilityOrigin : transform;
+                originWorld = ownerTransform.position;
+            }
+
+            Camera cam = cameraController != null ? cameraController.MainCamera : Camera.main;
+            Vector3 forward = cameraController != null
+                ? cameraController.GetCameraForwardZeroedYNormalised()
+                : GetFlattenedForward(ownerTransform);
+
+            ctx = new SoulWeaponAbilityContext(weaponIndex, def, ownerTransform, cam, forward, originWorld);
+            return true;
+        }
+
         private void TryActivateAbility(int slot)
         {
             string slotLabel = slot == 0 ? "Ability 1" : "Ability 2";
@@ -242,21 +303,14 @@ namespace Geis.SoulRealm.WeaponAbilities
                 return;
             }
 
-            int weaponIndex = weaponSwitcher.CurrentWeaponIndex;
-            if (weaponIndex < 0)
+            if (!TryBuildAbilityContext(out SoulWeaponAbilityContext ctx))
             {
                 feedback?.ShowBlocked($"{slotLabel}: no weapon equipped (press 1–4 or D-pad up).");
                 return;
             }
 
-            GeisWeaponDefinition def = weaponSwitcher.GetWeaponDefinition(weaponIndex);
-            if (def == null)
-            {
-                feedback?.ShowBlocked($"{slotLabel}: weapon slot {weaponIndex} has no definition.");
-                return;
-            }
-
-            SoulWeaponAbilityAsset ability = slot == 0 ? def.PrimarySoulAbility : def.SecondarySoulAbility;
+            SoulWeaponAbilityAsset ability =
+                slot == 0 ? ctx.WeaponDefinition.PrimarySoulAbility : ctx.WeaponDefinition.SecondarySoulAbility;
             if (ability == null)
             {
                 feedback?.ShowBlocked($"{slotLabel}: no ability assigned on this weapon (check Weapon Definition).");
@@ -283,25 +337,9 @@ namespace Geis.SoulRealm.WeaponAbilities
                 }
             }
 
-            Transform ownerTransform;
-            Vector3 originWorld;
-            var mgr = SoulRealmManager.Instance;
-            if (mgr != null)
-                mgr.GetAbilityContextTransforms(out ownerTransform, out originWorld);
-            else
-            {
-                ownerTransform = abilityOrigin != null ? abilityOrigin : transform;
-                originWorld = ownerTransform.position;
-            }
-
-            Camera cam = cameraController != null ? cameraController.MainCamera : Camera.main;
-            Vector3 forward = cameraController != null
-                ? cameraController.GetCameraForwardZeroedYNormalised()
-                : GetFlattenedForward(ownerTransform);
-
-            var ctx = new SoulWeaponAbilityContext(weaponIndex, def, ownerTransform, cam, forward, originWorld);
             ability.Activate(in ctx);
-            feedback?.ShowActivated(slot, ability.AbilityDisplayName, originWorld, forward);
+            if (ability.ShowActivationFeedback(in ctx))
+                feedback?.ShowActivated(slot, ability.AbilityDisplayName, ctx.OriginWorld, ctx.ForwardWorld);
         }
 
         private static Vector3 GetFlattenedForward(Transform t)
