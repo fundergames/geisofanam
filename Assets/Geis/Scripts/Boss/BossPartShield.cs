@@ -1,6 +1,8 @@
 using System;
+using System.Collections;
 using Geis.InputSystem;
 using Geis.SoulRealm;
+using RogueDeal.Combat;
 using UnityEngine;
 
 namespace RogueDeal.Boss
@@ -21,7 +23,7 @@ namespace RogueDeal.Boss
     ///   Call Prime(bool) from BossPart.ResetForCycle to prepare for the next cycle.
     /// </summary>
     [RequireComponent(typeof(SphereCollider))]
-    public class BossPartShield : MonoBehaviour
+    public class BossPartShield : MonoBehaviour, ISoulRealmShieldProjectileSink
     {
         // ── Events ─────────────────────────────────────────────────────────────────
 
@@ -47,6 +49,8 @@ namespace RogueDeal.Boss
         private float _damagePerHit;
         private bool _primed;        // will activate on the next Grounded entry
         private bool _ghostInRange;
+        private bool _hitFlashActive;
+        private Coroutine _hitFlashCoroutine;
 
         private GeisInputReader _inputReader;
         private SphereCollider _trigger;
@@ -97,6 +101,9 @@ namespace RogueDeal.Boss
                 && OwnerPart != null
                 && OwnerPart.State == BossPartState.Shielded;
 
+            if (_hitFlashActive)
+                shouldShow = false;
+
             SetVisible(shouldShow);
             SetPromptVisible(shouldShow && _ghostInRange);
         }
@@ -121,6 +128,33 @@ namespace RogueDeal.Boss
             _currentHealth = _maxHealth;
 
             SetVisible(false);
+        }
+
+        /// <inheritdoc />
+        public bool TryConsumeSoulRealmProjectileDamage(ref float damageAmount, Vector3 hitPosition)
+        {
+            if (OwnerPart == null || OwnerPart.State != BossPartState.Shielded)
+                return false;
+            if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
+                return false;
+
+            if (damageAmount <= 0f)
+                damageAmount = _damagePerHit;
+            if (damageAmount <= 0f)
+                return false;
+
+            _currentHealth -= damageAmount;
+
+            if (_currentHealth <= 0f)
+                DestroyShield();
+            else
+            {
+                if (_hitFlashCoroutine != null)
+                    StopCoroutine(_hitFlashCoroutine);
+                _hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
+            }
+
+            return true;
         }
 
         // ── Trigger detection (ghost enters/exits) ─────────────────────────────────
@@ -149,6 +183,21 @@ namespace RogueDeal.Boss
 
             if (_currentHealth <= 0f)
                 DestroyShield();
+            else
+            {
+                if (_hitFlashCoroutine != null)
+                    StopCoroutine(_hitFlashCoroutine);
+                _hitFlashCoroutine = StartCoroutine(HitFlashRoutine());
+            }
+        }
+
+        /// <summary>Briefly hides shield visuals/collider on each hit so the shield reads as "reacting" until broken.</summary>
+        private IEnumerator HitFlashRoutine()
+        {
+            _hitFlashActive = true;
+            yield return new WaitForSeconds(0.08f);
+            _hitFlashActive = false;
+            _hitFlashCoroutine = null;
         }
 
         // ── Destruction ────────────────────────────────────────────────────────────

@@ -94,7 +94,11 @@ namespace RogueDeal.Combat.Training
         private void OnDamageReceived(CombatEventData data)
         {
             if (data.target != combatEntity) return;
-            
+            if (data.wasImmune)
+                return;
+            if (data.skipEntityDamageInterceptors)
+                return;
+
             hitCounter++;
             lastHitTime = Time.time;
             

@@ -5,6 +5,7 @@
 
 using UnityEngine;
 using Geis.Locomotion;
+using Geis.SoulRealm;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 
@@ -22,11 +23,6 @@ namespace Geis.Combat
         [Header("Weapon definitions (preferred)")]
         [Tooltip("Optional. When set, combat action and weapon stats come from GeisWeaponDefinition on the switcher for each slot.")]
         [SerializeField] private GeisWeaponSwitcher _weaponSwitcher;
-
-        [Header("Legacy Overrides (when switcher not unified)")]
-        [Tooltip("Index matches slots: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow")]
-        [SerializeField] private CombatAction[] combatActionsByWeapon = new CombatAction[4];
-        [SerializeField] private Weapon[] weaponsBySlot = new Weapon[4];
 
         [Header("References")]
         [SerializeField] private GeisPlayerAnimationController _geisController;
@@ -51,14 +47,27 @@ namespace Geis.Combat
 
         private void OnEnable()
         {
+            if (_hitDetector != null)
+                _hitDetector.OverrideMeleeProbeOrigin = GetMeleeProbeOriginForCombat;
             if (_geisController != null)
                 _geisController.OnAttackPerformed += HandleAttackPerformed;
         }
 
         private void OnDisable()
         {
+            if (_hitDetector != null)
+                _hitDetector.OverrideMeleeProbeOrigin = null;
             if (_geisController != null)
                 _geisController.OnAttackPerformed -= HandleAttackPerformed;
+        }
+
+        private (Vector3 origin, Vector3 planarForward) GetMeleeProbeOriginForCombat()
+        {
+            if (SoulRealmManager.Instance != null &&
+                SoulRealmManager.Instance.TryGetGhostMeleeOrigin(out Vector3 p, out Vector3 f))
+                return (p, f);
+
+            return (transform.position, transform.forward);
         }
 
         private void HandleAttackPerformed(int weaponIndex)
@@ -79,12 +88,6 @@ namespace Geis.Combat
                 if (comboData != null)
                     action = comboData.ResolveCombatAction(comboState, action);
                 weapon = def.GetWeaponForDamage();
-            }
-
-            if (action == null)
-            {
-                action = GetLegacyCombatAction(weaponIndex);
-                weapon = GetLegacyWeapon(weaponIndex);
             }
 
             if (action == null)
@@ -110,25 +113,6 @@ namespace Geis.Combat
             {
                 _hitDetector.PerformHitCheck(action, null, weaponIndex);
             }
-        }
-
-        private CombatAction GetLegacyCombatAction(int weaponIndex)
-        {
-            if (combatActionsByWeapon == null) return null;
-            if (weaponIndex >= 0 && weaponIndex < combatActionsByWeapon.Length && combatActionsByWeapon[weaponIndex] != null)
-                return combatActionsByWeapon[weaponIndex];
-            foreach (var a in combatActionsByWeapon)
-            {
-                if (a != null) return a;
-            }
-            return null;
-        }
-
-        private Weapon GetLegacyWeapon(int weaponIndex)
-        {
-            if (weaponsBySlot == null || weaponIndex < 0 || weaponIndex >= weaponsBySlot.Length)
-                return null;
-            return weaponsBySlot[weaponIndex];
         }
     }
 }

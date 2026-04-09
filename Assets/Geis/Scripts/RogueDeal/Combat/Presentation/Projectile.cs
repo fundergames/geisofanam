@@ -1,4 +1,5 @@
 using UnityEngine;
+using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
 
@@ -33,6 +34,10 @@ namespace RogueDeal.Combat.Presentation
         private Transform target;
         private BaseEffect[] effects;
         private CombatEntityData attackerData;
+        /// <summary>Optional. For aim-point shots the move target is a synthetic marker — damage applies to this entity (e.g. raycast hit).</summary>
+        private CombatEntity _aimRayHitEntity;
+        /// <summary>Attacker for <see cref="CombatEvents.TriggerDamageApplied"/>.</summary>
+        private CombatEntity _sourceEntity;
         private float lifetime = 0f;
         private bool hasArrived = false;
         private Rigidbody rb;
@@ -55,9 +60,11 @@ namespace RogueDeal.Combat.Presentation
         /// <summary>
         /// Initializes the projectile with target, speed, effects, and attacker data
         /// </summary>
-        public void Initialize(Transform target, float speed, BaseEffect[] effects, CombatEntityData attackerData)
+        public void Initialize(Transform target, float speed, BaseEffect[] effects, CombatEntityData attackerData, CombatEntity sourceEntity = null)
         {
             _soulMarkSteeringHoming = false;
+            _aimRayHitEntity = null;
+            _sourceEntity = sourceEntity;
             this.target = target;
             this.speed = speed;
             this.effects = effects;
@@ -79,14 +86,22 @@ namespace RogueDeal.Combat.Presentation
         /// <summary>
         /// Bow soul-mark shot: starts along <paramref name="initialWorldDirection"/> then steers toward <paramref name="target"/>.
         /// </summary>
+        /// <param name="damageEntityFromAimRay">
+        /// Optional. Crosshair raycast hit at fire time (e.g. boss fist). Homing <paramref name="target"/> may be a mark
+        /// transform without a <see cref="CombatEntity"/> in its hierarchy; damage still applies to this entity.
+        /// </param>
         public void InitializeSoulMarkHoming(
             Transform target,
             Vector3 initialWorldDirection,
             float speed,
             BaseEffect[] effects,
-            CombatEntityData attackerData)
+            CombatEntityData attackerData,
+            CombatEntity sourceEntity = null,
+            CombatEntity damageEntityFromAimRay = null)
         {
             _soulMarkSteeringHoming = true;
+            _aimRayHitEntity = damageEntityFromAimRay;
+            _sourceEntity = sourceEntity;
             this.target = target;
             this.speed = speed;
             this.effects = effects;
@@ -107,12 +122,30 @@ namespace RogueDeal.Combat.Presentation
         /// Fires the arrow toward a fixed world-space aim point (camera-forward raycast hit).
         /// The arrow travels in a straight line to that point and despawns on arrival.
         /// </summary>
-        public void InitializeAimPoint(Vector3 aimWorldPoint, float speed, BaseEffect[] effects, CombatEntityData attackerData)
+        /// <param name="entityHitByAimRay"><see cref="CombatEntity"/> from the camera aim raycast (parent lookup). Required for damage — the move target is an empty marker, not the enemy.</param>
+        public void InitializeAimPoint(
+            Vector3 aimWorldPoint,
+            float speed,
+            BaseEffect[] effects,
+            CombatEntityData attackerData,
+            CombatEntity entityHitByAimRay = null,
+            CombatEntity sourceEntity = null)
         {
             _soulMarkSteeringHoming = false;
             _aimMarker = new GameObject("_ArrowAimMarker");
             _aimMarker.transform.position = aimWorldPoint;
-            Initialize(_aimMarker.transform, speed, effects, attackerData);
+            _aimRayHitEntity = entityHitByAimRay;
+            _sourceEntity = sourceEntity;
+            this.target = _aimMarker.transform;
+            this.speed = speed;
+            this.effects = effects;
+            this.attackerData = attackerData;
+            this.lifetime = 0f;
+            this.hasArrived = false;
+
+            Vector3 direction = (aimWorldPoint - transform.position).normalized;
+            if (direction != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(direction);
         }
 
         private void Update()
@@ -188,20 +221,63 @@ namespace RogueDeal.Combat.Presentation
             hasArrived = true;
             
             // Apply effects to target
-            if (target != null && effects != null && attackerData != null)
+            if (effects != null && attackerData != null)
             {
-                var targetEntity = target.GetComponent<CombatEntity>();
+                CombatEntity targetEntity = _aimRayHitEntity;
+                if (targetEntity == null && target != null)
+                    targetEntity = target.GetComponent<CombatEntity>() ?? target.GetComponentInParent<CombatEntity>();
+
                 if (targetEntity != null)
                 {
                     var targetData = targetEntity.GetEntityData();
                     if (targetData != null && targetData.IsAlive)
                     {
+                        if (TryApplySoulRealmShieldFromProjectile(targetEntity, targetData))
+                        {
+                            _deferredDespawn = true;
+                            return;
+                        }
+
+                        var physicalGate = targetEntity.GetComponentInParent<IPhysicalWeaponHitGate>();
+                        if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
+                        {
+                            CombatEvents.TriggerDamageApplied(new CombatEventData
+                            {
+                                source = _sourceEntity,
+                                target = targetEntity,
+                                damageAmount = 0f,
+                                wasCritical = false,
+                                wasImmune = true,
+                                hitPosition = targetEntity.GetHitPoint()
+                            });
+                        }
+                        else
+                        {
+                        float hpBefore = targetData.currentHealth;
+                        bool wasCritical = false;
                         foreach (var effect in effects)
                         {
                             if (effect == null) continue;
-                            
+
                             var calculated = effect.Calculate(attackerData, targetData, attackerData.equippedWeapon);
+                            if (calculated.wasCritical)
+                                wasCritical = true;
                             effect.Apply(targetData, calculated);
+                        }
+
+                        float damageDealt = hpBefore - targetData.currentHealth;
+                        if (damageDealt > 0f)
+                        {
+                            CombatEvents.TriggerDamageApplied(new CombatEventData
+                            {
+                                source = _sourceEntity,
+                                target = targetEntity,
+                                damageAmount = damageDealt,
+                                wasCritical = wasCritical,
+                                wasImmune = false,
+                                hitPosition = targetEntity.GetHitPoint()
+                            });
+                        }
                         }
                     }
                 }
@@ -212,6 +288,58 @@ namespace RogueDeal.Combat.Presentation
 
             // Defer destroy to LateUpdate so bow puzzle triggers can OverlapSphere the same frame.
             _deferredDespawn = true;
+        }
+
+        /// <summary>
+        /// Boss fist shields only allow melee while grounded; soul-realm bow shots must drain shield HP instead of tripping the physical gate.
+        /// </summary>
+        private bool TryApplySoulRealmShieldFromProjectile(CombatEntity targetEntity, CombatEntityData targetData)
+        {
+            var sink = targetEntity.GetComponentInChildren<ISoulRealmShieldProjectileSink>(true);
+            if (sink == null)
+                return false;
+
+            PreviewEffectsOutcome(effects, attackerData, targetData, out float previewDamage, out bool wasCritical);
+            float shieldDamage = previewDamage;
+            if (!sink.TryConsumeSoulRealmProjectileDamage(ref shieldDamage, targetEntity.GetHitPoint()))
+                return false;
+
+            CombatEvents.TriggerDamageApplied(new CombatEventData
+            {
+                source = _sourceEntity,
+                target = targetEntity,
+                damageAmount = shieldDamage,
+                wasCritical = wasCritical,
+                wasImmune = false,
+                skipEntityDamageInterceptors = true,
+                hitPosition = targetEntity.GetHitPoint()
+            });
+            return true;
+        }
+
+        private static void PreviewEffectsOutcome(
+            BaseEffect[] effectsList,
+            CombatEntityData attacker,
+            CombatEntityData target,
+            out float damageSum,
+            out bool anyCrit)
+        {
+            damageSum = 0f;
+            anyCrit = false;
+            if (effectsList == null || attacker == null || target == null)
+                return;
+
+            Weapon weapon = attacker.equippedWeapon;
+            foreach (var effect in effectsList)
+            {
+                if (effect == null) continue;
+
+                var calculated = effect.Calculate(attacker, target, weapon);
+                if (calculated.wasCritical)
+                    anyCrit = true;
+                if (calculated.damageAmount > 0f)
+                    damageSum += calculated.damageAmount;
+            }
         }
 
         private void LateUpdate()

@@ -1,4 +1,5 @@
 using Geis.Animation;
+using Geis.Combat;
 using Geis.InteractInput;
 using Geis.InputSystem;
 using Geis.Locomotion;
@@ -27,6 +28,7 @@ namespace Geis.SoulRealm
         private SoulGhostMotor motor;
         private GeisInputReader inputReader;
         private GeisPlayerAnimationController bodyLocomotion;
+        private GeisWeaponSwitcher _weaponSwitcher;
         private bool _hasFallingBlendParameter;
 
         private float movementInputDuration;
@@ -57,6 +59,7 @@ namespace Geis.SoulRealm
             motor = ghostMotor;
             inputReader = reader;
             bodyLocomotion = body;
+            _weaponSwitcher = body != null ? body.GetComponent<GeisWeaponSwitcher>() : null;
             if (animator == null)
                 animator = GetComponentInChildren<Animator>();
             _hasFallingBlendParameter = animator != null && AnimatorParameterGuard.HasParameter(animator, "FallingBlend");
@@ -70,14 +73,28 @@ namespace Geis.SoulRealm
             if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
                 return;
 
-            if (!SoulRealmManager.Instance.AllowGhostMovement)
-            {
-                if (animator != null)
-                    animator.speed = 0f;
-                return;
-            }
+            const int bowSlot = 3;
+            bool bowEquipped = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowSlot;
+            bool bowAimOrDraw = bowEquipped && (bodyLocomotion.IsBowDrawing || bodyLocomotion.IsAiming);
 
-            if (animator != null && animator.speed < 1f)
+            // Must run before AllowGhostMovement handling — that path used to return early and never pushed
+            // BowDrawing / BowAiming / BowDrawCharge to the spectral rig.
+            ApplyBowParametersToSpectralAnimator();
+
+            bool allowMove = SoulRealmManager.Instance.AllowGhostMovement;
+            if (!allowMove)
+            {
+                // Enter freeze & exit-hold normally force animator.speed = 0, which blocks bow layer transitions.
+                // Keep the spectral animator ticking while aiming or drawing so LT/RT bow presentation works.
+                if (bowAimOrDraw)
+                    animator.speed = 1f;
+                else
+                {
+                    animator.speed = 0f;
+                    return;
+                }
+            }
+            else if (animator.speed < 1f)
                 animator.speed = 1f;
 
             if (motor.TryConsumeSpectralDodgeAnimatorTrigger(out int dodgeDir))
@@ -87,6 +104,13 @@ namespace Geis.SoulRealm
                 if (AnimatorParameterGuard.HasParameter(animator, "Dodge"))
                     animator.SetTrigger(LocomotionAnimatorIds.Dodge);
             }
+
+            if (bodyLocomotion.IsSoulRealmMeleeAnimating)
+                return;
+
+            // Soul-realm movement frozen (but bow kept animator.speed up): skip locomotion snapshot only.
+            if (!allowMove && bowAimOrDraw)
+                return;
 
             var cam = bodyLocomotion.CameraControllerRef;
             if (cam == null)
@@ -156,6 +180,24 @@ namespace Geis.SoulRealm
             };
 
             LocomotionAnimatorApplier.ApplySyntyLocomotion(animator, snap, ctx);
+
+            // Locomotion writes base-layer floats/bools; re-apply bow so aim/draw cannot be left stale.
+            ApplyBowParametersToSpectralAnimator();
+        }
+
+        private void ApplyBowParametersToSpectralAnimator()
+        {
+            const int bowSlot = 3;
+            bool bowEquipped = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowSlot;
+            if (!bowEquipped || animator == null)
+                return;
+
+            if (AnimatorParameterGuard.HasParameter(animator, "BowDrawing"))
+                animator.SetBool(Animator.StringToHash("BowDrawing"), bodyLocomotion.IsBowDrawing);
+            if (AnimatorParameterGuard.HasParameter(animator, "BowDrawCharge"))
+                animator.SetFloat(Animator.StringToHash("BowDrawCharge"), bodyLocomotion.BowDrawChargeNormalized);
+            if (AnimatorParameterGuard.HasParameter(animator, "BowAiming"))
+                animator.SetBool(Animator.StringToHash("BowAiming"), bodyLocomotion.IsAiming);
         }
 
         private void UpdateMovementInputFlags()

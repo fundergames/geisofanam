@@ -18,7 +18,7 @@ namespace Geis.Locomotion
     /// Runs after <see cref="Puzzles.PlatformMover"/> (-50) so <see cref="GroundRideUtility"/> sees this frame&apos;s platform motion.
     /// </summary>
     [DefaultExecutionOrder(100)]
-    public class GeisPlayerAnimationController : MonoBehaviour
+    public partial class GeisPlayerAnimationController : MonoBehaviour
     {
         #region Enum
 
@@ -469,6 +469,13 @@ namespace Geis.Locomotion
         /// <summary>True while bow RT is held (draw). Drives optional <c>BowDrawing</c> / <c>BowDrawCharge</c> animator parameters.</summary>
         public bool IsBowDrawing => _isBowDrawing;
 
+        /// <summary>0–1 bow draw charge from <see cref="SetBowDrawState"/> — mirrored onto the spectral animator in soul realm.</summary>
+        public float BowDrawChargeNormalized => _bowDrawCharge;
+
+        /// <summary>True while a soul-realm melee swing is using the shared combo timeout (spectral animator).</summary>
+        public bool IsSoulRealmMeleeAnimating =>
+            SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive && _attackStateTimeout > 0f;
+
         /// <summary>When true, locomotion animator zeros MoveSpeed/gait in air (Jump/Fall states). Used by spectral mirror.</summary>
         public bool LocomotionAirGaitForAnimator =>
             _currentState == AnimationState.Jump || _currentState == AnimationState.Fall;
@@ -516,11 +523,25 @@ namespace Geis.Locomotion
         /// </summary>
         public void PrepareBodyAfterSoulRealmExit()
         {
+            _attackStateTimeout = 0f;
+            _comboInputBuffered = null;
+            _currentComboState = 0;
+
             if (_currentState == AnimationState.Jump || _currentState == AnimationState.Fall)
                 SwitchState(AnimationState.Locomotion);
 
             GroundedCheck();
             _velocity.y = _isGrounded ? -2f : 0f;
+        }
+
+        /// <summary>Clears attack/dodge state when entering soul realm so spectral combat starts from a known baseline.</summary>
+        public void ResetCombatStateForSoulRealmEntry()
+        {
+            _attackStateTimeout = 0f;
+            _comboInputBuffered = null;
+            _currentComboState = 0;
+            if (_currentState == AnimationState.Attack || _currentState == AnimationState.Dodge)
+                SwitchState(AnimationState.Locomotion);
         }
 
         #endregion
@@ -866,8 +887,9 @@ namespace Geis.Locomotion
 
         private void OnLightAttackRequested()
         {
-            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+            if (TryProcessSoulRealmMeleeInput(GeisComboInputType.Light))
                 return;
+
             if (!_isGrounded || _isCrouching) return;
 
             var comboData = GetCurrentComboData();
@@ -894,14 +916,15 @@ namespace Geis.Locomotion
 
         private void OnHeavyAttackRequested()
         {
-            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
-                return;
-            if (!_isGrounded || _isCrouching) return;
-
             // Bow uses RT hold/release for draw + shot (GeisBowController); never start heavy melee while bow is equipped.
             const int bowWeaponSlotIndex = 3;
             if (_weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowWeaponSlotIndex)
                 return;
+
+            if (TryProcessSoulRealmMeleeInput(GeisComboInputType.Heavy))
+                return;
+
+            if (!_isGrounded || _isCrouching) return;
 
             if (_currentState == AnimationState.Locomotion && _useDataDrivenCombo && GetCurrentComboData() != null)
             {
@@ -1278,6 +1301,11 @@ namespace Geis.Locomotion
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
             {
                 ApplyMovingGroundRideWhileBodySuppressed();
+                SoulRealmManager.Instance.SyncSpectralAnimatorControllerFromBody();
+                ApplyComboOverridesIfReady();
+                UpdateBestTarget();
+                UpdateLockOnAnchorPosition();
+                UpdateSoulRealmMeleeCombat();
                 return;
             }
 
@@ -2029,6 +2057,25 @@ namespace Geis.Locomotion
         #region Lock-on System
 
         /// <summary>
+        /// Uses ghost position in soul realm so lock-on candidate scoring matches the active avatar.
+        /// </summary>
+        private Vector3 GetLockOnDistanceEvaluationPosition()
+        {
+            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
+                return SoulRealmManager.Instance.GetInteractionProximityWorldPosition();
+            return transform.position;
+        }
+
+        /// <summary>
+        /// Keeps the player lock-on aim point on the enemy while the body root does not move (soul realm).
+        /// </summary>
+        private void UpdateLockOnAnchorPosition()
+        {
+            if (_isLockedOn && _targetLockOnPos != null && _currentLockOnTarget != null)
+                _targetLockOnPos.position = _currentLockOnTarget.transform.position;
+        }
+
+        /// <summary>
         ///     Updates and sets the best target for lock on from the list of available targets.
         /// </summary>
         private void UpdateBestTarget()
@@ -2052,7 +2099,7 @@ namespace Geis.Locomotion
                 {
                     target.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(false, false);
 
-                    float distance = Vector3.Distance(transform.position, target.transform.position);
+                    float distance = Vector3.Distance(GetLockOnDistanceEvaluationPosition(), target.transform.position);
                     float distanceScore = 1 / distance * 100;
 
                     Vector3 targetDirection = target.transform.position - _cameraController.GetCameraPosition();

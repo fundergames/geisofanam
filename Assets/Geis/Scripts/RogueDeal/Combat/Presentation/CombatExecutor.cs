@@ -368,6 +368,19 @@ namespace RogueDeal.Combat.Presentation
             ApplyEffectsToTargetList(effects, currentTargets);
         }
 
+        private void NotifyPhysicalWeaponImmuneHit(CombatEntity target)
+        {
+            CombatEvents.TriggerDamageApplied(new CombatEventData
+            {
+                source = combatEntity,
+                target = target,
+                damageAmount = 0f,
+                wasCritical = false,
+                wasImmune = true,
+                hitPosition = target.GetHitPoint()
+            });
+        }
+
         private void ApplyEffectsToTargetList(BaseEffect[] effects, List<CombatEntity> targetList)
         {
             if (effects == null || targetList == null) return;
@@ -378,6 +391,13 @@ namespace RogueDeal.Combat.Presentation
                 
                 var targetData = target.GetEntityData();
                 if (targetData == null || !targetData.IsAlive) continue;
+
+                var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
+                if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
+                {
+                    NotifyPhysicalWeaponImmuneHit(target);
+                    continue;
+                }
                 
                 float hpBefore = targetData.currentHealth;
                 bool wasCritical = false;
@@ -419,6 +439,7 @@ namespace RogueDeal.Combat.Presentation
                         target = target,
                         damageAmount = damageDealt,
                         wasCritical = wasCritical,
+                        wasImmune = false,
                         hitPosition = target.GetHitPoint()
                     });
                     
@@ -441,6 +462,13 @@ namespace RogueDeal.Combat.Presentation
                 
                 var targetData = target.GetEntityData();
                 if (targetData == null || !targetData.IsAlive) continue;
+
+                var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
+                if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
+                {
+                    NotifyPhysicalWeaponImmuneHit(target);
+                    continue;
+                }
                 
                 float hpBefore = targetData.currentHealth;
                 var calculated = effect.Calculate(entityData, targetData, entityData.equippedWeapon);
@@ -458,6 +486,7 @@ namespace RogueDeal.Combat.Presentation
                         target = target,
                         damageAmount = damageDealt,
                         wasCritical = calculated.wasCritical,
+                        wasImmune = false,
                         hitPosition = target.GetHitPoint()
                     });
                     

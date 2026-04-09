@@ -5,6 +5,7 @@
 // Animation: Synty AnimationBowCombat (Polygon) — Bow_Draw layer uses A_POLY_BOW_Stand_Shoot_Reload_Neut (see AC_Polygon_Masculine_Geis).
 // Naming and optional variants (Lng/Rcv/Cmp): GeisBowSyntyAnimationRefs. For sustained draw while holding RT, enable Loop Time on the Reload clip in the FBX import settings.
 
+using System;
 using UnityEngine;
 using UnityEngine.UI;
 using Geis.InputSystem;
@@ -12,6 +13,7 @@ using Geis.Locomotion;
 using Geis.SoulRealm;
 using Geis.SoulRealm.WeaponAbilities;
 using RogueDeal.Combat;
+using RogueDeal.Combat.Core.Cooldowns;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
 using RogueDeal.Combat.Presentation;
@@ -38,6 +40,8 @@ namespace Geis.Combat
         [SerializeField] private GeisWeaponSwitcher _weaponSwitcher;
         [Tooltip("CombatEntity on the player")]
         [SerializeField] private CombatEntity _combatEntity;
+        [Tooltip("Runs bow shot cooldown from GeisWeaponDefinition combatAction (e.g. Bow_Light_Attack). Auto-found if unset.")]
+        [SerializeField] private CombatExecutor _combatExecutor;
         [Tooltip("Optional. Enables soul-mark homing arrows after tagging in Soul Realm.")]
         [SerializeField] private SoulMarkHomingTracker _soulMarkHoming;
 
@@ -84,6 +88,7 @@ namespace Geis.Combat
             if (_playerController == null)  _playerController  = GetComponent<GeisPlayerAnimationController>();
             if (_weaponSwitcher == null)    _weaponSwitcher    = GetComponent<GeisWeaponSwitcher>();
             if (_combatEntity == null)      _combatEntity      = GetComponent<CombatEntity>();
+            if (_combatExecutor == null)    _combatExecutor    = GetComponent<CombatExecutor>();
             if (_soulMarkHoming == null)     _soulMarkHoming    = GetComponent<SoulMarkHomingTracker>()
                 ?? GetComponentInParent<SoulMarkHomingTracker>();
 
@@ -181,10 +186,19 @@ namespace Geis.Combat
                 return;
             }
 
+            var bowDefForCd = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(BowSlotIndex) : null;
+            CombatAction bowCombatAction = bowDefForCd != null ? bowDefForCd.GetCombatAction() : null;
+            if (_combatExecutor != null && bowCombatAction != null)
+            {
+                ActionCooldownManager cooldowns = _combatExecutor.GetCooldownManager();
+                if (cooldowns != null && !cooldowns.IsActionAvailable(bowCombatAction))
+                    return;
+            }
+
             Vector3 spawnPos = GetArrowSpawnWorldPosition();
 
             // Determine world-space aim point by raycasting from the camera forward.
-            Vector3 aimPoint = GetCameraAimPoint();
+            Vector3 aimPoint = GetCameraAimPoint(out CombatEntity aimHitEntity);
             Vector3 initialShotDirection = aimPoint - spawnPos;
             if (initialShotDirection.sqrMagnitude < 1e-6f)
             {
@@ -207,15 +221,31 @@ namespace Geis.Combat
             float speed = Mathf.Lerp(_arrowSpeed, _arrowSpeed * _chargedSpeedMultiplier, chargeRatio);
 
             CombatEntityData entityData = _combatEntity != null ? _combatEntity.GetEntityData() : null;
+            if (entityData != null && bowDefForCd != null)
+                entityData.equippedWeapon = bowDefForCd.GetWeaponForDamage();
+
             BaseEffect[] effects = ResolveEffects();
 
             if (_soulMarkHoming != null && _soulMarkHoming.TryConsumeHomingShot(out Transform homingTarget))
             {
-                projectile.InitializeSoulMarkHoming(homingTarget, initialShotDirection, speed, effects, entityData);
+                projectile.InitializeSoulMarkHoming(
+                    homingTarget,
+                    initialShotDirection,
+                    speed,
+                    effects,
+                    entityData,
+                    _combatEntity,
+                    aimHitEntity);
             }
             else
             {
-                projectile.InitializeAimPoint(aimPoint, speed, effects, entityData);
+                projectile.InitializeAimPoint(aimPoint, speed, effects, entityData, aimHitEntity, _combatEntity);
+            }
+
+            if (_combatExecutor != null && bowCombatAction != null)
+            {
+                ActionCooldownManager cooldowns = _combatExecutor.GetCooldownManager();
+                cooldowns?.StartCooldown(bowCombatAction);
             }
 
             onArrowFired?.Invoke(chargeRatio);
@@ -237,16 +267,44 @@ namespace Geis.Combat
         /// Raycast from the camera forward and return the first hit point,
         /// or the point at max range if nothing is hit.
         /// </summary>
-        private Vector3 GetCameraAimPoint()
+        /// <summary>
+        /// Camera aim raycast. <paramref name="hitEntity"/> is the <see cref="CombatEntity"/> on the struck collider (parent chain), if any.
+        /// </summary>
+        private Vector3 GetCameraAimPoint(out CombatEntity hitEntity)
         {
+            hitEntity = null;
             Camera cam = GetGameplayCamera();
             if (cam == null)
                 return transform.position + transform.forward * _arrowRange;
 
             Ray ray = new Ray(cam.transform.position, cam.transform.forward);
-            // Ignore triggers: lock-on / targeting volumes are often triggers in front of the mesh; we want the solid body hit.
+
+            // In soul realm, boss fists often use PhysicalOnly PuzzleRealmVisual — solid hurtboxes are disabled and only
+            // soul-realm trigger colliders (e.g. shield sphere) remain. Those require QueryTriggerInteraction.Collide.
+            bool soulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+            if (soulRealm)
+            {
+                RaycastHit[] hits = Physics.RaycastAll(ray, _arrowRange, _aimRaycastLayers, QueryTriggerInteraction.Collide);
+                Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+                foreach (RaycastHit h in hits)
+                {
+                    var ce = h.collider.GetComponent<CombatEntity>() ?? h.collider.GetComponentInParent<CombatEntity>();
+                    if (ce != null)
+                    {
+                        hitEntity = ce;
+                        return h.point;
+                    }
+                }
+
+                return ray.origin + ray.direction * _arrowRange;
+            }
+
+            // Physical realm: ignore triggers — lock-on / targeting volumes are often triggers in front of the mesh.
             if (Physics.Raycast(ray, out RaycastHit hit, _arrowRange, _aimRaycastLayers, QueryTriggerInteraction.Ignore))
+            {
+                hitEntity = hit.collider.GetComponent<CombatEntity>() ?? hit.collider.GetComponentInParent<CombatEntity>();
                 return hit.point;
+            }
 
             return ray.origin + ray.direction * _arrowRange;
         }
@@ -260,7 +318,7 @@ namespace Geis.Combat
 
         private BaseEffect[] ResolveEffects()
         {
-            var def    = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(BowSlotIndex) : null;
+            var def = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(BowSlotIndex) : null;
             var action = def?.GetCombatAction();
             return action?.effects ?? System.Array.Empty<BaseEffect>();
         }

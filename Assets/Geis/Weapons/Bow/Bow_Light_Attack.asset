@@ -30,13 +30,13 @@ MonoBehaviour:
   projectileSpeed: 10
   spawnsPersistentAOE: 0
   persistentAOEPrefab: {fileID: 0}
-  aoeRadius: 5
-  pulseCount: 5
-  pulseDuration: 1
+  aoeRadius: 0
+  pulseCount: 0
+  pulseDuration: 0
   cooldownConfig:
-    cooldownType: 0
+    cooldownType: 2
     turnCooldown: 0
-    timeCooldown: 0
+    timeCooldown: 1
     usesCharges: 0
     maxCharges: 1
     startingCharges: 1

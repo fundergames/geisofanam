@@ -27,6 +27,10 @@ namespace RogueDeal.Combat.UI
 
         private void HandleDamageApplied(CombatEventData data)
         {
+            // Immune feedback uses DamagePopupManager via CombatEntity → EnemyVisual / PlayerVisual.
+            if (data.wasImmune)
+                return;
+
             SpawnDamageNumber(data.hitPosition, data.damageAmount, data.wasCritical);
         }
 

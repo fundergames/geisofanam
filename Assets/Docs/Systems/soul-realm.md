@@ -18,6 +18,20 @@ Soul realm mode (ghost vs. frozen body), world freeze hooks, weapon-bound supern
 - **Freeze registry**: `SoulRealmFreezeTarget` list for selective world freeze (implementation detail in manager code).
 - **Delta time**: Internal cap `SoulRealmMaxDeltaPerFrame` on soul-realm timers to avoid huge `deltaTime` spikes completing exit in one frame.
 
+### Realm-scoped simulation (`RealmSimulation`)
+
+Some gameplay/VFX logic is not affected by the freeze registry (notably **coroutines** and **particle systems** that continue advancing using `Time.deltaTime`). Use `RealmSimulation` when logic should advance only in a specific realm:
+
+- **Groups**:
+  - `RealmSimulationGroup.Physical`: simulates only while **not** in soul realm.
+  - `RealmSimulationGroup.Soul`: simulates only while **in** soul realm.
+  - `RealmSimulationGroup.Universal`: always simulates.
+- **Helpers**:
+  - `RealmSimulation.DeltaTime(group)` returns `0` when that group is frozen.
+  - `RealmSimulation.WaitForSecondsRealm(group, seconds)` waits in realm time (does not elapse while frozen).
+
+Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for **physical-only** hazards/attacks/VFX, switch it to the realm-scoped helpers so it truly freezes during soul realm.
+
 ### `SoulRealmInteractable` (static helper)
 
 - `BlockPhysicalInteractions` → true when `SoulRealmManager.Instance.IsSoulRealmActive`. Used to **block normal physical interactions** (weapon switcher, interact scripts that respect it). Soul-only gameplay should still check `IsSoulRealmActive` where relevant.

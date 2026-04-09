@@ -33,6 +33,10 @@ namespace RogueDeal.Combat
         [Range(0f, 180f)]
         public float coneAngle = 60f;
 
+        [Header("Simple melee probe (SimpleAttackHitDetector)")]
+        [Tooltip("If true, SimpleAttackHitDetector OverlapSphere hits this entity even when its tag is not listed in that component's valid target tags. Use for boss parts, destructibles, etc.")]
+        public bool simpleMeleeBypassTagFilter;
+
         private CombatAnimationController animationController;
         private CombatVFXController vfxController;
         private CombatSFXController sfxController;
@@ -293,18 +297,23 @@ namespace RogueDeal.Combat
             if (data.target == this)
             {
                 EnemyVisual enemyVisual = GetComponent<EnemyVisual>() ?? GetComponentInParent<EnemyVisual>() ?? GetComponentInChildren<EnemyVisual>();
+                PlayerVisual playerVisual = GetComponent<PlayerVisual>() ?? GetComponentInParent<PlayerVisual>() ?? GetComponentInChildren<PlayerVisual>();
+
+                if (data.wasImmune)
+                {
+                    if (enemyVisual != null)
+                        enemyVisual.AnimateImmuneHit();
+                    else if (playerVisual != null)
+                        playerVisual.AnimateImmuneHit();
+                    else if (DamagePopupManager.Instance != null)
+                        DamagePopupManager.Instance.ShowImmunePopup(data.hitPosition);
+                    return;
+                }
+
                 if (enemyVisual != null)
-                {
                     enemyVisual.AnimateDamage(Mathf.RoundToInt(data.damageAmount), data.wasCritical);
-                }
-                else
-                {
-                    PlayerVisual playerVisual = GetComponent<PlayerVisual>() ?? GetComponentInParent<PlayerVisual>() ?? GetComponentInChildren<PlayerVisual>();
-                    if (playerVisual != null)
-                    {
-                        playerVisual.AnimateDamage(Mathf.RoundToInt(data.damageAmount));
-                    }
-                }
+                else if (playerVisual != null)
+                    playerVisual.AnimateDamage(Mathf.RoundToInt(data.damageAmount));
             }
         }
 

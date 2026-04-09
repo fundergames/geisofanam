@@ -246,6 +246,17 @@ namespace RogueDeal.Combat
             return sequence;
         }
         
+        /// <summary>Hit was blocked by immunity — show "Immune" instead of a damage number.</summary>
+        public Sequence AnimateImmuneHit()
+        {
+            UpdateHealthBar();
+            ShowImmunePopup();
+            Transform targetTransform = modelRoot != null ? modelRoot : transform;
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(targetTransform.DOPunchScale(Vector3.one * 0.05f, 0.15f, 3, 0.5f));
+            return sequence;
+        }
+
         public Sequence AnimateDamage(int damageAmount, bool isCritical = false)
         {
             UpdateHealthBar();
@@ -296,6 +307,23 @@ namespace RogueDeal.Combat
             ShowDamagePopup(Random.Range(50, 100), true);
         }
         
+        private void ShowImmunePopup()
+        {
+            Vector3 spawnPosition = damagePopupSpawnPoint != null
+                ? damagePopupSpawnPoint.position
+                : transform.position + damagePopupOffset;
+
+            if (DamagePopupManager.Instance != null)
+                DamagePopupManager.Instance.ShowImmunePopup(spawnPosition);
+            else if (damagePopupPrefab != null)
+            {
+                GameObject popupObj = Instantiate(damagePopupPrefab, spawnPosition, Quaternion.identity);
+                DamagePopup popup = popupObj.GetComponent<DamagePopup>();
+                if (popup != null)
+                    popup.InitializeImmune(spawnPosition, null);
+            }
+        }
+
         private void ShowDamagePopup(int damageAmount, bool isCritical)
         {
             Vector3 spawnPosition = damagePopupSpawnPoint != null 

@@ -275,6 +275,19 @@ namespace RogueDeal.Combat
             
             return sequence;
         }
+
+        /// <summary>Damage was fully blocked (e.g. immunity) — brief feedback, no damage number.</summary>
+        public Sequence AnimateImmuneHit()
+        {
+            UpdateHealthBar();
+            if (DamagePopupManager.Instance != null)
+                DamagePopupManager.Instance.ShowImmunePopup(transform.position + Vector3.up * 1.5f);
+
+            Transform targetTransform = modelRoot != null ? modelRoot : transform;
+            Sequence sequence = DOTween.Sequence();
+            sequence.Append(targetTransform.DOPunchScale(Vector3.one * 0.05f, 0.15f, 3, 0.5f));
+            return sequence;
+        }
         
         public void TriggerAnimation(string triggerName)
         {

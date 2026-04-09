@@ -18,23 +18,45 @@ MonoBehaviour:
   portrait: {fileID: 0}
   totalSouls: 100
   soulDrainPerDamagePoint: 1
-  phase2SoulThreshold: 0.55
-  phase3SoulThreshold: 0.28
+  phases:
+  - exitSoulPercentThreshold: 0.66
+    enterBannerMessage: Phase 1 Banner
+    timeBetweenSlams: 0.8
+    slamGroundedDuration: 5
+    critSpotVulnerableWindow: 60
+    critRequiresSoulRealm: 1
+    useShieldedHands: 0
+  - exitSoulPercentThreshold: 0.33
+    enterBannerMessage: The Soul Warden's fists begin to glow...
+    timeBetweenSlams: 0.8
+    slamGroundedDuration: 4
+    critSpotVulnerableWindow: 45
+    critRequiresSoulRealm: 1
+    useShieldedHands: 1
+  - exitSoulPercentThreshold: 0
+    enterBannerMessage: The veil tears...
+    timeBetweenSlams: 0.8
+    slamGroundedDuration: 3
+    critSpotVulnerableWindow: 30
+    critRequiresSoulRealm: 1
+    useShieldedHands: 1
   rightHand: {fileID: 11400000, guid: 07877b8357cf54b41b2f84d29dbb4ae4, type: 2}
   leftHand: {fileID: 11400000, guid: 932022fdbb1384e52852496f9e96b9c6, type: 2}
-  critSpot: {fileID: 0}
+  critSpot: {fileID: 11400000, guid: 8b57ab5776695a147a178bbc23d05f6d, type: 2}
   slamWindupDuration: 0.6
+  slamRecoveryDuration: 0.5
+  slamDamage: 8
+  slamDamageRadius: 8
+  phase2SoulThreshold: 0.66
+  phase3SoulThreshold: 0.33
   slamGroundedDuration: 5
   slamGroundedDurationPhase2: 10
   slamGroundedDurationPhase3: 0
-  slamRecoveryDuration: 0.5
   timeBetweenSlams: 0.8
   timeBetweenSlamsPhase3: 0
-  slamDamage: 8
-  slamDamageRadius: 8
-  critSpotVulnerableWindow: 8
-  critSpotVulnerableWindowPhase2: 0
-  critSpotVulnerableWindowPhase3: 0
+  critSpotVulnerableWindow: 60
+  critSpotVulnerableWindowPhase2: 45
+  critSpotVulnerableWindowPhase3: 30
   critRequiresSoulRealmPhase1: 1
   critRequiresSoulRealmPhase2: 1
   critRequiresSoulRealmPhase3: 1

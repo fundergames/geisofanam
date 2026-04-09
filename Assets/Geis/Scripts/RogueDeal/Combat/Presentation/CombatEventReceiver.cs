@@ -202,11 +202,13 @@ namespace RogueDeal.Combat.Presentation
             var projectile = projectileObj.GetComponent<Projectile>();
             if (projectile != null)
             {
+                var attackerEntity = combatExecutor != null ? combatExecutor.GetComponent<CombatEntity>() : null;
                 projectile.Initialize(
                     target.transform,
                     action.projectileSpeed,
                     action.effects,
-                    combatExecutor.GetEntityData()
+                    combatExecutor.GetEntityData(),
+                    attackerEntity
                 );
             }
         }

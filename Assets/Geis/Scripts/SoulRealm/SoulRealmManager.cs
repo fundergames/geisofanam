@@ -90,8 +90,16 @@ namespace Geis.SoulRealm
         private Quaternion _bodyRotationAtEntry;
         private GameObject _spectralVisualInstance;
         private Transform _spectralMeshSourceRoot;
+        private Animator _spectralAnimator;
+        private Transform _spectralWeaponAttach;
 
         public bool IsSoulRealmActive => _isSoulRealm;
+
+        /// <summary>Runtime duplicate of the body animator on the spectral mesh (null when not in soul realm).</summary>
+        public Animator SpectralAnimator => _spectralAnimator;
+
+        /// <summary>Same motor as the moving ghost — used for grounded checks during soul-realm combat.</summary>
+        public SoulGhostMotor GhostMotor => ghostMotor;
         public float SoulRealmBlend => _isSoulRealm ? 1f : 0f;
 
         /// <summary>
@@ -376,6 +384,7 @@ namespace Geis.SoulRealm
                 _bodyPositionAtEntry = bodyLocomotion.transform.position;
                 _bodyRotationAtEntry = bodyLocomotion.transform.rotation;
                 bodyLocomotion.SetWalkLocomotionForSoulRealm(false);
+                bodyLocomotion.ResetCombatStateForSoulRealmEntry();
             }
 
             if (bodyAnimator != null)
@@ -420,6 +429,7 @@ namespace Geis.SoulRealm
                     spectralDissolveEnterDuration,
                     spectralDissolveInvertForShader);
                 _spectralVisualInstance = existing;
+                CacheSpectralAnimatorRefs(_spectralVisualInstance, bodyAnimator);
             }
 
             if (cameraController != null)
@@ -480,6 +490,91 @@ namespace Geis.SoulRealm
         }
 
         /// <summary>
+        /// Keeps the spectral copy on the same <see cref="Animator.runtimeAnimatorController"/> as the body
+        /// (combo overrides / weapon swaps) while soul realm is active.
+        /// </summary>
+        public void SyncSpectralAnimatorControllerFromBody()
+        {
+            if (!_isSoulRealm || _spectralAnimator == null || bodyAnimator == null)
+                return;
+            if (_spectralAnimator.runtimeAnimatorController != bodyAnimator.runtimeAnimatorController)
+                _spectralAnimator.runtimeAnimatorController = bodyAnimator.runtimeAnimatorController;
+        }
+
+        /// <summary>
+        /// World position and horizontal forward for melee overlap probes while the ghost is active.
+        /// </summary>
+        public bool TryGetGhostMeleeOrigin(out Vector3 position, out Vector3 forward)
+        {
+            position = default;
+            forward = default;
+            if (!_isSoulRealm || ghostRoot == null || !ghostRoot.activeInHierarchy)
+                return false;
+
+            position = ghostRoot.transform.position;
+            Vector3 f = ghostRoot.transform.forward;
+            f.y = 0f;
+            if (f.sqrMagnitude > 1e-6f)
+                f.Normalize();
+            else if (cameraController != null)
+                f = cameraController.GetCameraForwardZeroedYNormalised();
+            else
+                f = Vector3.forward;
+            forward = f;
+            return true;
+        }
+
+        /// <summary>Right-hand (or best effort) transform on the spectral rig for weapon prefabs in soul realm.</summary>
+        public bool TryGetSpectralWeaponAttachTransform(out Transform hand)
+        {
+            hand = _spectralWeaponAttach;
+            return _isSoulRealm && hand != null;
+        }
+
+        private void CacheSpectralAnimatorRefs(GameObject spectralInstance, Animator bodyAnimSource)
+        {
+            _spectralAnimator = null;
+            _spectralWeaponAttach = null;
+            if (spectralInstance == null)
+                return;
+
+            _spectralAnimator = spectralInstance.GetComponentInChildren<Animator>();
+            if (_spectralAnimator == null)
+                return;
+
+            if (bodyAnimSource != null && bodyAnimSource.avatar != null && bodyAnimSource.avatar.isHuman)
+            {
+                var bone = _spectralAnimator.GetBoneTransform(HumanBodyBones.RightHand);
+                if (bone != null)
+                    _spectralWeaponAttach = bone;
+            }
+
+            if (_spectralWeaponAttach == null)
+            {
+                var t = _spectralAnimator.transform.Find("weapon_r");
+                if (t == null) t = FindChildRecursive(_spectralAnimator.transform, "weapon_r");
+                if (t == null) t = FindChildRecursive(_spectralAnimator.transform, "Hand_R");
+                _spectralWeaponAttach = t;
+            }
+
+            if (_spectralWeaponAttach == null)
+                _spectralWeaponAttach = _spectralAnimator.GetBoneTransform(HumanBodyBones.RightHand);
+        }
+
+        private static Transform FindChildRecursive(Transform root, string name)
+        {
+            if (root == null) return null;
+            if (root.name == name) return root;
+            for (int i = 0; i < root.childCount; i++)
+            {
+                var found = FindChildRecursive(root.GetChild(i), name);
+                if (found != null) return found;
+            }
+
+            return null;
+        }
+
+        /// <summary>
         /// World position for bow projectiles in soul realm: uses the moving ghost and camera yaw, not the frozen body hand.
         /// </summary>
         public bool TryGetGhostBowProjectileSpawnWorldPosition(out Vector3 worldPosition)
@@ -525,6 +620,8 @@ namespace Geis.SoulRealm
 
             SoulSpectralGhostVisual.Despawn(_spectralVisualInstance);
             _spectralVisualInstance = null;
+            _spectralAnimator = null;
+            _spectralWeaponAttach = null;
 
             if (ghostRoot != null)
             {

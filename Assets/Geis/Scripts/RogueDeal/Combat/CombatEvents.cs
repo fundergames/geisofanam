@@ -11,6 +11,12 @@ namespace RogueDeal.Combat
         public EffectData effect;
         public float damageAmount;
         public bool wasCritical;
+        /// <summary>True when the hit connected but dealt no damage due to immunity / invulnerability (UI shows "Immune").</summary>
+        public bool wasImmune;
+        /// <summary>
+        /// When true, CritSpot/BossPart-style interceptors should not heal or reinterpret HP — damage was applied to another pool (e.g. soul shield).
+        /// </summary>
+        public bool skipEntityDamageInterceptors;
         public Vector3 hitPosition;
     }
 

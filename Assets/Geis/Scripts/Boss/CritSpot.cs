@@ -26,7 +26,7 @@ namespace RogueDeal.Boss
     /// GiantBossController.DrainSouls converts the damage value into soul drain.
     /// </summary>
     [RequireComponent(typeof(CombatEntity))]
-    public class CritSpot : MonoBehaviour
+    public class CritSpot : MonoBehaviour, IPhysicalWeaponHitGate
     {
         // ── Events ─────────────────────────────────────────────────────────────────
 
@@ -64,6 +64,16 @@ namespace RogueDeal.Boss
         // ── Properties ─────────────────────────────────────────────────────────────
 
         public bool IsVulnerable => _isVulnerable;
+
+        /// <summary>Used by combat pipeline so blocked physical hits show "Immune" instead of damage numbers.</summary>
+        public bool AllowsPhysicalWeaponHits()
+        {
+            if (!_isVulnerable)
+                return false;
+            if (_requiresSoulRealm)
+                return SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+            return true;
+        }
 
         // ── Unity lifecycle ────────────────────────────────────────────────────────
 
@@ -144,14 +154,23 @@ namespace RogueDeal.Boss
         private void HandleDamageApplied(CombatEventData data)
         {
             if (data.target != _combatEntity) return;
+            if (data.wasImmune)
+                return;
+            if (data.skipEntityDamageInterceptors)
+                return;
 
             // Always restore entity HP — CritSpot is an infinite-HP hit target
             _entityData?.Heal(data.damageAmount);
 
             if (!_isVulnerable) return;
 
-            // In soul-realm mode physical hits are blocked; only ghost attacks count
-            if (_requiresSoulRealm) return;
+            // In soul-realm mode, only count hits while the Soul Realm is active.
+            // This supports both ghost-input hits and physical weapon hits performed in the Soul Realm.
+            if (_requiresSoulRealm)
+            {
+                bool inSoulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+                if (!inSoulRealm) return;
+            }
 
             RegisterHit(data.damageAmount);
         }

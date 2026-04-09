@@ -77,6 +77,29 @@ namespace RogueDeal.Combat
             }
         }
 
+        public void ShowImmunePopup(Vector3 worldPosition)
+        {
+            if (damagePopupPrefab == null)
+            {
+                Debug.LogWarning("[DamagePopupManager] DamagePopup prefab is not assigned!");
+                return;
+            }
+
+            GameObject popupObj;
+
+            if (usePooling && damagePopupPool != null)
+                popupObj = damagePopupPool.Get();
+            else
+                popupObj = Instantiate(damagePopupPrefab, popupParent != null ? popupParent : transform);
+
+            if (popupObj != null)
+            {
+                DamagePopup popup = popupObj.GetComponent<DamagePopup>();
+                if (popup != null)
+                    popup.InitializeImmune(worldPosition, usePooling ? damagePopupPool : null);
+            }
+        }
+
         private void OnDestroy()
         {
             if (instance == this)

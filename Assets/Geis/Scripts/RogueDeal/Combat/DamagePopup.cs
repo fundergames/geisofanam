@@ -13,6 +13,7 @@ namespace RogueDeal.Combat
         [SerializeField] private float moveDistance = 1f;
         [SerializeField] private Color normalColor = Color.white;
         [SerializeField] private Color criticalColor = Color.yellow;
+        [SerializeField] private Color immuneColor = new Color(0.65f, 0.65f, 0.7f, 1f);
         [SerializeField] private bool billboardToCamera = true;
 
         private Camera mainCamera;
@@ -33,6 +34,31 @@ namespace RogueDeal.Combat
 
             damageText.text = damage.ToString();
             damageText.color = isCritical ? criticalColor : normalColor;
+
+            transform.position = worldPosition;
+
+            canvasGroup.alpha = 1f;
+
+            gameObject.SetActive(true);
+
+            AnimatePopup();
+        }
+
+        public void InitializeImmune(Vector3 worldPosition, DamagePopupPool poolReference = null)
+        {
+            if (damageText == null)
+                damageText = GetComponentInChildren<TextMeshProUGUI>();
+
+            if (canvasGroup == null)
+                canvasGroup = GetComponent<CanvasGroup>();
+
+            if (billboardToCamera)
+                mainCamera = Camera.main;
+
+            pool = poolReference;
+
+            damageText.text = "Immune";
+            damageText.color = immuneColor;
 
             transform.position = worldPosition;
 

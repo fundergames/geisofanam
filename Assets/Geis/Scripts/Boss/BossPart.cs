@@ -18,19 +18,25 @@ namespace RogueDeal.Boss
     ///   Disabled   — permanently out of the fight (end-state).
     ///
     /// Damage integration:
-    ///   This component owns a CombatEntity so the player's WeaponHitbox hits it normally.
+    ///   This component owns a CombatEntity so player attacks register via CombatEvents.OnDamageApplied
+    ///   (GeisCombatBridge → SimpleAttackHitDetector → CombatExecutor, or legacy WeaponHitbox).
     ///   We intercept CombatEvents.OnDamageApplied to:
     ///     1. Immediately heal back the CombatEntityData (keeps it alive for future weapon hits).
     ///     2. Apply the damage to our own HP pool only when the state is Grounded.
+    ///   SimpleAttackHitDetector / similar also skip boss fists unless grounded so weapon effects
+    ///   do not run during windup, idle, shielded, etc.
     ///   All other states silently block damage (no visible feedback needed here — the UI / VFX
     ///   on GiantBossController handle the "blocked" state).
     /// </summary>
     [RequireComponent(typeof(CombatEntity))]
-    public class BossPart : MonoBehaviour
+    public class BossPart : MonoBehaviour, IPhysicalWeaponHitGate
     {
         // ── Inspector ──────────────────────────────────────────────────────────────
 
         [SerializeField] private BossPartDefinition definition;
+
+        [Header("Debug")]
+        [SerializeField] private bool debugDamage;
 
         [Tooltip("Optional shield child. Auto-located if null. " +
                  "Activated when this part enters the Shielded state.")]
@@ -65,11 +71,15 @@ namespace RogueDeal.Boss
             ? Mathf.Clamp01(_currentHealth / definition.maxHealth)
             : 0f;
 
+        public bool AllowsPhysicalWeaponHits() => _state == BossPartState.Grounded;
+
         // ── Unity lifecycle ────────────────────────────────────────────────────────
 
         private void Awake()
         {
             _combatEntity = GetComponent<CombatEntity>();
+            if (_combatEntity != null)
+                _combatEntity.simpleMeleeBypassTagFilter = true;
 
             if (shield == null)
                 shield = GetComponentInChildren<BossPartShield>(true);
@@ -154,13 +164,25 @@ namespace RogueDeal.Boss
         private void HandleDamageApplied(CombatEventData data)
         {
             if (data.target != _combatEntity) return;
+            if (data.wasImmune)
+                return;
+            if (data.skipEntityDamageInterceptors)
+                return;
+
+            if (debugDamage)
+                Debug.Log($"[BossPart] Damage event received on {name}: amount={data.damageAmount:F1} state={_state}", this);
 
             // Always heal back the CombatEntityData immediately so it never reads as dead.
             // BossPart manages its own HP pool; CombatEntityData is only used as a hit-detection target.
             _entityData?.Heal(data.damageAmount);
 
             // Only register real damage when the fist is physically attackable
-            if (_state != BossPartState.Grounded) return;
+            if (_state != BossPartState.Grounded)
+            {
+                if (debugDamage)
+                    Debug.Log($"[BossPart] Ignored damage because state={_state} (must be Grounded).", this);
+                return;
+            }
 
             _currentHealth -= data.damageAmount;
 

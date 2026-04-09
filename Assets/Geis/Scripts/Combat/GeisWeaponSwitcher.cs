@@ -109,9 +109,6 @@ namespace Geis.Combat
 
         private void Update()
         {
-            if (SoulRealmInteractable.BlockPhysicalInteractions)
-                return;
-
             int slotCount = weaponSlots != null ? Mathf.Min(4, weaponSlots.Length) : 0;
             if (slotCount == 0) return;
 
@@ -244,6 +241,10 @@ namespace Geis.Combat
 
             var def = weaponSlots[slotIndex];
             Transform parent = GetAttachmentParent(def);
+            if (SoulRealmManager.Instance != null &&
+                SoulRealmManager.Instance.TryGetSpectralWeaponAttachTransform(out Transform spectralHand))
+                parent = spectralHand;
+
             GameObject prefab = null;
 
             if (def != null)
@@ -272,16 +273,25 @@ namespace Geis.Combat
 
             _currentWeaponIndex = slotIndex;
 
-            if (_animator != null)
+            ApplyEquippedWeaponIndexToAnimator(_animator, slotIndex);
+
+            var mgr = SoulRealmManager.Instance;
+            mgr?.SyncSpectralAnimatorControllerFromBody();
+            if (mgr != null)
+                ApplyEquippedWeaponIndexToAnimator(mgr.SpectralAnimator, slotIndex);
+        }
+
+        private static void ApplyEquippedWeaponIndexToAnimator(Animator anim, int slotIndex)
+        {
+            if (anim == null)
+                return;
+            int hash = Animator.StringToHash("EquippedWeaponIndex");
+            foreach (var p in anim.parameters)
             {
-                int hash = Animator.StringToHash("EquippedWeaponIndex");
-                foreach (var p in _animator.parameters)
+                if (p.name == "EquippedWeaponIndex")
                 {
-                    if (p.name == "EquippedWeaponIndex")
-                    {
-                        _animator.SetInteger(hash, slotIndex);
-                        break;
-                    }
+                    anim.SetInteger(hash, slotIndex);
+                    break;
                 }
             }
         }

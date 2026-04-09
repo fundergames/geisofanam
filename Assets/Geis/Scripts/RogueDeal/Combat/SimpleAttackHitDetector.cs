@@ -1,5 +1,7 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Presentation;
@@ -35,7 +37,13 @@ namespace RogueDeal.Combat
         [SerializeField] private bool usePlayerCenterFallback = true;
         [Tooltip("Log hit checks and target count (for debugging)")]
         [SerializeField] private bool debugLog = false;
-        [Tooltip("Layers to check for enemies")]
+
+        /// <summary>
+        /// Optional. When set (e.g. from Geis combat bridge), overlap probes use this position and planar forward
+        /// instead of this transform — used for soul-realm ghost melee while the CombatEntity root stays on the body.
+        /// </summary>
+        public Func<(Vector3 origin, Vector3 planarForward)> OverrideMeleeProbeOrigin;
+        [Tooltip("Layers to check for enemies. Use Everything (~0) unless you know all hurtboxes share one layer. A mask like 64 = only layer 6 — Default (0) is excluded.")]
         [SerializeField] private LayerMask targetLayers = ~0;
         [Tooltip("Tags that identify valid targets (empty = any)")]
         [SerializeField] private string[] validTargetTags = { "Enemy" };
@@ -141,6 +149,8 @@ namespace RogueDeal.Combat
                 var targets = FindTargetsInRange();
                 if (debugLog)
                     Debug.Log($"[SimpleAttackHitDetector] Hit {i + 1}/{hitCount} found {targets.Count} target(s)");
+                else if (targets.Count == 0)
+                    Debug.Log($"[SimpleAttackHitDetector] Hit {i + 1}/{hitCount} found 0 targets for '{action.actionName}'. Layers={DescribeLayerMask(targetLayers)} (mask value {targetLayers.value}). Increase hitRadius / rangeOffset or set Target Layers to include the boss hurtbox layer.", this);
 
                 if (targets.Count > 0)
                 {
@@ -164,9 +174,13 @@ namespace RogueDeal.Combat
 
             var notified = new HashSet<IPuzzleMeleeHitSink>();
 
+            GetMeleeProbeOrigin(out Vector3 meleeOrigin, out Vector3 meleeFwd);
+            Vector3 forwardCenterPuzzle = meleeOrigin + meleeFwd * rangeOffset + Vector3.up * 0.5f;
+            Vector3 playerCenterPuzzle = meleeOrigin + Vector3.up * 0.5f;
+
             void CollectFromSphere(Vector3 center)
             {
-                Collider[] cols = Physics.OverlapSphere(center, hitRadius, puzzleProbeLayers);
+                Collider[] cols = Physics.OverlapSphere(center, hitRadius, puzzleProbeLayers, QueryTriggerInteraction.Collide);
                 for (int c = 0; c < cols.Length; c++)
                 {
                     var col = cols[c];
@@ -182,13 +196,9 @@ namespace RogueDeal.Combat
                 }
             }
 
-            Vector3 forwardCenter = transform.position + transform.forward * rangeOffset + Vector3.up * 0.5f;
-            CollectFromSphere(forwardCenter);
+            CollectFromSphere(forwardCenterPuzzle);
             if (usePlayerCenterFallback)
-            {
-                Vector3 playerCenter = transform.position + Vector3.up * 0.5f;
-                CollectFromSphere(playerCenter);
-            }
+                CollectFromSphere(playerCenterPuzzle);
         }
 
         /// <summary>
@@ -213,18 +223,36 @@ namespace RogueDeal.Combat
             return fallback;
         }
 
+        private void GetMeleeProbeOrigin(out Vector3 origin, out Vector3 planarForward)
+        {
+            if (OverrideMeleeProbeOrigin != null)
+            {
+                (origin, planarForward) = OverrideMeleeProbeOrigin();
+                return;
+            }
+
+            origin = transform.position;
+            planarForward = transform.forward;
+            planarForward.y = 0f;
+            if (planarForward.sqrMagnitude > 1e-6f)
+                planarForward.Normalize();
+            else
+                planarForward = transform.forward;
+        }
+
         private List<CombatEntity> FindTargetsInRange()
         {
             var results = new List<CombatEntity>();
             var seen = new HashSet<CombatEntity>();
 
-            Vector3 forwardCenter = transform.position + transform.forward * rangeOffset + Vector3.up * 0.5f;
-            Collider[] colliders = Physics.OverlapSphere(forwardCenter, hitRadius, targetLayers);
+            GetMeleeProbeOrigin(out Vector3 probeOrigin, out Vector3 planarForward);
+            Vector3 forwardCenter = probeOrigin + planarForward * rangeOffset + Vector3.up * 0.5f;
+            Collider[] colliders = Physics.OverlapSphere(forwardCenter, hitRadius, targetLayers, QueryTriggerInteraction.Collide);
 
             if (usePlayerCenterFallback)
             {
-                Vector3 playerCenter = transform.position + Vector3.up * 0.5f;
-                Collider[] fallbackColliders = Physics.OverlapSphere(playerCenter, hitRadius, targetLayers);
+                Vector3 playerCenter = probeOrigin + Vector3.up * 0.5f;
+                Collider[] fallbackColliders = Physics.OverlapSphere(playerCenter, hitRadius, targetLayers, QueryTriggerInteraction.Collide);
                 var combined = new List<Collider>(colliders);
                 foreach (var col in fallbackColliders)
                 {
@@ -266,6 +294,14 @@ namespace RogueDeal.Combat
                     continue;
                 }
 
+                var gate = entity.GetComponentInParent<IPhysicalWeaponHitGate>();
+                if (gate != null && !gate.AllowsPhysicalWeaponHits())
+                {
+                    if (debugLog)
+                        Debug.Log($"[SimpleAttackHitDetector] Skipped {entity.gameObject.name}: physical weapon hits gated off.");
+                    continue;
+                }
+
                 var data = entity.GetEntityData();
                 if (data == null || !data.IsAlive)
                 {
@@ -280,24 +316,69 @@ namespace RogueDeal.Combat
 
             if (debugLog && colliders.Length == 0)
             {
+                GetMeleeProbeOrigin(out Vector3 dbgOrigin, out Vector3 _dbgFwd);
                 float dist = float.MaxValue;
                 var entities = UnityEngine.Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
                 foreach (var e in entities)
                 {
                     if (e == _combatEntity) continue;
-                    float d = Vector3.Distance(transform.position, e.transform.position);
+                    float d = Vector3.Distance(dbgOrigin, e.transform.position);
                     if (d < dist) dist = d;
                 }
-                Debug.Log($"[SimpleAttackHitDetector] No colliders in sphere. Nearest enemy ~{dist:F1}m away. Sphere: fwd={forwardCenter}, r={hitRadius}, layers={targetLayers.value}");
+
+                Vector3 playerCenterDbg = transform.position + Vector3.up * 0.5f;
+                int unmaskedFwd = Physics.OverlapSphere(forwardCenter, hitRadius, ~0, QueryTriggerInteraction.Collide).Length;
+                int unmaskedFeet = usePlayerCenterFallback
+                    ? Physics.OverlapSphere(playerCenterDbg, hitRadius, ~0, QueryTriggerInteraction.Collide).Length
+                    : 0;
+
+                var sb = new StringBuilder();
+                sb.Append("[SimpleAttackHitDetector] No colliders with current layer mask. ");
+                sb.Append($"Nearest CombatEntity ~{dist:F1}m (straight-line). Sphere fwd center={forwardCenter}, r={hitRadius}. ");
+                sb.Append($"TargetLayers: {DescribeLayerMask(targetLayers)} (value {targetLayers.value}). ");
+                if (unmaskedFwd + unmaskedFeet > 0)
+                    sb.Append($"Same spheres with all layers + triggers: fwd={unmaskedFwd}, feet={unmaskedFeet} → fix Target Layers (often need Default) or move hurtboxes to an included layer. ");
+                else if (dist < float.MaxValue && dist > hitRadius * 2f)
+                    sb.Append($"Try larger hitRadius (e.g. ≥ {dist:F1}m) or stand closer. ");
+                else
+                    sb.Append("No physics colliders in the spheres at all — add/enable colliders on hurtboxes or increase radius. ");
+
+                Debug.Log(sb.ToString(), this);
             }
 
             return results;
+        }
+
+        /// <summary>Human-readable layer mask for logs (Unity mask value is not obvious in-editor).</summary>
+        private static string DescribeLayerMask(LayerMask mask)
+        {
+            int v = mask.value;
+            if (v == 0)
+                return "NONE";
+            // Bitmask -1 in Unity is often stored as all bits set for "Everything" in LayerMask UI
+            if (v == -1)
+                return "Everything";
+
+            var parts = new List<string>(8);
+            for (int i = 0; i < 32; i++)
+            {
+                if ((v & (1 << i)) == 0) continue;
+                string name = LayerMask.LayerToName(i);
+                if (string.IsNullOrEmpty(name))
+                    name = $"unnamed";
+                parts.Add($"{i}:{name}");
+            }
+
+            return parts.Count > 0 ? string.Join(", ", parts) : $"raw={v}";
         }
 
         private bool IsValidTarget(CombatEntity target)
         {
             if (target == _combatEntity)
                 return false;
+
+            if (target.simpleMeleeBypassTagFilter)
+                return true;
 
             if (validTargetTags != null && validTargetTags.Length > 0)
             {

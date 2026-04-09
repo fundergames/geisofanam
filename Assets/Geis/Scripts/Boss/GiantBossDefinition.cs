@@ -8,10 +8,9 @@ namespace RogueDeal.Boss
     /// Contains:
     ///   - Soul pool (= boss total HP, drained by crit-spot hits)
     ///   - Part definitions (right hand, left hand, crit spot)
-    ///   - Fist-slam timing and damage values
-    ///   - Phase-transition threshold
+    ///   - Per-phase tuning (<see cref="GiantBossPhaseData"/>) — slam rhythm, crit windows, shields, transitions
+    ///   - Shared slam animation/damage values
     ///
-    /// All tuneable numbers live here so designers can iterate without touching code.
     /// GiantBossController reads from this asset and drives all encounter logic.
     /// </summary>
     [CreateAssetMenu(
@@ -37,139 +36,193 @@ namespace RogueDeal.Boss
         [Tooltip("Souls drain per 1 point of crit-spot damage.")]
         public float soulDrainPerDamagePoint = 1f;
 
-        [Tooltip("Fraction of souls remaining that triggers Phase 2. " +
-                 "E.g. 0.5 means Phase 2 starts after the player has released half the souls.")]
-        [Range(0f, 1f)]
-        public float phase2SoulThreshold = 0.5f;
+        // ── Phases ───────────────────────────────────────────────────────────────────
 
-        [Tooltip("Fraction of souls remaining that triggers Phase 3. Set to 0 to disable Phase 3 " +
-                 "(Phase 2 continues until the boss is defeated). Must be below phase2SoulThreshold.")]
-        [Range(0f, 1f)]
-        public float phase3SoulThreshold = 0.25f;
+        [Header("Phases")]
+        [Tooltip("Ordered phases (first element = phase 1). Add or remove entries to change phase count.")]
+        public GiantBossPhaseData[] phases;
 
         // ── Part Definitions ───────────────────────────────────────────────────────
 
         [Header("Parts")]
-        [Tooltip("Right fist. Must have hasSoulShieldInPhase2 = true to grow a shield in Phase 2.")]
+        [Tooltip("Right fist. Must have hasSoulShieldInPhase2 = true to grow a shield when the phase uses shields.")]
         public BossPartDefinition rightHand;
         [Tooltip("Left fist.")]
         public BossPartDefinition leftHand;
         [Tooltip("The soul core / weak spot exposed after both hands are broken.")]
         public BossPartDefinition critSpot;
 
-        // ── Fist Slam Timing ───────────────────────────────────────────────────────
+        // ── Fist Slam — shared animation / impact ─────────────────────────────────
 
-        [Header("Fist Slam — Timing")]
+        [Header("Fist Slam — Shared")]
         [Tooltip("Seconds the windup animation plays before the fist hits the ground.")]
         public float slamWindupDuration = 1.5f;
-
-        [Tooltip("Phase 1: seconds the fist stays grounded and is physically attackable.")]
-        public float slamGroundedDuration = 4f;
-
-        [Tooltip("Phase 2: longer window to give the player time to soul-realm in, " +
-                 "destroy the shield, exit, then attack.")]
-        public float slamGroundedDurationPhase2 = 8f;
-
-        [Tooltip("Phase 3: grounded window per fist. If 0, uses slamGroundedDurationPhase2.")]
-        public float slamGroundedDurationPhase3 = 0f;
 
         [Tooltip("Recovery pause after a fist lifts back up before the next slam.")]
         public float slamRecoveryDuration = 1f;
 
-        [Tooltip("Gap between the right-hand slam sequence ending and the left-hand one beginning.")]
-        public float timeBetweenSlams = 1.5f;
-
-        [Tooltip("Phase 3: gap between slams. If 0, uses timeBetweenSlams.")]
-        public float timeBetweenSlamsPhase3 = 0f;
-
-        // ── Fist Slam Damage ───────────────────────────────────────────────────────
-
-        [Header("Fist Slam — Damage")]
         [Tooltip("Damage dealt to the player if they are inside slamDamageRadius when the fist lands.")]
         public float slamDamage = 25f;
 
         [Tooltip("Radius around the fist's grounded position that damages the player.")]
         public float slamDamageRadius = 3f;
 
-        // ── Crit Spot ──────────────────────────────────────────────────────────────
+        // ── Legacy (migration from pre–phase-blob assets) ─────────────────────────
 
-        [Header("Crit Spot")]
-        [Tooltip("Phase 1: seconds the crit spot stays exposed after both hands are broken.")]
-        public float critSpotVulnerableWindow = 6f;
+        [SerializeField, HideInInspector] private float phase2SoulThreshold = 0.5f;
+        [SerializeField, HideInInspector] private float phase3SoulThreshold = 0.25f;
+        [SerializeField, HideInInspector] private float slamGroundedDuration = 4f;
+        [SerializeField, HideInInspector] private float slamGroundedDurationPhase2 = 8f;
+        [SerializeField, HideInInspector] private float slamGroundedDurationPhase3;
+        [SerializeField, HideInInspector] private float timeBetweenSlams = 1.5f;
+        [SerializeField, HideInInspector] private float timeBetweenSlamsPhase3;
+        [SerializeField, HideInInspector] private float critSpotVulnerableWindow = 6f;
+        [SerializeField, HideInInspector] private float critSpotVulnerableWindowPhase2;
+        [SerializeField, HideInInspector] private float critSpotVulnerableWindowPhase3;
+        [SerializeField, HideInInspector] private bool critRequiresSoulRealmPhase1 = true;
+        [SerializeField, HideInInspector] private bool critRequiresSoulRealmPhase2 = true;
+        [SerializeField, HideInInspector] private bool critRequiresSoulRealmPhase3 = true;
 
-        [Tooltip("Phase 2 crit window. If 0, uses critSpotVulnerableWindow.")]
-        public float critSpotVulnerableWindowPhase2 = 0f;
+        // ── Runtime helpers ─────────────────────────────────────────────────────────
 
-        [Tooltip("Phase 3 crit window. If 0, falls back to Phase 2 then Phase 1 values.")]
-        public float critSpotVulnerableWindowPhase3 = 0f;
-
-        [Tooltip("If true, only the spectral ghost can damage the crit spot in Phase 1.")]
-        public bool critRequiresSoulRealmPhase1 = true;
-
-        [Tooltip("If true, only the spectral ghost can damage the crit spot in Phase 2.")]
-        public bool critRequiresSoulRealmPhase2 = true;
-
-        [Tooltip("If true, only the spectral ghost can damage the crit spot in Phase 3.")]
-        public bool critRequiresSoulRealmPhase3 = true;
-
-        /// <summary>Grounded fist window for slam loop, by encounter phase (1–3).</summary>
-        public float GetSlamGroundedDuration(int phaseIndex)
+        /// <summary>Number of configured phases (at least 1).</summary>
+        public int PhaseCount
         {
-            return phaseIndex switch
+            get
             {
-                1 => slamGroundedDuration,
-                2 => slamGroundedDurationPhase2,
-                3 => slamGroundedDurationPhase3 > 0f ? slamGroundedDurationPhase3 : slamGroundedDurationPhase2,
-                _ => slamGroundedDuration
+                EnsurePhasesPopulated();
+                return Mathf.Max(1, phases != null ? phases.Length : 0);
+            }
+        }
+
+        /// <summary>1-based phase index into <see cref="phases"/>.</summary>
+        public GiantBossPhaseData GetPhaseData(int phaseIndex1Based)
+        {
+            EnsurePhasesPopulated();
+
+            if (phases == null || phases.Length == 0)
+                return CreateDefaultPhases()[0];
+
+            int i = Mathf.Clamp(phaseIndex1Based - 1, 0, phases.Length - 1);
+            return phases[i];
+        }
+
+        private void OnEnable()
+        {
+            EnsurePhasesPopulated();
+        }
+
+        private void EnsurePhasesPopulated()
+        {
+            if (phases != null && phases.Length > 0)
+                return;
+
+            phases = MigrateFromLegacyFields();
+        }
+
+        private GiantBossPhaseData[] MigrateFromLegacyFields()
+        {
+            float p2Crit = critSpotVulnerableWindowPhase2 > 0f ? critSpotVulnerableWindowPhase2 : critSpotVulnerableWindow;
+            float p3Crit = critSpotVulnerableWindowPhase3 > 0f ? critSpotVulnerableWindowPhase3 : p2Crit;
+
+            float p3SlamGround = slamGroundedDurationPhase3 > 0f ? slamGroundedDurationPhase3 : slamGroundedDurationPhase2;
+            float p3Between = timeBetweenSlamsPhase3 > 0f ? timeBetweenSlamsPhase3 : timeBetweenSlams;
+
+            var phase1 = new GiantBossPhaseData
+            {
+                exitSoulPercentThreshold   = phase2SoulThreshold,
+                enterBannerMessage         = "",
+                timeBetweenSlams           = timeBetweenSlams,
+                slamGroundedDuration       = slamGroundedDuration,
+                critSpotVulnerableWindow   = critSpotVulnerableWindow,
+                critRequiresSoulRealm      = critRequiresSoulRealmPhase1,
+                useShieldedHands           = false
             };
-        }
 
-        /// <summary>Delay between right and left slam in the loop.</summary>
-        public float GetTimeBetweenSlams(int phaseIndex)
-        {
-            if (phaseIndex == 3 && timeBetweenSlamsPhase3 > 0f)
-                return timeBetweenSlamsPhase3;
-            return timeBetweenSlams;
-        }
-
-        /// <summary>Crit vulnerability duration after both hands break.</summary>
-        public float GetCritWindowSeconds(int phaseIndex)
-        {
-            float p1 = critSpotVulnerableWindow;
-            float p2 = critSpotVulnerableWindowPhase2 > 0f ? critSpotVulnerableWindowPhase2 : p1;
-            float p3 = critSpotVulnerableWindowPhase3 > 0f
-                ? critSpotVulnerableWindowPhase3
-                : p2;
-            return phaseIndex switch
+            var phase2 = new GiantBossPhaseData
             {
-                1 => p1,
-                2 => p2,
-                3 => p3,
-                _ => p1
+                exitSoulPercentThreshold   = phase3SoulThreshold > 0f ? phase3SoulThreshold : 0f,
+                enterBannerMessage         = "The Soul Warden's fists begin to glow...",
+                timeBetweenSlams           = timeBetweenSlams,
+                slamGroundedDuration       = slamGroundedDurationPhase2,
+                critSpotVulnerableWindow   = p2Crit,
+                critRequiresSoulRealm      = critRequiresSoulRealmPhase2,
+                useShieldedHands           = true
             };
+
+            if (phase3SoulThreshold <= 0f)
+                return new[] { phase1, phase2 };
+
+            var phase3 = new GiantBossPhaseData
+            {
+                exitSoulPercentThreshold   = 0f,
+                enterBannerMessage         = "The veil tears...",
+                timeBetweenSlams           = p3Between,
+                slamGroundedDuration       = p3SlamGround,
+                critSpotVulnerableWindow   = p3Crit,
+                critRequiresSoulRealm      = critRequiresSoulRealmPhase3,
+                useShieldedHands           = true
+            };
+
+            return new[] { phase1, phase2, phase3 };
         }
 
-        /// <summary>Ghost-only vs physical crit damage for this phase.</summary>
-        public bool GetCritRequiresSoulRealm(int phaseIndex)
+        private static GiantBossPhaseData[] CreateDefaultPhases()
         {
-            return phaseIndex switch
+            return new[]
             {
-                1 => critRequiresSoulRealmPhase1,
-                2 => critRequiresSoulRealmPhase2,
-                3 => critRequiresSoulRealmPhase3,
-                _ => true
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold   = 0.5f,
+                    enterBannerMessage         = "",
+                    timeBetweenSlams           = 1.5f,
+                    slamGroundedDuration       = 4f,
+                    critSpotVulnerableWindow   = 6f,
+                    critRequiresSoulRealm      = true,
+                    useShieldedHands           = false
+                },
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold   = 0.25f,
+                    enterBannerMessage         = "The Soul Warden's fists begin to glow...",
+                    timeBetweenSlams           = 1.5f,
+                    slamGroundedDuration       = 8f,
+                    critSpotVulnerableWindow   = 6f,
+                    critRequiresSoulRealm      = true,
+                    useShieldedHands           = true
+                },
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold   = 0f,
+                    enterBannerMessage         = "The veil tears...",
+                    timeBetweenSlams           = 1.5f,
+                    slamGroundedDuration       = 8f,
+                    critSpotVulnerableWindow   = 6f,
+                    critRequiresSoulRealm      = true,
+                    useShieldedHands           = true
+                }
             };
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (phase3SoulThreshold > 0f && phase3SoulThreshold >= phase2SoulThreshold)
+            if (phases == null || phases.Length < 2)
+                return;
+
+            for (int i = 0; i < phases.Length - 1; i++)
             {
-                Debug.LogWarning(
-                    "[GiantBossDefinition] phase3SoulThreshold should be less than phase2SoulThreshold " +
-                    "or Phase 3 may never begin.",
-                    this);
+                float next = phases[i + 1].exitSoulPercentThreshold;
+                if (next <= 0f)
+                    continue;
+
+                if (phases[i].exitSoulPercentThreshold <= next)
+                {
+                    Debug.LogWarning(
+                        "[GiantBossDefinition] Phase " + (i + 1) + " exitSoulPercentThreshold should usually be " +
+                        "greater than phase " + (i + 2) + " so the encounter progresses as souls are drained.",
+                        this);
+                }
             }
         }
 #endif

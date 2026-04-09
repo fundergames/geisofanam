@@ -367,18 +367,44 @@ namespace Geis.Editor
             g.title = "Primitive Arena";
             g.totalSouls = 100f;
             g.soulDrainPerDamagePoint = 1f;
-            g.phase2SoulThreshold = 0.55f;
-            g.phase3SoulThreshold = 0.28f;
             g.rightHand = right;
             g.leftHand = left;
             g.slamWindupDuration = 0.6f;
-            g.slamGroundedDuration = 5f;
-            g.slamGroundedDurationPhase2 = 10f;
             g.slamRecoveryDuration = 0.5f;
-            g.timeBetweenSlams = 0.8f;
             g.slamDamage = 8f;
             g.slamDamageRadius = 8f;
-            g.critSpotVulnerableWindow = 8f;
+            g.phases = new[]
+            {
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold = 0.55f,
+                    timeBetweenSlams = 0.8f,
+                    slamGroundedDuration = 5f,
+                    critSpotVulnerableWindow = 8f,
+                    critRequiresSoulRealm = true,
+                    useShieldedHands = false
+                },
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold = 0.28f,
+                    enterBannerMessage = "The Soul Warden's fists begin to glow...",
+                    timeBetweenSlams = 0.8f,
+                    slamGroundedDuration = 10f,
+                    critSpotVulnerableWindow = 8f,
+                    critRequiresSoulRealm = true,
+                    useShieldedHands = true
+                },
+                new GiantBossPhaseData
+                {
+                    exitSoulPercentThreshold = 0f,
+                    enterBannerMessage = "The veil tears...",
+                    timeBetweenSlams = 0.8f,
+                    slamGroundedDuration = 10f,
+                    critSpotVulnerableWindow = 8f,
+                    critRequiresSoulRealm = true,
+                    useShieldedHands = true
+                }
+            };
             AssetDatabase.CreateAsset(g, path);
             return g;
         }

@@ -375,13 +375,13 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1659465032667406238}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: 0, y: 1, z: 0, w: 0}
   m_LocalPosition: {x: 0, y: 5, z: 0}
   m_LocalScale: {x: 4, y: 5, z: 4}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 4497694189874621128}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 180, z: 0}
 --- !u!33 &5420366555461376575
 MeshFilter:
   m_ObjectHideFlags: 0
@@ -450,7 +450,7 @@ GameObject:
   - component: {fileID: 6630137770484585313}
   - component: {fileID: 6508811552340664932}
   - component: {fileID: 7793802636592896395}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ShieldMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -467,7 +467,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.05, y: 1.05, z: 1.05}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2599019407850128710}
@@ -505,7 +505,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -579,7 +579,9 @@ GameObject:
   - component: {fileID: 1749829700297031954}
   - component: {fileID: 1044363774860711857}
   - component: {fileID: 3884557408616682847}
-  m_Layer: 0
+  - component: {fileID: 7085336731038512720}
+  - component: {fileID: 3781858160955539154}
+  m_Layer: 6
   m_Name: CritSpot
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -595,7 +597,7 @@ Transform:
   m_GameObject: {fileID: 2739740460196294536}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 6.5, z: 2}
+  m_LocalPosition: {x: 0, y: 6.5, z: -2}
   m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -655,7 +657,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -699,6 +701,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &3884557408616682847
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -717,6 +720,49 @@ MonoBehaviour:
   interactionRadius: 3
   ghostHitDamage: 20
   soulRealmPromptObject: {fileID: 0}
+--- !u!114 &7085336731038512720
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2739740460196294536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7befd6ec878235a479fa36bce13aff23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.EnemyVisual
+  modelRoot: {fileID: 0}
+  animator: {fileID: 0}
+  renderers: []
+  uiCanvas: {fileID: 0}
+  enemyNameText: {fileID: 0}
+  healthBar: {fileID: 0}
+  healthText: {fileID: 0}
+  enemyHealthBar: {fileID: 0}
+  damagePopupPrefab: {fileID: 8653298389752135049, guid: 24d2cea86aa5b4505a78b2f8117616f5, type: 3}
+  damagePopupSpawnPoint: {fileID: 0}
+  damagePopupOffset: {x: 0, y: 2, z: 0}
+  spawnDuration: 0.5
+  spawnScale: {x: 0.5, y: 0.5, z: 0.5}
+--- !u!114 &3781858160955539154
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2739740460196294536}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &3161517689929573562
 GameObject:
   m_ObjectHideFlags: 0
@@ -886,7 +932,6 @@ Transform:
   m_Children:
   - {fileID: 2296782100888793549}
   - {fileID: 4497694189874621128}
-  - {fileID: 8657631961392081744}
   - {fileID: 5709975342749509455}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -931,7 +976,11 @@ GameObject:
   - component: {fileID: 8970937077389181030}
   - component: {fileID: 1208070540768996251}
   - component: {fileID: 1369543030097137879}
-  m_Layer: 0
+  - component: {fileID: 1240837780540941550}
+  - component: {fileID: 4099092532093425569}
+  - component: {fileID: 8589014377493554317}
+  - component: {fileID: 8233508917367046858}
+  m_Layer: 6
   m_Name: RightHand
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -1008,7 +1057,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1052,6 +1101,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &1369543030097137879
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1065,7 +1115,85 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RogueDeal.Boss.BossPart
   definition: {fileID: 11400000, guid: 07877b8357cf54b41b2f84d29dbb4ae4, type: 2}
+  debugDamage: 0
   shield: {fileID: 8666286470379176898}
+--- !u!114 &1240837780540941550
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746709677149628411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8ada1a63c12c94391c30bfe588ff30, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.DamagePopup
+  damageText: {fileID: 0}
+  canvasGroup: {fileID: 0}
+  moveDuration: 1
+  moveDistance: 1
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  immuneColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
+  billboardToCamera: 1
+--- !u!114 &4099092532093425569
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746709677149628411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e8e4d9da077c02744b9a330d0b037fb8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisObjectLockOn
+  _highlightMat: {fileID: 0}
+  _targetMat: {fileID: 0}
+--- !u!114 &8589014377493554317
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746709677149628411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7befd6ec878235a479fa36bce13aff23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.EnemyVisual
+  modelRoot: {fileID: 6594801323425387856}
+  animator: {fileID: 0}
+  renderers: []
+  uiCanvas: {fileID: 0}
+  enemyNameText: {fileID: 0}
+  healthBar: {fileID: 0}
+  healthText: {fileID: 0}
+  enemyHealthBar: {fileID: 0}
+  damagePopupPrefab: {fileID: 8653298389752135049, guid: 24d2cea86aa5b4505a78b2f8117616f5, type: 3}
+  damagePopupSpawnPoint: {fileID: 6594801323425387856}
+  damagePopupOffset: {x: 0, y: 2, z: 0}
+  spawnDuration: 0.5
+  spawnScale: {x: 0.5, y: 0.5, z: 0.5}
+--- !u!114 &8233508917367046858
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3746709677149628411}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 1
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &4192603049605255215
 GameObject:
   m_ObjectHideFlags: 0
@@ -1077,7 +1205,8 @@ GameObject:
   - component: {fileID: 49420163060822090}
   - component: {fileID: 2118003512239223506}
   - component: {fileID: 8666286470379176898}
-  m_Layer: 0
+  - component: {fileID: 2847144994774225592}
+  m_Layer: 6
   m_Name: SoulShield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1119,7 +1248,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2.8
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8666286470379176898
 MonoBehaviour:
@@ -1133,78 +1262,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6e190829213649489fef3aa798abea5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RogueDeal.Boss.BossPartShield
-  interactionRadius: 2.5
+  interactionRadius: 1
   renderers: []
   destroyVFXPrefab: {fileID: 0}
   interactPromptObject: {fileID: 0}
---- !u!1 &4516462348050734248
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 8657631961392081744}
-  - component: {fileID: 4989419061852055264}
-  - component: {fileID: 7610099892550662784}
-  m_Layer: 0
-  m_Name: EventSystem
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &8657631961392081744
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4516462348050734248}
-  serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -15.90727, y: 0, z: 13.21418}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 3624060237672237501}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &4989419061852055264
+--- !u!114 &2847144994774225592
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4516462348050734248}
+  m_GameObject: {fileID: 4192603049605255215}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76c392e42b5098c458856cdf6ecaaaa1, type: 3}
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.EventSystem
-  m_FirstSelected: {fileID: 0}
-  m_sendNavigationEvents: 1
-  m_DragThreshold: 10
---- !u!114 &7610099892550662784
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4516462348050734248}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4f231c4fb786f3946a6b90b886c48677, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.EventSystems.StandaloneInputModule
-  m_SendPointerHoverToParent: 1
-  m_HorizontalAxis: Horizontal
-  m_VerticalAxis: Vertical
-  m_SubmitButton: Submit
-  m_CancelButton: Cancel
-  m_InputActionsPerSecond: 10
-  m_RepeatDelay: 0.5
-  m_ForceModuleActive: 0
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &4945761410813509480
 GameObject:
   m_ObjectHideFlags: 0
@@ -1216,7 +1295,7 @@ GameObject:
   - component: {fileID: 9072667985847499930}
   - component: {fileID: 2301698152115936815}
   - component: {fileID: 8710351317832993461}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: ShieldMesh
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1233,7 +1312,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1.05, y: 1.05, z: 1.05}
+  m_LocalScale: {x: 2, y: 2, z: 2}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 49420163060822090}
@@ -1271,7 +1350,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1411,7 +1490,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 6548239199851017825}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -15.90727, y: 0, z: 17.21418}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1442,6 +1521,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &7188308418186076209
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1571,7 +1651,10 @@ GameObject:
   - component: {fileID: 8702273105862268308}
   - component: {fileID: 819317826491086624}
   - component: {fileID: 4307194153576722202}
-  m_Layer: 0
+  - component: {fileID: 6755977893624315321}
+  - component: {fileID: 4924709093657036725}
+  - component: {fileID: 6408395599901928649}
+  m_Layer: 6
   m_Name: LeftHand
   m_TagString: Enemy
   m_Icon: {fileID: 0}
@@ -1648,7 +1731,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 24b664e23775d44c19f077cb8f21630b, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1692,6 +1775,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &4307194153576722202
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1705,7 +1789,71 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RogueDeal.Boss.BossPart
   definition: {fileID: 11400000, guid: 932022fdbb1384e52852496f9e96b9c6, type: 2}
+  debugDamage: 0
   shield: {fileID: 8304702880086338207}
+--- !u!114 &6755977893624315321
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6709279928770081126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9b8ada1a63c12c94391c30bfe588ff30, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.DamagePopup
+  damageText: {fileID: 0}
+  canvasGroup: {fileID: 0}
+  moveDuration: 1
+  moveDistance: 1
+  normalColor: {r: 1, g: 1, b: 1, a: 1}
+  criticalColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  immuneColor: {r: 0.65, g: 0.65, b: 0.7, a: 1}
+  billboardToCamera: 1
+--- !u!114 &4924709093657036725
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6709279928770081126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7befd6ec878235a479fa36bce13aff23, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.EnemyVisual
+  modelRoot: {fileID: 0}
+  animator: {fileID: 0}
+  renderers: []
+  uiCanvas: {fileID: 0}
+  enemyNameText: {fileID: 0}
+  healthBar: {fileID: 0}
+  healthText: {fileID: 0}
+  enemyHealthBar: {fileID: 0}
+  damagePopupPrefab: {fileID: 8653298389752135049, guid: 24d2cea86aa5b4505a78b2f8117616f5, type: 3}
+  damagePopupSpawnPoint: {fileID: 0}
+  damagePopupOffset: {x: 0, y: 2, z: 0}
+  spawnDuration: 0.5
+  spawnScale: {x: 0.5, y: 0.5, z: 0.5}
+--- !u!114 &6408395599901928649
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6709279928770081126}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 1
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &6884189630868689526
 GameObject:
   m_ObjectHideFlags: 0
@@ -1795,7 +1943,8 @@ GameObject:
   - component: {fileID: 2599019407850128710}
   - component: {fileID: 628253444484511954}
   - component: {fileID: 8304702880086338207}
-  m_Layer: 0
+  - component: {fileID: 6102074733238723692}
+  m_Layer: 6
   m_Name: SoulShield
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -1837,7 +1986,7 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 2.8
+  m_Radius: 1
   m_Center: {x: 0, y: 0, z: 0}
 --- !u!114 &8304702880086338207
 MonoBehaviour:
@@ -1851,10 +2000,28 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f6e190829213649489fef3aa798abea5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::RogueDeal.Boss.BossPartShield
-  interactionRadius: 2.5
+  interactionRadius: 1
   renderers: []
   destroyVFXPrefab: {fileID: 0}
   interactPromptObject: {fileID: 0}
+--- !u!114 &6102074733238723692
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7196284902139998673}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 31850b443ff8beb4b8f62a804e249b9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Puzzles.PuzzleRealmVisual
+  realmMode: 0
+  tintRealmMaterials: 1
+  useRealmNoiseDissolve: 1
+  realmDissolveDuration: 0.45
+  realmDissolveRenderersOverride: []
+  bothRealmsDissolveMaterialTemplate: {fileID: 0}
 --- !u!1 &7673848745684934991
 GameObject:
   m_ObjectHideFlags: 0

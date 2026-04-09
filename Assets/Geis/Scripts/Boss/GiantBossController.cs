@@ -15,9 +15,7 @@ namespace RogueDeal.Boss
     ///   - Detects when both hands are broken and exposes the CritSpot.
     ///   - Tracks the soul pool (boss HP); notifies UI and handles defeat.
     ///   - Manages phase transitions via the IBossPhase interface:
-    ///       Phase 1  → no shields, slam-dodge-attack.
-    ///       Phase 2  → hands land Shielded; soul-realm shield must be broken first.
-    ///       Phase 3  → same structure as Phase 2; tuning via GiantBossDefinition (optional if phase3SoulThreshold is 0).
+    ///       Each phase is configured by a <see cref="GiantBossPhaseData"/> entry (shields, slam cadence, crit window, soul threshold to advance).
     ///
     /// Slam cycle detail (per hand):
     ///   1. SetState(Slamming)  — windup animation plays.
@@ -54,6 +52,25 @@ namespace RogueDeal.Boss
         [Tooltip("Auto-located at encounter start if null.")]
         [SerializeField] private CombatEntity playerEntity;
 
+        [Header("Slam impact VFX")]
+        [Tooltip("Optional. VFX spawned at fist impact; BossSlamShockwaveVfx is added at runtime if missing (e.g. store-bought particle prefabs).")]
+        [SerializeField] private GameObject slamShockwaveVfxPrefab;
+
+        [Tooltip("Shockwave ring radius at the start of the expand (meters).")]
+        [SerializeField] private float slamShockwaveStartRadius = 0.15f;
+
+        [Tooltip("Shockwave radius at the end of the expand (meters). If ≤ 0, uses slamDamageRadius from GiantBossDefinition.")]
+        [SerializeField] private float slamShockwaveEndRadius;
+
+        [Tooltip("Seconds to interpolate from start radius to end radius.")]
+        [SerializeField] private float slamShockwaveExpandDuration = 0.35f;
+
+        [Tooltip("Optional delay after impact (seconds). Use this to sync VFX to the exact fist-ground contact frame.")]
+        [SerializeField] private float slamShockwaveImpactDelay = 0f;
+
+        [Tooltip("Local offset from the BossPart fist (VFX is parented to the fist transform).")]
+        [SerializeField] private Vector3 slamShockwavePositionOffset;
+
         // ── Static events (consumed by BossHealthUI / BossEncounterManager) ────────
 
         /// <summary>Remaining souls changed. (remaining, total)</summary>
@@ -83,6 +100,10 @@ namespace RogueDeal.Boss
         private IBossPhase _currentPhase;
         private Coroutine _slamLoopCoroutine;
         private Coroutine _critWindowCoroutine;
+        private bool _phaseAdvanceLocked;
+
+        private float _pendingCritDrainSouls;
+        private float _requiredCritDrainSoulsThisWindow;
 
         private CombatEntity _combatEntity;
 
@@ -162,25 +183,77 @@ namespace RogueDeal.Boss
 
             OnSoulsChanged?.Invoke(_remainingSouls, definition.totalSouls);
 
-            TransitionToPhase(new GiantBossPhase1());
+            TransitionToPhase(new GiantBossConfiguredPhase(1));
             OnPhaseChanged?.Invoke(1);
 
             Debug.Log($"[GiantBossController] Encounter started: {definition.bossName}");
         }
 
         /// <summary>
-        /// Called by IBossPhase implementations to drain boss HP on crit hits.
+        /// Called by IBossPhase implementations when the crit spot is hit.
+        /// Crit hits accumulate progress; the boss soul pool only changes when the crit is completed.
         /// </summary>
         public void DrainSouls(float damage)
         {
-            float drain = damage * definition.soulDrainPerDamagePoint;
-            _remainingSouls = Mathf.Max(0f, _remainingSouls - drain);
+            if (!_encounterStarted || definition == null)
+                return;
+            if (_phaseAdvanceLocked)
+                return;
+            if (!_critSpotExposed)
+                return;
 
+            float drainSouls = damage * definition.soulDrainPerDamagePoint;
+            if (drainSouls <= 0f)
+                return;
+
+            _pendingCritDrainSouls += drainSouls;
+
+            // Health only updates once the player has done "enough" crit damage for this phase.
+            if (_pendingCritDrainSouls < _requiredCritDrainSoulsThisWindow)
+                return;
+
+            CompleteCritDrainToPhaseThreshold();
+        }
+
+        private void CompleteCritDrainToPhaseThreshold()
+        {
+            if (definition == null)
+                return;
+            var data = definition.GetPhaseData(_phaseIndex);
+
+            float total = Mathf.Max(0.0001f, definition.totalSouls);
+            float threshold = data.exitSoulPercentThreshold;
+            float targetSouls = Mathf.Clamp01(threshold) * total;
+
+            // Clamp to the phase target and advance immediately.
+            _remainingSouls = Mathf.Max(0f, targetSouls);
             OnSoulsChanged?.Invoke(_remainingSouls, definition.totalSouls);
-            Debug.Log($"[GiantBossController] Souls drained: {drain:F1}. Remaining: {_remainingSouls:F1}/{definition.totalSouls}");
 
+            _phaseAdvanceLocked = true;
+
+            if (_critWindowCoroutine != null)
+            {
+                StopCoroutine(_critWindowCoroutine);
+                _critWindowCoroutine = null;
+            }
+
+            critSpot?.SetVulnerable(false);
+            _critSpotExposed = false;
+            _pendingCritDrainSouls = 0f;
+            _requiredCritDrainSoulsThisWindow = 0f;
+
+            // Defeat (final crit) case: if the phase target is 0, this is the kill.
             if (_remainingSouls <= 0f && _encounterStarted)
+            {
                 DefeatBoss();
+                _phaseAdvanceLocked = false;
+                return;
+            }
+
+            ResetPartsForPhase(data.useShieldedHands);
+            AdvancePhase();
+
+            _phaseAdvanceLocked = false;
         }
 
         /// <summary>
@@ -223,22 +296,16 @@ namespace RogueDeal.Boss
 
         private void AdvancePhase()
         {
-            if (_phaseIndex == 1)
-            {
-                _phaseIndex = 2;
-                TransitionToPhase(new GiantBossPhase2());
-                OnPhaseChanged?.Invoke(2);
-                OnPhaseMessage?.Invoke("The Soul Warden's fists begin to glow...");
+            if (_phaseIndex >= definition.PhaseCount)
                 return;
-            }
 
-            if (_phaseIndex == 2 && definition.phase3SoulThreshold > 0f)
-            {
-                _phaseIndex = 3;
-                TransitionToPhase(new GiantBossPhase3());
-                OnPhaseChanged?.Invoke(3);
-                OnPhaseMessage?.Invoke("The veil tears...");
-            }
+            _phaseIndex++;
+            TransitionToPhase(new GiantBossConfiguredPhase(_phaseIndex));
+            OnPhaseChanged?.Invoke(_phaseIndex);
+
+            var data = definition.GetPhaseData(_phaseIndex);
+            if (!string.IsNullOrEmpty(data.enterBannerMessage))
+                OnPhaseMessage?.Invoke(data.enterBannerMessage);
         }
 
         private void TransitionToPhase(IBossPhase newPhase)
@@ -268,12 +335,16 @@ namespace RogueDeal.Boss
                 yield return new WaitUntil(() => !_critSpotExposed);
 
                 yield return SlamHand(rightHandPart, "R");
-                yield return new WaitForSeconds(definition.GetTimeBetweenSlams(_phaseIndex));
+                yield return RealmSimulation.WaitForSecondsRealm(
+                    RealmSimulationGroup.Physical,
+                    definition.GetPhaseData(_phaseIndex).timeBetweenSlams);
 
                 yield return new WaitUntil(() => !_critSpotExposed);
 
                 yield return SlamHand(leftHandPart, "L");
-                yield return new WaitForSeconds(definition.GetTimeBetweenSlams(_phaseIndex));
+                yield return RealmSimulation.WaitForSecondsRealm(
+                    RealmSimulationGroup.Physical,
+                    definition.GetPhaseData(_phaseIndex).timeBetweenSlams);
             }
         }
 
@@ -284,19 +355,21 @@ namespace RogueDeal.Boss
                 || hand.State == BossPartState.Disabled)
                 yield break;
 
-            float groundedDuration = definition.GetSlamGroundedDuration(_phaseIndex);
+            float groundedDuration = definition.GetPhaseData(_phaseIndex).slamGroundedDuration;
 
             // ── Windup ──────────────────────────────────────────────────────────
             hand.SetState(BossPartState.Slamming);
             bossAnimator?.SetTrigger($"SlamWindup_{suffix}");
 
-            yield return new WaitForSeconds(definition.slamWindupDuration);
+            yield return RealmSimulation.WaitForSecondsRealm(
+                RealmSimulationGroup.Physical,
+                definition.slamWindupDuration);
 
             // ── Impact ───────────────────────────────────────────────────────────
             DealSlamDamage(hand);
             bossAnimator?.SetTrigger($"SlamLand_{suffix}");
 
-            bool needsShield = _phaseIndex >= 2
+            bool needsShield = definition.GetPhaseData(_phaseIndex).useShieldedHands
                 && hand.Definition != null
                 && hand.Definition.hasSoulShieldInPhase2;
 
@@ -306,7 +379,7 @@ namespace RogueDeal.Boss
             float elapsed = 0f;
             while (elapsed < groundedDuration && hand.State != BossPartState.Broken)
             {
-                elapsed += Time.deltaTime;
+                elapsed += RealmSimulation.DeltaTime(RealmSimulationGroup.Physical);
                 yield return null;
             }
 
@@ -315,13 +388,20 @@ namespace RogueDeal.Boss
                 hand.SetState(BossPartState.Idle);
 
             bossAnimator?.SetTrigger($"SlamRecover_{suffix}");
-            yield return new WaitForSeconds(definition.slamRecoveryDuration);
+            yield return RealmSimulation.WaitForSecondsRealm(
+                RealmSimulationGroup.Physical,
+                definition.slamRecoveryDuration);
         }
 
         // ── Slam damage ────────────────────────────────────────────────────────────
 
         private void DealSlamDamage(BossPart hand)
         {
+            if (!RealmSimulation.IsSimulating(RealmSimulationGroup.Physical))
+                return;
+
+            StartCoroutine(PlaySlamShockwaveOnImpact(hand));
+
             if (playerEntity == null) return;
 
             float dist = Vector3.Distance(hand.transform.position, playerEntity.transform.position);
@@ -339,6 +419,43 @@ namespace RogueDeal.Boss
                 damageAmount = definition.slamDamage,
                 hitPosition  = playerEntity.GetHitPoint()
             });
+        }
+
+        private IEnumerator PlaySlamShockwaveOnImpact(BossPart hand)
+        {
+            float wait = Mathf.Max(0f, slamShockwaveImpactDelay);
+            if (wait > 0f)
+                yield return RealmSimulation.WaitForSecondsRealm(RealmSimulationGroup.Physical, wait);
+
+            TryPlaySlamShockwave(hand);
+        }
+
+        /// <summary>
+        /// Spawns the optional slam shockwave parented to the fist; radii from inspector (end defaults to slam damage radius).
+        /// </summary>
+        private void TryPlaySlamShockwave(BossPart hand)
+        {
+            if (slamShockwaveVfxPrefab == null || definition == null || hand == null)
+                return;
+
+            GameObject instance = Instantiate(slamShockwaveVfxPrefab);
+            Transform fist = hand.transform;
+            instance.transform.SetParent(fist, false);
+            instance.transform.localPosition = slamShockwavePositionOffset;
+            instance.transform.localRotation = slamShockwaveVfxPrefab.transform.localRotation;
+            instance.transform.localScale = slamShockwaveVfxPrefab.transform.localScale;
+
+            // Prefer an existing driver; otherwise add one so third-party VFX prefabs work without manual setup.
+            var shockwave = instance.GetComponent<BossSlamShockwaveVfx>()
+                ?? instance.GetComponentInChildren<BossSlamShockwaveVfx>(true);
+            if (shockwave == null)
+                shockwave = instance.AddComponent<BossSlamShockwaveVfx>();
+
+            float endR = slamShockwaveEndRadius > 0f ? slamShockwaveEndRadius : definition.slamDamageRadius;
+            shockwave.Play(
+                Mathf.Max(0f, slamShockwaveStartRadius),
+                Mathf.Max(0f, endR),
+                slamShockwaveExpandDuration);
         }
 
         // ── Part broken / crit-spot cycle ──────────────────────────────────────────
@@ -367,9 +484,16 @@ namespace RogueDeal.Boss
         {
             _critSpotExposed = true;
 
-            float windowSeconds = definition.GetCritWindowSeconds(_phaseIndex);
-            bool requiresSoul = definition.GetCritRequiresSoulRealm(_phaseIndex);
+            var phaseData = definition.GetPhaseData(_phaseIndex);
+            float windowSeconds = phaseData.critSpotVulnerableWindow;
+            bool requiresSoul = phaseData.critRequiresSoulRealm;
             critSpot?.SetVulnerable(true, requiresSoulRealm: requiresSoul);
+
+            // This window's "required" crit is exactly the remaining souls down to the phase's exit threshold.
+            float total = Mathf.Max(0.0001f, definition.totalSouls);
+            float targetSouls = Mathf.Clamp01(phaseData.exitSoulPercentThreshold) * total;
+            _pendingCritDrainSouls = 0f;
+            _requiredCritDrainSoulsThisWindow = Mathf.Max(0f, _remainingSouls - targetSouls);
 
             Debug.Log($"[GiantBossController] Both hands broken — crit spot exposed " +
                       $"(soulRealm={requiresSoul}, window={windowSeconds:F1}s).");
@@ -390,8 +514,10 @@ namespace RogueDeal.Boss
 
             critSpot?.SetVulnerable(false);
             _critSpotExposed = false;
+            _pendingCritDrainSouls = 0f;
+            _requiredCritDrainSoulsThisWindow = 0f;
 
-            ResetPartsForPhase(_phaseIndex >= 2);
+            ResetPartsForPhase(definition.GetPhaseData(_phaseIndex).useShieldedHands);
 
             Debug.Log("[GiantBossController] Crit window closed — hands reset.");
         }

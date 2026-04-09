@@ -54,16 +54,40 @@ namespace RogueDeal.Boss
         [Tooltip("How long phase transition messages remain visible (seconds)")]
         [SerializeField] private float messageDisplayDuration = 3f;
 
+        [Header("Health Smoothing")]
+        [Tooltip("Seconds to smooth health bar changes (SmoothDamp). 0 = snap immediately.")]
+        [SerializeField] private float healthSmoothTime = 0.18f;
+
         // ── Runtime state ──────────────────────────────────────────────────────────
 
         private Color _activePhaseColor;
         private Coroutine _messageCoroutine;
+        private float _targetHealth01 = 1f;
+        private float _healthVel;
 
         // ── Unity lifecycle ────────────────────────────────────────────────────────
 
         private void Awake()
         {
             _activePhaseColor = phase1Color;
+        }
+
+        private void Update()
+        {
+            if (healthSlider == null)
+                return;
+
+            if (healthSmoothTime <= 0f)
+            {
+                healthSlider.value = _targetHealth01;
+                return;
+            }
+
+            healthSlider.value = Mathf.SmoothDamp(
+                healthSlider.value,
+                _targetHealth01,
+                ref _healthVel,
+                healthSmoothTime);
         }
 
         private void OnEnable()
@@ -129,8 +153,9 @@ namespace RogueDeal.Boss
 
         private void HandleHealthChanged(float current, float max)
         {
-            if (healthSlider != null)
-                healthSlider.value = max > 0f ? current / max : 0f;
+            _targetHealth01 = max > 0f ? current / max : 0f;
+            if (healthSlider != null && healthSmoothTime <= 0f)
+                healthSlider.value = _targetHealth01;
         }
 
         private void HandlePhaseChanged(int phase)

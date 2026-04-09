@@ -18,5 +18,5 @@ MonoBehaviour:
   weaponPrefab: {fileID: 1218206468385280803, guid: 583d1dc9b6f67f549a61d72471d123d5, type: 3}
   slotType: 2
   baseDamage: 50
-  maxRange: 2
+  maxRange: 5
   damageTypeMultiplierArray: []

@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
 
@@ -411,6 +412,22 @@ namespace RogueDeal.Combat.Presentation
                 Debug.Log($"[WeaponHitbox] Target {target.gameObject.name} is already dead, skipping damage");
                 return;
             }
+
+            var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
+            if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
+            {
+                CombatEntity attackerEntity = combatExecutor.GetComponent<CombatEntity>();
+                CombatEvents.TriggerDamageApplied(new CombatEventData
+                {
+                    source = attackerEntity,
+                    target = target,
+                    damageAmount = 0f,
+                    wasCritical = false,
+                    wasImmune = true,
+                    hitPosition = target.GetHitPoint()
+                });
+                return;
+            }
             
             var weapon = attackerData.equippedWeapon;
             float hpBefore = targetData.currentHealth;
@@ -447,6 +464,7 @@ namespace RogueDeal.Combat.Presentation
                     target = target,
                     damageAmount = damageDealt,
                     wasCritical = wasCritical,
+                    wasImmune = false,
                     hitPosition = target.GetHitPoint()
                 });
                 
