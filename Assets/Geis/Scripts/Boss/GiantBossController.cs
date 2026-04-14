@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using Geis.SoulRealm;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
@@ -51,6 +52,13 @@ namespace RogueDeal.Boss
         [Header("Player Reference")]
         [Tooltip("Auto-located at encounter start if null.")]
         [SerializeField] private CombatEntity playerEntity;
+
+        [Header("Slam Targeting")]
+        [Tooltip("Layers checked for slam targets. Keep as Everything unless you have dedicated combat layers.")]
+        [SerializeField] private LayerMask slamTargetLayers = ~0;
+
+        [Tooltip("Optional tag filter for slam targets. Leave empty to hit any CombatEntity in range.")]
+        [SerializeField] private string[] slamTargetTags = { "Player" };
 
         [Header("Slam impact VFX")]
         [Tooltip("Optional. VFX spawned at fist impact; BossSlamShockwaveVfx is added at runtime if missing (e.g. store-bought particle prefabs).")]
@@ -167,8 +175,7 @@ namespace RogueDeal.Boss
             if (player != null)
                 playerEntity = player;
 
-            if (playerEntity == null)
-                playerEntity = FindFirstObjectByType<CombatEntity>();
+            ResolvePlayerEntity();
 
             _remainingSouls    = definition.totalSouls;
             _phaseIndex        = 1;
@@ -401,24 +408,75 @@ namespace RogueDeal.Boss
                 return;
 
             StartCoroutine(PlaySlamShockwaveOnImpact(hand));
+            if (hand == null || definition == null)
+                return;
 
-            if (playerEntity == null) return;
+            ResolvePlayerEntity();
 
-            float dist = Vector3.Distance(hand.transform.position, playerEntity.transform.position);
-            if (dist > definition.slamDamageRadius) return;
+            List<CombatEntity> targets = CombatActionDamageUtility.CollectTargetsInSphere(
+                hand.transform.position,
+                definition.slamDamageRadius,
+                slamTargetLayers,
+                sourceEntity: _combatEntity,
+                requiredTags: slamTargetTags,
+                explicitCandidate: playerEntity);
 
-            var playerData = playerEntity.GetEntityData();
-            if (playerData == null || !playerData.IsAlive) return;
+            if (targets.Count == 0)
+                return;
 
-            playerData.TakeDamage(definition.slamDamage);
+            bool appliedViaCombatAction = CombatActionDamageUtility.ApplyActionToTargets(
+                _combatEntity,
+                definition.slamDamageAction,
+                targets);
 
-            CombatEvents.TriggerDamageApplied(new CombatEventData
+            if (appliedViaCombatAction)
+                return;
+
+            ApplyLegacySlamDamage(targets);
+        }
+
+        private void ApplyLegacySlamDamage(IReadOnlyList<CombatEntity> targets)
+        {
+            if (definition == null || definition.slamDamage <= 0f)
+                return;
+
+            for (int i = 0; i < targets.Count; i++)
             {
-                source      = _combatEntity,
-                target      = playerEntity,
-                damageAmount = definition.slamDamage,
-                hitPosition  = playerEntity.GetHitPoint()
-            });
+                CombatEntity target = targets[i];
+                if (target == null)
+                    continue;
+
+                CombatEntityData targetData = target.GetEntityData();
+                if (targetData == null || !targetData.IsAlive)
+                    continue;
+
+                targetData.TakeDamage(definition.slamDamage);
+
+                Vector3 hitPosition = target.GetHitPoint();
+                CombatEvents.TriggerDamageApplied(new CombatEventData
+                {
+                    source = _combatEntity,
+                    target = target,
+                    damageAmount = definition.slamDamage,
+                    hitPosition = hitPosition
+                });
+
+                CombatEvents.TriggerHitReactionStarted(new CombatEventData
+                {
+                    source = _combatEntity,
+                    target = target,
+                    damageAmount = definition.slamDamage,
+                    hitPosition = hitPosition
+                });
+            }
+        }
+
+        private void ResolvePlayerEntity()
+        {
+            if (playerEntity != null && playerEntity != _combatEntity)
+                return;
+
+            playerEntity = CombatActionDamageUtility.FindLikelyPlayerEntity(_combatEntity);
         }
 
         private IEnumerator PlaySlamShockwaveOnImpact(BossPart hand)

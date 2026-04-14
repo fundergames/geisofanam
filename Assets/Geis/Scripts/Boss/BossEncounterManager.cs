@@ -105,7 +105,14 @@ namespace RogueDeal.Boss
 
             // Resolve player if not already set
             if (playerEntity == null)
-                playerEntity = FindFirstObjectByType<CombatEntity>();
+            {
+                CombatEntity bossEntity = giantBossController != null
+                    ? giantBossController.GetComponent<CombatEntity>()
+                    : bossController != null
+                        ? bossController.GetComponent<CombatEntity>()
+                        : null;
+                playerEntity = CombatActionDamageUtility.FindLikelyPlayerEntity(bossEntity);
+            }
 
             _encounterActive = true;
 

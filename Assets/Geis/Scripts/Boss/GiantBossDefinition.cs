@@ -1,4 +1,5 @@
 using UnityEngine;
+using RogueDeal.Combat.Core.Data;
 
 namespace RogueDeal.Boss
 {
@@ -66,6 +67,9 @@ namespace RogueDeal.Boss
 
         [Tooltip("Radius around the fist's grounded position that damages the player.")]
         public float slamDamageRadius = 3f;
+
+        [Tooltip("Optional. When assigned, fist slams apply this CombatAction's effects (same pipeline as player attacks). If empty, slamDamage is used as a legacy fallback.")]
+        public CombatAction slamDamageAction;
 
         // ── Legacy (migration from pre–phase-blob assets) ─────────────────────────
 
