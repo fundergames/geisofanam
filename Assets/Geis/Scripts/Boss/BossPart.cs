@@ -42,6 +42,19 @@ namespace RogueDeal.Boss
                  "Activated when this part enters the Shielded state.")]
         [SerializeField] private BossPartShield shield;
 
+        [Header("Visuals")]
+        [Tooltip("Optional indicator shown while this part is stunned (Pinned).")]
+        [SerializeField] private GameObject stunnedIndicator;
+        [Tooltip("Optional indicator shown while this part is broken (HP depleted).")]
+        [SerializeField] private GameObject brokenIndicator;
+
+        [Header("Pinned (stunned) behaviour")]
+        [Tooltip("If true, when the part becomes Pinned it will lock its local position so animation can't pull it back to idle.")]
+        [SerializeField] private bool lockLocalPositionWhilePinned = true;
+
+        [Tooltip("If true, also lock local rotation while pinned. Leave off to let rotation/secondary motion keep animating.")]
+        [SerializeField] private bool lockLocalRotationWhilePinned = false;
+
         // ── Events ─────────────────────────────────────────────────────────────────
 
         /// <summary>Fired whenever this part's state changes. (part, newState)</summary>
@@ -57,6 +70,9 @@ namespace RogueDeal.Boss
 
         private BossPartState _state = BossPartState.Idle;
         private float _currentHealth;
+        private bool _pinnedTransformLocked;
+        private Vector3 _pinnedLocalPosition;
+        private Quaternion _pinnedLocalRotation;
 
         // ── Components ─────────────────────────────────────────────────────────────
 
@@ -71,7 +87,13 @@ namespace RogueDeal.Boss
             ? Mathf.Clamp01(_currentHealth / definition.maxHealth)
             : 0f;
 
-        public bool AllowsPhysicalWeaponHits() => _state == BossPartState.Grounded;
+        public bool AllowsPhysicalWeaponHits() => _state == BossPartState.Grounded || _state == BossPartState.Pinned;
+
+        /// <summary>
+        /// True only for the break event where this part transitioned from Pinned -> Broken.
+        /// Used by the controller to play a "return to side" recover animation for pinned breaks.
+        /// </summary>
+        public bool WasPinnedWhenBrokenThisCycle { get; private set; }
 
         // ── Unity lifecycle ────────────────────────────────────────────────────────
 
@@ -88,6 +110,18 @@ namespace RogueDeal.Boss
         private void Start()
         {
             InitialiseFromDefinition();
+        }
+
+        private void LateUpdate()
+        {
+            if (!_pinnedTransformLocked)
+                return;
+            if (_state != BossPartState.Pinned)
+                return;
+
+            transform.localPosition = _pinnedLocalPosition;
+            if (lockLocalRotationWhilePinned)
+                transform.localRotation = _pinnedLocalRotation;
         }
 
         private void OnEnable()
@@ -125,6 +159,28 @@ namespace RogueDeal.Boss
             if (shield != null)
                 shield.gameObject.SetActive(newState == BossPartState.Shielded);
 
+            if (stunnedIndicator != null)
+                stunnedIndicator.SetActive(newState == BossPartState.Pinned);
+
+            if (brokenIndicator != null)
+                brokenIndicator.SetActive(newState == BossPartState.Broken);
+
+            if (newState == BossPartState.Pinned)
+            {
+                if (lockLocalPositionWhilePinned || lockLocalRotationWhilePinned)
+                {
+                    _pinnedTransformLocked = true;
+                    if (lockLocalPositionWhilePinned)
+                        _pinnedLocalPosition = transform.localPosition;
+                    if (lockLocalRotationWhilePinned)
+                        _pinnedLocalRotation = transform.localRotation;
+                }
+            }
+            else
+            {
+                _pinnedTransformLocked = false;
+            }
+
             OnStateChanged?.Invoke(this, newState);
         }
 
@@ -145,6 +201,13 @@ namespace RogueDeal.Boss
                 shield.gameObject.SetActive(false);
                 shield.Prime(withShield);
             }
+
+            if (stunnedIndicator != null)
+                stunnedIndicator.SetActive(false);
+            if (brokenIndicator != null)
+                brokenIndicator.SetActive(false);
+            _pinnedTransformLocked = false;
+            WasPinnedWhenBrokenThisCycle = false;
 
             SetState(BossPartState.Idle);
             OnPartReset?.Invoke(this);
@@ -177,7 +240,7 @@ namespace RogueDeal.Boss
             _entityData?.Heal(data.damageAmount);
 
             // Only register real damage when the fist is physically attackable
-            if (_state != BossPartState.Grounded)
+            if (_state != BossPartState.Grounded && _state != BossPartState.Pinned)
             {
                 if (debugDamage)
                     Debug.Log($"[BossPart] Ignored damage because state={_state} (must be Grounded).", this);
@@ -203,6 +266,7 @@ namespace RogueDeal.Boss
         private void BreakPart()
         {
             _currentHealth = 0f;
+            WasPinnedWhenBrokenThisCycle = _state == BossPartState.Pinned;
             SetState(BossPartState.Broken);
             OnPartBroken?.Invoke(this);
         }
@@ -217,6 +281,8 @@ namespace RogueDeal.Boss
         Slamming,
         /// <summary>Fist grounded; physically attackable.</summary>
         Grounded,
+        /// <summary>Fist locked in place during phase mechanics; physically attackable and should not recover.</summary>
+        Pinned,
         /// <summary>Fist grounded but covered by a soul-realm shield. Destroy shield first.</summary>
         Shielded,
         /// <summary>HP depleted this cycle; waiting for crit-spot phase.</summary>

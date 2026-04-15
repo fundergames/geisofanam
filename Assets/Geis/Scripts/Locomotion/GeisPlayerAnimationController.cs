@@ -2,7 +2,6 @@
 // Original: Synty.AnimationBaseLocomotion.Samples.SamplePlayerAnimationController
 
 using System;
-using Synty.AnimationBaseLocomotion.Samples.InputSystem;
 using System.Collections.Generic;
 using UnityEngine;
 using Geis.Combat;
@@ -697,8 +696,7 @@ namespace Geis.Locomotion
 
             if (enable && _currentLockOnTarget != null)
             {
-                var lockOn = _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>();
-                lockOn?.Highlight(true, true);
+                _currentLockOnTarget.GetComponent<Geis.Combat.GeisObjectLockOn>()?.Highlight(true, true);
             }
         }
 
@@ -2097,7 +2095,7 @@ namespace Geis.Locomotion
 
                 foreach (GameObject target in _currentTargetCandidates)
                 {
-                    target.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(false, false);
+                    target.GetComponent<Geis.Combat.GeisObjectLockOn>()?.Highlight(false, false);
 
                     float distance = Vector3.Distance(GetLockOnDistanceEvaluationPosition(), target.transform.position);
                     float distanceScore = 1 / distance * 100;
@@ -2122,14 +2120,14 @@ namespace Geis.Locomotion
 
                 if (_currentLockOnTarget != null)
                 {
-                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(true, false);
+                    _currentLockOnTarget.GetComponent<Geis.Combat.GeisObjectLockOn>()?.Highlight(true, false);
                 }
             }
             else
             {
                 if (_currentTargetCandidates.Contains(_currentLockOnTarget))
                 {
-                    _currentLockOnTarget.GetComponent<Synty.AnimationBaseLocomotion.Samples.SampleObjectLockOn>()?.Highlight(true, true);
+                    _currentLockOnTarget.GetComponent<Geis.Combat.GeisObjectLockOn>()?.Highlight(true, true);
                 }
                 else
                 {
