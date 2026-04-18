@@ -44,6 +44,12 @@ namespace Geis.SoulRealm
         [SerializeField] private bool exitHoldUseHorizontalDistance = true;
         [SerializeField] private float enterGraceSeconds = 0.35f;
 
+        [Header("Exit shortcuts")]
+        [Tooltip("If true, double-tapping the SoulRealm/Return input while already in the soul realm immediately exits (skips hold).")]
+        [SerializeField] private bool enableDoubleTapInstantExit = true;
+        [Tooltip("Max seconds between taps to count as a double tap.")]
+        [SerializeField] private float doubleTapMaxGapSeconds = 0.30f;
+
         [Header("Visuals")]
         [SerializeField] private SoulRealmVisuals visuals;
         [Tooltip("Screen-centered particle trail while holding soul-realm exit (left bumper). Auto-added if unset.")]
@@ -85,6 +91,7 @@ namespace Geis.SoulRealm
         /// <summary>True while exit input is held and exit is allowed (after grace). Do not use _exitHoldTimer &gt; 0 alone — timer is 0 on the first hold frame.</summary>
         private bool _exitHoldHeld;
         private bool _isSoulRealm;
+        private float _lastSoulRealmTapTime = -999f;
 
         private Vector3 _bodyPositionAtEntry;
         private Quaternion _bodyRotationAtEntry;
@@ -307,6 +314,19 @@ namespace Geis.SoulRealm
                 var sr = inputReader.SoulRealm;
                 bool canExit = _enterGrace <= 0f;
 
+                if (canExit && enableDoubleTapInstantExit && sr.WasPressedThisFrame())
+                {
+                    float now = Time.unscaledTime;
+                    if (now - _lastSoulRealmTapTime <= Mathf.Max(0.05f, doubleTapMaxGapSeconds))
+                    {
+                        _lastSoulRealmTapTime = -999f;
+                        ForceExitSoulRealm();
+                        return;
+                    }
+
+                    _lastSoulRealmTapTime = now;
+                }
+
                 if (canExit && sr.IsPressed())
                 {
                     _exitHoldHeld = true;
@@ -378,6 +398,7 @@ namespace Geis.SoulRealm
             _enterMovementFreeze = Mathf.Max(enterGraceSeconds, dissolveEnter);
             _exitHoldTimer = 0f;
             _exitHoldHeld = false;
+            _lastSoulRealmTapTime = -999f;
 
             if (bodyLocomotion != null)
             {
@@ -464,6 +485,7 @@ namespace Geis.SoulRealm
         public void ForceExitSoulRealm()
         {
             if (!_isSoulRealm) return;
+            _lastSoulRealmTapTime = -999f;
             _exitHoldTimer = 0f;
             _exitHoldHeld = false;
             if (cameraController != null)

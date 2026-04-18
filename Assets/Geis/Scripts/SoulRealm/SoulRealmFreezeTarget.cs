@@ -14,6 +14,7 @@ namespace Geis.SoulRealm
 
         private float _savedAnimatorSpeed = 1f;
         private bool _frozen;
+        private bool _allowSoulRealmFreeze = true;
         private ParticleSystem[] _particles;
         private bool[] _particleWasPlaying;
 
@@ -43,8 +44,25 @@ namespace Geis.SoulRealm
                 ApplyFrozen(false);
         }
 
+        /// <summary>
+        /// Allows gameplay systems to opt out of soul-realm freezing at runtime (e.g. a boss that must keep animating in phase 2).
+        /// If freezing is disallowed while currently frozen, this immediately unfreezes.
+        /// </summary>
+        public void SetAllowSoulRealmFreeze(bool allow)
+        {
+            if (_allowSoulRealmFreeze == allow)
+                return;
+
+            _allowSoulRealmFreeze = allow;
+
+            if (!_allowSoulRealmFreeze && _frozen)
+                ApplyFrozen(false);
+        }
+
         public void ApplyFrozen(bool frozen)
         {
+            if (!_allowSoulRealmFreeze)
+                return;
             if (_frozen == frozen)
                 return;
             _frozen = frozen;

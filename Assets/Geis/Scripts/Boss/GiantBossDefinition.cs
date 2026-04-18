@@ -140,7 +140,19 @@ namespace RogueDeal.Boss
                 slamGroundedDuration       = slamGroundedDuration,
                 critSpotVulnerableWindow   = critSpotVulnerableWindow,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase1,
-                useShieldedHands           = false
+                useShieldedHands           = false,
+
+                // Data-driven structure defaults (Phase 1)
+                stunGateSeconds            = 0f,
+                completionGateSeconds      = 0f,
+                stunByBreakingSoulShield   = false,
+                requireBothFistsDestroyed  = false,
+                requirePhysicalCritShield  = false,
+                requireSoulCritShield      = true,  // Phase 1 ends on crit-shield break (not soul threshold)
+                requirePhysicalCritSpotHit = false,
+                requireSoulCritSpotHit     = false,
+                physicalBeamsCount         = 0,
+                soulBeamsCount             = 0
             };
 
             var phase2 = new GiantBossPhaseData
@@ -151,7 +163,19 @@ namespace RogueDeal.Boss
                 slamGroundedDuration       = slamGroundedDurationPhase2,
                 critSpotVulnerableWindow   = p2Crit,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase2,
-                useShieldedHands           = true
+                useShieldedHands           = true,
+
+                // Data-driven structure defaults (Phase 2)
+                stunGateSeconds            = 0f,
+                completionGateSeconds      = 0f,
+                stunByBreakingSoulShield   = true,
+                requireBothFistsDestroyed  = true,
+                requirePhysicalCritShield  = true,
+                requireSoulCritShield      = true,
+                requirePhysicalCritSpotHit = false,
+                requireSoulCritSpotHit     = false,
+                physicalBeamsCount         = 2,
+                soulBeamsCount             = 0
             };
 
             if (phase3SoulThreshold <= 0f)
@@ -165,7 +189,19 @@ namespace RogueDeal.Boss
                 slamGroundedDuration       = p3SlamGround,
                 critSpotVulnerableWindow   = p3Crit,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase3,
-                useShieldedHands           = true
+                useShieldedHands           = true,
+
+                // Data-driven structure defaults (Phase 3)
+                stunGateSeconds            = 0f,
+                completionGateSeconds      = 0f,
+                stunByBreakingSoulShield   = true,
+                requireBothFistsDestroyed  = true,
+                requirePhysicalCritShield  = true,
+                requireSoulCritShield      = true,
+                requirePhysicalCritSpotHit = true,
+                requireSoulCritSpotHit     = true,
+                physicalBeamsCount         = 2,
+                soulBeamsCount             = 3
             };
 
             return new[] { phase1, phase2, phase3 };

@@ -291,6 +291,10 @@ namespace Geis.Combat
                     var ce = h.collider.GetComponent<CombatEntity>() ?? h.collider.GetComponentInParent<CombatEntity>();
                     if (ce != null)
                     {
+                        // In Soul Realm, the frozen physical body can be in front of the camera and shares the same CombatEntity.
+                        // Never allow the aim-ray to select our own physical self as the damage target.
+                        if (_combatEntity != null && ce == _combatEntity)
+                            continue;
                         hitEntity = ce;
                         return h.point;
                     }

@@ -37,5 +37,38 @@ namespace RogueDeal.Boss
         [Header("Hands")]
         [Tooltip("Spawn soul shields on each slam; requires BossPartDefinition.hasSoulShieldInPhase2.")]
         public bool useShieldedHands = false;
+
+        [Header("Timers (optional)")]
+        [Tooltip("Seconds to get both fists into the 'stunned' state for this phase. If <= 0, no stun gate timer.")]
+        public float stunGateSeconds = 0f;
+
+        [Tooltip("Seconds to complete this phase's full objective chain once started. If <= 0, no completion timer.")]
+        public float completionGateSeconds = 0f;
+
+        [Header("Phase objectives (data-driven structure)")]
+        [Tooltip("If true, breaking a fist's soul shield counts as 'stunning' that fist for this phase (pins it).")]
+        public bool stunByBreakingSoulShield = false;
+
+        [Tooltip("If true, the player must break both fists (physical HP) during the completion gate.")]
+        public bool requireBothFistsDestroyed = false;
+
+        [Tooltip("If true, a physical-only crit shield must be destroyed during this phase.")]
+        public bool requirePhysicalCritShield = false;
+
+        [Tooltip("If true, a soul-only crit shield must be destroyed during this phase.")]
+        public bool requireSoulCritShield = false;
+
+        [Tooltip("If true, the crit spot must take at least one valid hit in Physical realm mode.")]
+        public bool requirePhysicalCritSpotHit = false;
+
+        [Tooltip("If true, the crit spot must take at least one valid hit in Soul realm mode.")]
+        public bool requireSoulCritSpotHit = false;
+
+        [Header("Beams (counts)")]
+        [Tooltip("Number of physical-realm tracking beams to fire during this phase.")]
+        public int physicalBeamsCount = 0;
+
+        [Tooltip("Number of soul-realm tracking beams to fire during this phase.")]
+        public int soulBeamsCount = 0;
     }
 }

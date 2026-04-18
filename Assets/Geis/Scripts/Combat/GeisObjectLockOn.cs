@@ -3,7 +3,6 @@
 // Same structure as SampleObjectLockOn: needs child "TargetHighlight" with MeshRenderer.
 
 using UnityEngine;
-using Synty.AnimationBaseLocomotion.Samples;
 
 namespace Geis.Combat
 {
@@ -12,8 +11,39 @@ namespace Geis.Combat
     /// Registers this object when the player enters its trigger; use alongside or instead of SampleObjectLockOn.
     /// Requires child "TargetHighlight" with MeshRenderer (same as SampleObjectLockOn).
     /// </summary>
-    public class GeisObjectLockOn : SampleObjectLockOn
+    public class GeisObjectLockOn : MonoBehaviour
     {
+        [Header("Highlight")]
+        [SerializeField] private Material highlightMaterial;
+        [SerializeField] private Material targetMaterial;
+
+        private Transform _highlightOrb;
+        private MeshRenderer _meshRenderer;
+
+        private void Start()
+        {
+            _highlightOrb = transform.Find("TargetHighlight");
+            if (_highlightOrb == null)
+                return;
+
+            _meshRenderer = _highlightOrb.GetComponent<MeshRenderer>();
+            _highlightOrb.gameObject.SetActive(false);
+        }
+
+        public void Highlight(bool enable, bool targetLock)
+        {
+            if (_highlightOrb == null)
+                return;
+
+            _highlightOrb.gameObject.SetActive(enable);
+            if (!enable || _meshRenderer == null)
+                return;
+
+            var mat = targetLock ? targetMaterial : highlightMaterial;
+            if (mat != null)
+                _meshRenderer.material = mat;
+        }
+
         private void OnTriggerEnter(Collider otherCollider)
         {
             var controller = otherCollider.GetComponent<Geis.Locomotion.GeisPlayerAnimationController>();

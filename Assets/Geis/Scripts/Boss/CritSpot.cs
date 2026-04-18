@@ -51,6 +51,10 @@ namespace RogueDeal.Boss
         [SerializeField] private float ghostHitDamage = 20f;
         [SerializeField] private GameObject soulRealmPromptObject;
 
+        [Header("Debug")]
+        [Tooltip("If true, logs when hits register or are ignored (Editor/Dev builds only).")]
+        [SerializeField] private bool debugHits;
+
         // ── Runtime state ──────────────────────────────────────────────────────────
 
         private bool _isVulnerable;
@@ -172,6 +176,13 @@ namespace RogueDeal.Boss
                 if (!inSoulRealm) return;
             }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (debugHits)
+            {
+                bool inSoulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+                Debug.Log($"[CritSpot] DamageApplied registered: damage={data.damageAmount:F2} inSoulRealm={inSoulRealm} requiresSoulRealm={_requiresSoulRealm}", this);
+            }
+#endif
             RegisterHit(data.damageAmount);
         }
 
@@ -186,6 +197,10 @@ namespace RogueDeal.Boss
 
             if (!GhostIsInRange()) return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (debugHits)
+                Debug.Log($"[CritSpot] GhostAttack registered: damage={ghostHitDamage:F2}", this);
+#endif
             RegisterHit(ghostHitDamage);
         }
 
@@ -193,6 +208,13 @@ namespace RogueDeal.Boss
 
         private void RegisterHit(float damage)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (debugHits)
+            {
+                bool inSoulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+                Debug.Log($"[CritSpot] Hit registered: damage={damage:F2} inSoulRealm={inSoulRealm} vulnerable={_isVulnerable} requiresSoulRealm={_requiresSoulRealm}", this);
+            }
+#endif
             if (hitVFXPrefab != null)
                 Instantiate(hitVFXPrefab, transform.position, Quaternion.identity);
 

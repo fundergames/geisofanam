@@ -2,6 +2,7 @@ using UnityEngine;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
+using Geis.SoulRealm;
 
 namespace RogueDeal.Combat.Presentation
 {
@@ -13,6 +14,10 @@ namespace RogueDeal.Combat.Presentation
     [DefaultExecutionOrder(50)]
     public class Projectile : MonoBehaviour
     {
+        [Header("Debug")]
+        [Tooltip("If true, logs what this projectile hits and how damage is applied (Editor/Dev builds only).")]
+        [SerializeField] private bool debugHits;
+
         [Header("Projectile Settings")]
         [Tooltip("Speed of the projectile")]
         public float speed = 10f;
@@ -46,6 +51,15 @@ namespace RogueDeal.Combat.Presentation
         private bool _soulMarkSteeringHoming;
         private Vector3 _homingMoveDirection = Vector3.forward;
         private float _homingDistanceReference = 1f;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        private void DebugHitLog(string message, CombatEntity targetEntity)
+        {
+            if (!debugHits) return;
+            string targetName = targetEntity != null ? targetEntity.name : "<none>";
+            Debug.Log($"[Projectile] {message} (projectile={name}, target={targetName})", this);
+        }
+#endif
 
         private void Awake()
         {
@@ -229,11 +243,25 @@ namespace RogueDeal.Combat.Presentation
 
                 if (targetEntity != null)
                 {
+                    // Safety: while in Soul Realm, never allow projectiles to apply effects to the shooter's physical self.
+                    // (The physical body remains visible and can be ray-hit / targeted.)
+                    if (SoulRealmManager.Instance != null
+                        && SoulRealmManager.Instance.IsSoulRealmActive
+                        && _sourceEntity != null
+                        && targetEntity == _sourceEntity)
+                    {
+                        _deferredDespawn = true;
+                        return;
+                    }
+
                     var targetData = targetEntity.GetEntityData();
                     if (targetData != null && targetData.IsAlive)
                     {
                         if (TryApplySoulRealmShieldFromProjectile(targetEntity, targetData))
                         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            DebugHitLog("Applied damage via ISoulRealmShieldProjectileSink", targetEntity);
+#endif
                             _deferredDespawn = true;
                             return;
                         }
@@ -241,6 +269,9 @@ namespace RogueDeal.Combat.Presentation
                         var physicalGate = targetEntity.GetComponentInParent<IPhysicalWeaponHitGate>();
                         if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
                         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            DebugHitLog($"Blocked by IPhysicalWeaponHitGate ({physicalGate.GetType().Name})", targetEntity);
+#endif
                             CombatEvents.TriggerDamageApplied(new CombatEventData
                             {
                                 source = _sourceEntity,
@@ -268,6 +299,9 @@ namespace RogueDeal.Combat.Presentation
                         float damageDealt = hpBefore - targetData.currentHealth;
                         if (damageDealt > 0f)
                         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            DebugHitLog($"Dealt damage={damageDealt:F2} (crit={wasCritical})", targetEntity);
+#endif
                             CombatEvents.TriggerDamageApplied(new CombatEventData
                             {
                                 source = _sourceEntity,
@@ -277,6 +311,12 @@ namespace RogueDeal.Combat.Presentation
                                 wasImmune = false,
                                 hitPosition = targetEntity.GetHitPoint()
                             });
+                        }
+                        else
+                        {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                            DebugHitLog("No damage dealt (effects resulted in 0)", targetEntity);
+#endif
                         }
                         }
                     }
@@ -311,7 +351,6 @@ namespace RogueDeal.Combat.Presentation
                 damageAmount = shieldDamage,
                 wasCritical = wasCritical,
                 wasImmune = false,
-                skipEntityDamageInterceptors = true,
                 hitPosition = targetEntity.GetHitPoint()
             });
             return true;

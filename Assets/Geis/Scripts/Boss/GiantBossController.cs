@@ -44,6 +44,30 @@ namespace RogueDeal.Boss
         [SerializeField] private BossPart leftHandPart;
         [SerializeField] private CritSpot critSpot;
 
+        [Header("Phase 3 — Dual-Realm Loop (optional)")]
+        [Tooltip("Soul-only shield gating the crit spot in phase 3.")]
+        [SerializeField] private SoulShieldTarget phase3SoulCritShield;
+        [Tooltip("Physical-only shield gating the crit spot in phase 3.")]
+        [SerializeField] private PhysicalShieldTarget phase3PhysicalCritShield;
+        [Tooltip("Eye weak spot used after beams complete (physical-only).")]
+        [SerializeField] private PhysicalShieldTarget phase3EyeTarget;
+        [Tooltip("Origin transform for tracking beams (defaults to crit spot if null).")]
+        [SerializeField] private Transform phase3EyeOrigin;
+
+        [Header("Phase 3 — Tuning")]
+        [Tooltip("X seconds in Soul Realm to break the soul crit shield before phase 3 restarts.")]
+        [SerializeField] private float phase3SoulShieldSeconds = 8f;
+        [Tooltip("Y seconds in Physical Realm to break both pinned fists after soul shield breaks.")]
+        [SerializeField] private float phase3PhysicalCleanupSeconds = 10f;
+        [Tooltip("Z tracking beams fired after physical crit shield breaks.")]
+        [SerializeField] private int phase3TrackingBeamCount = 5;
+        [Tooltip("Seconds between tracking beams.")]
+        [SerializeField] private float phase3TrackingBeamInterval = 0.6f;
+        [Tooltip("Damage applied to the player per tracking beam (line-of-sight).")]
+        [SerializeField] private float phase3TrackingBeamDamage = 12f;
+        [Tooltip("Seconds the eye stays vulnerable after beams complete. If <= 0, remains vulnerable until reset/kill.")]
+        [SerializeField] private float phase3EyeVulnerableSeconds = 6f;
+
         [Header("Animation")]
         [Tooltip("Main boss animator. Right-hand triggers: SlamWindup_R / SlamLand_R / SlamRecover_R. " +
                  "Left-hand uses the same with _L suffix. Death: Die.")]
@@ -78,6 +102,20 @@ namespace RogueDeal.Boss
 
         [Tooltip("Local offset from the BossPart fist (VFX is parented to the fist transform).")]
         [SerializeField] private Vector3 slamShockwavePositionOffset;
+
+        [Header("Tracking beam VFX")]
+        [Tooltip("Optional. If assigned, used as the pooled prefab for tracking beams. Should contain (or will be given) a BossBeamLineVfx + LineRenderer.")]
+        [SerializeField] private GameObject trackingBeamVfxPrefab;
+        [Tooltip("Optional override material for the tracking beam line.")]
+        [SerializeField] private Material trackingBeamMaterial;
+        [Tooltip("Seconds a tracking beam line stays visible.")]
+        [SerializeField] private float trackingBeamVfxDuration = 0.18f;
+        [Tooltip("Line width for the tracking beam.")]
+        [SerializeField] private float trackingBeamVfxWidth = 0.06f;
+        [Tooltip("Beam color when fired in Physical simulation.")]
+        [SerializeField] private Color trackingBeamPhysicalColor = new Color(1f, 0.25f, 0.15f, 1f);
+        [Tooltip("Beam color when fired in Soul simulation.")]
+        [SerializeField] private Color trackingBeamSoulColor = new Color(0.25f, 0.85f, 1f, 1f);
 
         // ── Static events (consumed by BossHealthUI / BossEncounterManager) ────────
 
@@ -114,6 +152,14 @@ namespace RogueDeal.Boss
         private float _requiredCritDrainSoulsThisWindow;
 
         private CombatEntity _combatEntity;
+        private SoulRealmFreezeTarget[] _freezeTargets;
+
+        private readonly System.Collections.Generic.Queue<BossBeamLineVfx> _trackingBeamPool
+            = new System.Collections.Generic.Queue<BossBeamLineVfx>(8);
+        
+        [Header("Debug")]
+        [Tooltip("If true, logs crit drain and phase-advance progress (Editor/Dev builds only).")]
+        [SerializeField] private bool debugPhaseDrain;
 
         // ── Properties (read by IBossPhase implementations) ────────────────────────
 
@@ -134,18 +180,24 @@ namespace RogueDeal.Boss
 
             if (bossAnimator == null)
                 bossAnimator = GetComponent<Animator>() ?? GetComponentInChildren<Animator>();
+
+            // Boss/hands are typically authored as freeze targets so they pause in Soul Realm.
+            // Phase 2 requires they keep updating so soul shields stay aligned to the fists.
+            _freezeTargets = GetComponentsInChildren<SoulRealmFreezeTarget>(true);
         }
 
         private void OnEnable()
         {
             BossPart.OnPartBroken += HandlePartBroken;
             BossPart.OnPartReset  += HandlePartReset;
+            SoulRealmManager.SoulRealmStateChanged += HandleSoulRealmStateChanged;
         }
 
         private void OnDisable()
         {
             BossPart.OnPartBroken -= HandlePartBroken;
             BossPart.OnPartReset  -= HandlePartReset;
+            SoulRealmManager.SoulRealmStateChanged -= HandleSoulRealmStateChanged;
             StopAllCoroutines();
         }
 
@@ -190,8 +242,9 @@ namespace RogueDeal.Boss
 
             OnSoulsChanged?.Invoke(_remainingSouls, definition.totalSouls);
 
-            TransitionToPhase(new GiantBossConfiguredPhase(1));
+            TransitionToPhase(new GiantBossSequencePhase(1));
             OnPhaseChanged?.Invoke(1);
+            SyncFreezeTargetsForCurrentPhase();
 
             Debug.Log($"[GiantBossController] Encounter started: {definition.bossName}");
         }
@@ -214,6 +267,18 @@ namespace RogueDeal.Boss
                 return;
 
             _pendingCritDrainSouls += drainSouls;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (debugPhaseDrain)
+            {
+                var data = definition.GetPhaseData(_phaseIndex);
+                float total = Mathf.Max(0.0001f, definition.totalSouls);
+                float targetSouls = Mathf.Clamp01(data.exitSoulPercentThreshold) * total;
+                Debug.Log(
+                    $"[GiantBossController] DrainSouls: hitDamage={damage:F2} drainSouls={drainSouls:F2} pending={_pendingCritDrainSouls:F2}/{_requiredCritDrainSoulsThisWindow:F2} remaining={_remainingSouls:F2} target={targetSouls:F2} phase={_phaseIndex}",
+                    this);
+            }
+#endif
 
             // Health only updates once the player has done "enough" crit damage for this phase.
             if (_pendingCritDrainSouls < _requiredCritDrainSoulsThisWindow)
@@ -307,8 +372,9 @@ namespace RogueDeal.Boss
                 return;
 
             _phaseIndex++;
-            TransitionToPhase(new GiantBossConfiguredPhase(_phaseIndex));
+            TransitionToPhase(new GiantBossSequencePhase(_phaseIndex));
             OnPhaseChanged?.Invoke(_phaseIndex);
+            SyncFreezeTargetsForCurrentPhase();
 
             var data = definition.GetPhaseData(_phaseIndex);
             if (!string.IsNullOrEmpty(data.enterBannerMessage))
@@ -332,6 +398,104 @@ namespace RogueDeal.Boss
             _currentPhase.OnEnter(this);
         }
 
+        // ── Phase 3 helpers (called by GiantBossPhase3DualRealmLoop) ───────────────
+
+        public BossPart RightHandPart => rightHandPart;
+        public BossPart LeftHandPart  => leftHandPart;
+        public CritSpot CritSpot      => critSpot;
+
+        public SoulShieldTarget     Phase3SoulCritShield     => phase3SoulCritShield;
+        public PhysicalShieldTarget Phase3PhysicalCritShield => phase3PhysicalCritShield;
+        public PhysicalShieldTarget Phase3EyeTarget          => phase3EyeTarget;
+        public Transform Phase3EyeOrigin                     => phase3EyeOrigin != null ? phase3EyeOrigin : (critSpot != null ? critSpot.transform : transform);
+
+        public float Phase3SoulShieldSeconds         => phase3SoulShieldSeconds;
+        public float Phase3PhysicalCleanupSeconds    => phase3PhysicalCleanupSeconds;
+        public int   Phase3TrackingBeamCount         => phase3TrackingBeamCount;
+        public float Phase3TrackingBeamInterval      => phase3TrackingBeamInterval;
+        public float Phase3TrackingBeamDamage        => phase3TrackingBeamDamage;
+        public float Phase3EyeVulnerableSeconds      => phase3EyeVulnerableSeconds;
+
+        public CombatEntity PlayerEntity => playerEntity;
+
+        public void ForceDefeatBoss()
+        {
+            if (!_encounterStarted)
+                return;
+            DefeatBoss();
+        }
+
+        private void HandleSoulRealmStateChanged()
+        {
+            // Re-apply freeze policy on realm toggles because SoulRealmManager reapplies freezes on entry/exit.
+            SyncFreezeTargetsForCurrentPhase();
+        }
+
+        private void SyncFreezeTargetsForCurrentPhase()
+        {
+            if (_freezeTargets == null || _freezeTargets.Length == 0)
+                return;
+
+            // Phase 2: fists must keep animating in both realms so shields remain aligned.
+            bool allowFreeze = _phaseIndex != 2;
+            for (int i = 0; i < _freezeTargets.Length; i++)
+            {
+                var t = _freezeTargets[i];
+                if (t != null)
+                    t.SetAllowSoulRealmFreeze(allowFreeze);
+            }
+        }
+
+        public void PlayTrackingBeamVfx(RealmSimulationGroup group, Vector3 origin, Vector3 end)
+        {
+            // VFX should not depend on realm simulation state; it’s purely visual.
+            var vfx = GetTrackingBeamVfxInstance();
+            if (vfx == null)
+                return;
+
+            Color c = group == RealmSimulationGroup.Soul ? trackingBeamSoulColor : trackingBeamPhysicalColor;
+            vfx.Play(origin, end, c, trackingBeamVfxWidth, trackingBeamVfxDuration, trackingBeamMaterial);
+        }
+
+        private BossBeamLineVfx GetTrackingBeamVfxInstance()
+        {
+            while (_trackingBeamPool.Count > 0)
+            {
+                var pooled = _trackingBeamPool.Dequeue();
+                if (pooled != null)
+                    return pooled;
+            }
+
+            GameObject go;
+            if (trackingBeamVfxPrefab != null)
+            {
+                go = Instantiate(trackingBeamVfxPrefab);
+            }
+            else
+            {
+                go = new GameObject("BossTrackingBeamVfx");
+            }
+
+            if (go == null)
+                return null;
+
+            go.transform.SetParent(null, false);
+
+            var vfx = go.GetComponent<BossBeamLineVfx>() ?? go.AddComponent<BossBeamLineVfx>();
+            StartCoroutine(ReturnBeamToPoolWhenDone(vfx));
+            return vfx;
+        }
+
+        private IEnumerator ReturnBeamToPoolWhenDone(BossBeamLineVfx vfx)
+        {
+            // Each instance handles its own disable timing; this coroutine returns it to the pool once it turns itself off.
+            while (vfx != null && vfx.gameObject.activeSelf)
+                yield return null;
+
+            if (vfx != null)
+                _trackingBeamPool.Enqueue(vfx);
+        }
+
         // ── Slam coroutine ─────────────────────────────────────────────────────────
 
         private IEnumerator SlamLoop()
@@ -343,14 +507,14 @@ namespace RogueDeal.Boss
 
                 yield return SlamHand(rightHandPart, "R");
                 yield return RealmSimulation.WaitForSecondsRealm(
-                    RealmSimulationGroup.Physical,
+                    RealmSimulationGroup.Universal,
                     definition.GetPhaseData(_phaseIndex).timeBetweenSlams);
 
                 yield return new WaitUntil(() => !_critSpotExposed);
 
                 yield return SlamHand(leftHandPart, "L");
                 yield return RealmSimulation.WaitForSecondsRealm(
-                    RealmSimulationGroup.Physical,
+                    RealmSimulationGroup.Universal,
                     definition.GetPhaseData(_phaseIndex).timeBetweenSlams);
             }
         }
@@ -359,6 +523,7 @@ namespace RogueDeal.Boss
         {
             if (hand == null
                 || hand.State == BossPartState.Broken
+                || hand.State == BossPartState.Pinned
                 || hand.State == BossPartState.Disabled)
                 yield break;
 
@@ -369,7 +534,7 @@ namespace RogueDeal.Boss
             bossAnimator?.SetTrigger($"SlamWindup_{suffix}");
 
             yield return RealmSimulation.WaitForSecondsRealm(
-                RealmSimulationGroup.Physical,
+                RealmSimulationGroup.Universal,
                 definition.slamWindupDuration);
 
             // ── Impact ───────────────────────────────────────────────────────────
@@ -384,19 +549,31 @@ namespace RogueDeal.Boss
 
             // ── Grounded window — wait until broken or time expires ───────────────
             float elapsed = 0f;
-            while (elapsed < groundedDuration && hand.State != BossPartState.Broken)
+            // If the hand becomes Pinned (stunned), it stays down and we stop the slam sequence here.
+            while (elapsed < groundedDuration
+                   && hand.State != BossPartState.Broken
+                   && hand.State != BossPartState.Pinned)
             {
-                elapsed += RealmSimulation.DeltaTime(RealmSimulationGroup.Physical);
+                // While shielded, do not advance the grounded timer. Otherwise the slam can "recover"
+                // mid-shield, which makes a later stun/pin feel like it snapped back incorrectly.
+                if (hand.State != BossPartState.Shielded)
+                    elapsed += RealmSimulation.DeltaTime(RealmSimulationGroup.Universal);
                 yield return null;
             }
 
             // ── Recovery ────────────────────────────────────────────────────────
+            // Stunned (Pinned): stay on the ground in place.
+            if (hand.State == BossPartState.Pinned)
+                yield break;
+
+            // Broken: play recovery so the fist returns to the boss' side/idle pose, but keep the state as Broken
+            // so SlamLoop skips it and it remains an objective/end-state until a phase reset.
             if (hand.State != BossPartState.Broken)
                 hand.SetState(BossPartState.Idle);
 
             bossAnimator?.SetTrigger($"SlamRecover_{suffix}");
             yield return RealmSimulation.WaitForSecondsRealm(
-                RealmSimulationGroup.Physical,
+                RealmSimulationGroup.Universal,
                 definition.slamRecoveryDuration);
         }
 
@@ -483,7 +660,7 @@ namespace RogueDeal.Boss
         {
             float wait = Mathf.Max(0f, slamShockwaveImpactDelay);
             if (wait > 0f)
-                yield return RealmSimulation.WaitForSecondsRealm(RealmSimulationGroup.Physical, wait);
+                yield return RealmSimulation.WaitForSecondsRealm(RealmSimulationGroup.Universal, wait);
 
             TryPlaySlamShockwave(hand);
         }
@@ -522,6 +699,14 @@ namespace RogueDeal.Boss
         {
             if (part == rightHandPart) _rightHandBroken = true;
             if (part == leftHandPart)  _leftHandBroken  = true;
+
+            // If a pinned (stunned) fist breaks, it won't be running a SlamHand coroutine anymore.
+            // Trigger the recover animation so it returns to the boss-side pose.
+            if (bossAnimator != null && part != null && part.WasPinnedWhenBrokenThisCycle)
+            {
+                if (part == rightHandPart) bossAnimator.SetTrigger("SlamRecover_R");
+                if (part == leftHandPart)  bossAnimator.SetTrigger("SlamRecover_L");
+            }
 
             if (_rightHandBroken && _leftHandBroken && !_critSpotExposed)
             {

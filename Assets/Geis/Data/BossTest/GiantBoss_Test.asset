@@ -19,13 +19,23 @@ MonoBehaviour:
   totalSouls: 100
   soulDrainPerDamagePoint: 1
   phases:
-  - exitSoulPercentThreshold: 0.66
+  - exitSoulPercentThreshold: 0.952
     enterBannerMessage: Phase 1 Banner
     timeBetweenSlams: 0.8
     slamGroundedDuration: 5
     critSpotVulnerableWindow: 60
     critRequiresSoulRealm: 1
     useShieldedHands: 0
+    stunGateSeconds: 0
+    completionGateSeconds: 0
+    stunByBreakingSoulShield: 0
+    requireBothFistsDestroyed: 0
+    requirePhysicalCritShield: 0
+    requireSoulCritShield: 1
+    requirePhysicalCritSpotHit: 0
+    requireSoulCritSpotHit: 0
+    physicalBeamsCount: 0
+    soulBeamsCount: 0
   - exitSoulPercentThreshold: 0.33
     enterBannerMessage: The Soul Warden's fists begin to glow...
     timeBetweenSlams: 0.8
@@ -33,6 +43,16 @@ MonoBehaviour:
     critSpotVulnerableWindow: 45
     critRequiresSoulRealm: 1
     useShieldedHands: 1
+    stunGateSeconds: 0
+    completionGateSeconds: 0
+    stunByBreakingSoulShield: 1
+    requireBothFistsDestroyed: 1
+    requirePhysicalCritShield: 1
+    requireSoulCritShield: 1
+    requirePhysicalCritSpotHit: 0
+    requireSoulCritSpotHit: 0
+    physicalBeamsCount: 2
+    soulBeamsCount: 0
   - exitSoulPercentThreshold: 0
     enterBannerMessage: The veil tears...
     timeBetweenSlams: 0.8
@@ -40,6 +60,16 @@ MonoBehaviour:
     critSpotVulnerableWindow: 30
     critRequiresSoulRealm: 1
     useShieldedHands: 1
+    stunGateSeconds: 0
+    completionGateSeconds: 0
+    stunByBreakingSoulShield: 1
+    requireBothFistsDestroyed: 1
+    requirePhysicalCritShield: 1
+    requireSoulCritShield: 1
+    requirePhysicalCritSpotHit: 1
+    requireSoulCritSpotHit: 1
+    physicalBeamsCount: 2
+    soulBeamsCount: 3
   rightHand: {fileID: 11400000, guid: 07877b8357cf54b41b2f84d29dbb4ae4, type: 2}
   leftHand: {fileID: 11400000, guid: 932022fdbb1384e52852496f9e96b9c6, type: 2}
   critSpot: {fileID: 11400000, guid: 8b57ab5776695a147a178bbc23d05f6d, type: 2}
