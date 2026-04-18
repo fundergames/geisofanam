@@ -16,7 +16,7 @@ namespace RogueDeal.Boss
     ///   - Detects when both hands are broken and exposes the CritSpot.
     ///   - Tracks the soul pool (boss HP); notifies UI and handles defeat.
     ///   - Manages phase transitions via the IBossPhase interface:
-    ///       Each phase is configured by a <see cref="GiantBossPhaseData"/> entry (shields, slam cadence, crit window, soul threshold to advance).
+    ///       Each phase is configured by a <see cref="GiantBossPhaseDefinition"/> asset (shields, slam cadence, crit window, soul threshold to advance).
     ///
     /// Slam cycle detail (per hand):
     ///   1. SetState(Slamming)  — windup animation plays.
@@ -54,19 +54,12 @@ namespace RogueDeal.Boss
         [Tooltip("Origin transform for tracking beams (defaults to crit spot if null).")]
         [SerializeField] private Transform phase3EyeOrigin;
 
-        [Header("Phase 3 — Tuning")]
-        [Tooltip("X seconds in Soul Realm to break the soul crit shield before phase 3 restarts.")]
-        [SerializeField] private float phase3SoulShieldSeconds = 8f;
-        [Tooltip("Y seconds in Physical Realm to break both pinned fists after soul shield breaks.")]
-        [SerializeField] private float phase3PhysicalCleanupSeconds = 10f;
-        [Tooltip("Z tracking beams fired after physical crit shield breaks.")]
-        [SerializeField] private int phase3TrackingBeamCount = 5;
-        [Tooltip("Seconds between tracking beams.")]
-        [SerializeField] private float phase3TrackingBeamInterval = 0.6f;
-        [Tooltip("Damage applied to the player per tracking beam (line-of-sight).")]
-        [SerializeField] private float phase3TrackingBeamDamage = 12f;
-        [Tooltip("Seconds the eye stays vulnerable after beams complete. If <= 0, remains vulnerable until reset/kill.")]
-        [SerializeField] private float phase3EyeVulnerableSeconds = 6f;
+        [Header("Phase tuning — fallbacks")]
+        [Tooltip("Used when the active phase asset leaves timer/interval at 0 (unset or legacy assets).")]
+        [SerializeField] private float fallbackSoulCritShieldTimerSeconds = 8f;
+        [SerializeField] private float fallbackPhysicalPinnedFistTimerSeconds = 10f;
+        [SerializeField] private float fallbackTrackingBeamInterval = 0.6f;
+        [SerializeField] private float fallbackTrackingBeamDamage = 12f;
 
         [Header("Animation")]
         [Tooltip("Main boss animator. Right-hand triggers: SlamWindup_R / SlamLand_R / SlamRecover_R. " +
@@ -160,6 +153,9 @@ namespace RogueDeal.Boss
         [Header("Debug")]
         [Tooltip("If true, logs crit drain and phase-advance progress (Editor/Dev builds only).")]
         [SerializeField] private bool debugPhaseDrain;
+
+        [Tooltip("Scene view: slam damage spheres (Y-aligned like gameplay), shockwave start/end rings, and labels.")]
+        [SerializeField] private bool drawSlamGizmos = true;
 
         // ── Properties (read by IBossPhase implementations) ────────────────────────
 
@@ -398,7 +394,7 @@ namespace RogueDeal.Boss
             _currentPhase.OnEnter(this);
         }
 
-        // ── Phase 3 helpers (called by GiantBossPhase3DualRealmLoop) ───────────────
+        // ── Phase targets & resolve helpers (dual-realm / sequence phases) ─────────
 
         public BossPart RightHandPart => rightHandPart;
         public BossPart LeftHandPart  => leftHandPart;
@@ -409,12 +405,37 @@ namespace RogueDeal.Boss
         public PhysicalShieldTarget Phase3EyeTarget          => phase3EyeTarget;
         public Transform Phase3EyeOrigin                     => phase3EyeOrigin != null ? phase3EyeOrigin : (critSpot != null ? critSpot.transform : transform);
 
-        public float Phase3SoulShieldSeconds         => phase3SoulShieldSeconds;
-        public float Phase3PhysicalCleanupSeconds    => phase3PhysicalCleanupSeconds;
-        public int   Phase3TrackingBeamCount         => phase3TrackingBeamCount;
-        public float Phase3TrackingBeamInterval      => phase3TrackingBeamInterval;
-        public float Phase3TrackingBeamDamage        => phase3TrackingBeamDamage;
-        public float Phase3EyeVulnerableSeconds      => phase3EyeVulnerableSeconds;
+        public float ResolveSoulCritShieldTimerSeconds(int phaseIndex1Based)
+        {
+            if (definition == null)
+                return Mathf.Max(0f, fallbackSoulCritShieldTimerSeconds);
+            float v = definition.GetPhaseData(phaseIndex1Based).soulCritShieldBreakTimerSeconds;
+            return v > 0f ? v : Mathf.Max(0f, fallbackSoulCritShieldTimerSeconds);
+        }
+
+        public float ResolvePhysicalPinnedFistTimerSeconds(int phaseIndex1Based)
+        {
+            if (definition == null)
+                return Mathf.Max(0f, fallbackPhysicalPinnedFistTimerSeconds);
+            float v = definition.GetPhaseData(phaseIndex1Based).physicalPinnedFistCleanupTimerSeconds;
+            return v > 0f ? v : Mathf.Max(0f, fallbackPhysicalPinnedFistTimerSeconds);
+        }
+
+        public float ResolveTrackingBeamInterval(int phaseIndex1Based)
+        {
+            if (definition == null)
+                return Mathf.Max(0.02f, fallbackTrackingBeamInterval);
+            float v = definition.GetPhaseData(phaseIndex1Based).trackingBeamInterval;
+            return v > 0f ? v : Mathf.Max(0.02f, fallbackTrackingBeamInterval);
+        }
+
+        public float ResolveTrackingBeamDamage(int phaseIndex1Based)
+        {
+            if (definition == null)
+                return Mathf.Max(0f, fallbackTrackingBeamDamage);
+            float v = definition.GetPhaseData(phaseIndex1Based).trackingBeamDamage;
+            return v > 0f ? v : Mathf.Max(0f, fallbackTrackingBeamDamage);
+        }
 
         public CombatEntity PlayerEntity => playerEntity;
 
@@ -436,8 +457,13 @@ namespace RogueDeal.Boss
             if (_freezeTargets == null || _freezeTargets.Length == 0)
                 return;
 
-            // Phase 2: fists must keep animating in both realms so shields remain aligned.
-            bool allowFreeze = _phaseIndex != 2;
+            var phaseData = definition != null ? definition.GetPhaseData(_phaseIndex) : null;
+            bool allowFreeze;
+            if (phaseData != null && phaseData.overrideSoulRealmFreezePolicy)
+                allowFreeze = phaseData.freezeBossPartsInSoulRealm;
+            else
+                allowFreeze = _phaseIndex != 2; // legacy: phase 2 keeps fists animating for shields
+
             for (int i = 0; i < _freezeTargets.Length; i++)
             {
                 var t = _freezeTargets[i];
@@ -579,6 +605,20 @@ namespace RogueDeal.Boss
 
         // ── Slam damage ────────────────────────────────────────────────────────────
 
+        /// <summary>
+        /// Slam damage uses a horizontal footprint (fist X/Z) but the BossPart pivot is often
+        /// high on the wind-up — a 3D sphere centered on that point wastes radius vertically and
+        /// misses the player on the ground. Align Y to the resolved player so the radius matches
+        /// the fight plane; before the player exists, use the raw fist position.
+        /// </summary>
+        private Vector3 GetSlamDamageSphereCenter(BossPart hand)
+        {
+            Vector3 p = hand.transform.position;
+            if (playerEntity != null && playerEntity != _combatEntity)
+                return new Vector3(p.x, playerEntity.transform.position.y, p.z);
+            return p;
+        }
+
         private void DealSlamDamage(BossPart hand)
         {
             if (!RealmSimulation.IsSimulating(RealmSimulationGroup.Physical))
@@ -590,8 +630,10 @@ namespace RogueDeal.Boss
 
             ResolvePlayerEntity();
 
+            Vector3 slamCenter = GetSlamDamageSphereCenter(hand);
+
             List<CombatEntity> targets = CombatActionDamageUtility.CollectTargetsInSphere(
-                hand.transform.position,
+                slamCenter,
                 definition.slamDamageRadius,
                 slamTargetLayers,
                 sourceEntity: _combatEntity,
@@ -782,5 +824,50 @@ namespace RogueDeal.Boss
 
             Debug.Log($"[GiantBossController] {definition.bossName} defeated — all souls released!");
         }
+
+#if UNITY_EDITOR
+        private void OnDrawGizmos()
+        {
+            if (!drawSlamGizmos || definition == null)
+                return;
+
+            DrawSlamGizmosForHand(rightHandPart, "R", new Color(1f, 0.38f, 0.12f, 1f));
+            DrawSlamGizmosForHand(leftHandPart, "L", new Color(1f, 0.62f, 0.22f, 1f));
+        }
+
+        private void DrawSlamGizmosForHand(BossPart hand, string handLabel, Color damageColor)
+        {
+            if (hand == null)
+                return;
+
+            Vector3 damageCenter = GetSlamDamageSphereCenter(hand);
+            float damageR = definition.slamDamageRadius;
+
+            Gizmos.color = damageColor;
+            Gizmos.DrawWireSphere(damageCenter, damageR);
+
+            string dmgLine = definition.slamDamageAction == null
+                ? $"Damage: {definition.slamDamage}"
+                : $"Action: {(string.IsNullOrEmpty(definition.slamDamageAction.actionName) ? definition.slamDamageAction.name : definition.slamDamageAction.actionName)}";
+
+            UnityEditor.Handles.Label(
+                damageCenter + Vector3.up * Mathf.Max(0.2f, damageR * 0.28f),
+                $"{handLabel} slam\n{dmgLine}\nRadius: {damageR:F2} m");
+
+            // Shockwave uses fist-local offset; radii match TryPlaySlamShockwave / BossSlamShockwaveVfx.
+            Vector3 shockCenter = hand.transform.TransformPoint(slamShockwavePositionOffset);
+            float endR = slamShockwaveEndRadius > 0f ? slamShockwaveEndRadius : definition.slamDamageRadius;
+            float startR = Mathf.Max(0.01f, slamShockwaveStartRadius);
+
+            Gizmos.color = new Color(0.22f, 0.78f, 1f, 0.4f);
+            Gizmos.DrawWireSphere(shockCenter, startR);
+            Gizmos.color = new Color(0.22f, 0.78f, 1f, 0.85f);
+            Gizmos.DrawWireSphere(shockCenter, Mathf.Max(startR, endR));
+
+            UnityEditor.Handles.Label(
+                shockCenter + Vector3.up * Mathf.Max(0.15f, Mathf.Max(startR, endR) * 0.2f),
+                $"{handLabel} shockwave\nstart {startR:F2} m → end {endR:F2} m");
+        }
+#endif
     }
 }

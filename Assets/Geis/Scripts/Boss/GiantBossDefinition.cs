@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 using RogueDeal.Combat.Core.Data;
 
 namespace RogueDeal.Boss
@@ -9,7 +10,7 @@ namespace RogueDeal.Boss
     /// Contains:
     ///   - Soul pool (= boss total HP, drained by crit-spot hits)
     ///   - Part definitions (right hand, left hand, crit spot)
-    ///   - Per-phase tuning (<see cref="GiantBossPhaseData"/>) — slam rhythm, crit windows, shields, transitions
+    ///   - Ordered references to <see cref="GiantBossPhaseDefinition"/> assets
     ///   - Shared slam animation/damage values
     ///
     /// GiantBossController reads from this asset and drives all encounter logic.
@@ -40,8 +41,12 @@ namespace RogueDeal.Boss
         // ── Phases ───────────────────────────────────────────────────────────────────
 
         [Header("Phases")]
-        [Tooltip("Ordered phases (first element = phase 1). Add or remove entries to change phase count.")]
-        public GiantBossPhaseData[] phases;
+        [Tooltip("Ordered phase assets (first = phase 1). Add or remove entries to change phase count.")]
+        public GiantBossPhaseDefinition[] phaseDefinitions;
+
+        /// <summary>Embedded phases from older assets (inline YAML). Migrated to <see cref="phaseDefinitions"/> on load.</summary>
+        [SerializeField, HideInInspector, FormerlySerializedAs("phases")]
+        private GiantBossPhaseData[] _legacyInlinePhases;
 
         // ── Part Definitions ───────────────────────────────────────────────────────
 
@@ -95,36 +100,88 @@ namespace RogueDeal.Boss
             get
             {
                 EnsurePhasesPopulated();
-                return Mathf.Max(1, phases != null ? phases.Length : 0);
+                return Mathf.Max(1, phaseDefinitions != null ? phaseDefinitions.Length : 0);
             }
         }
 
-        /// <summary>1-based phase index into <see cref="phases"/>.</summary>
-        public GiantBossPhaseData GetPhaseData(int phaseIndex1Based)
+        /// <summary>1-based phase index into <see cref="phaseDefinitions"/>.</summary>
+        public GiantBossPhaseDefinition GetPhaseData(int phaseIndex1Based)
         {
             EnsurePhasesPopulated();
 
-            if (phases == null || phases.Length == 0)
+            if (phaseDefinitions == null || phaseDefinitions.Length == 0)
                 return CreateDefaultPhases()[0];
 
-            int i = Mathf.Clamp(phaseIndex1Based - 1, 0, phases.Length - 1);
-            return phases[i];
+            int i = Mathf.Clamp(phaseIndex1Based - 1, 0, phaseDefinitions.Length - 1);
+            if (phaseDefinitions[i] != null)
+                return phaseDefinitions[i];
+
+            return CreateDefaultPhases()[0];
         }
 
         private void OnEnable()
         {
+            TryMigrateLegacyInlinePhases();
             EnsurePhasesPopulated();
+        }
+
+        private void TryMigrateLegacyInlinePhases()
+        {
+            if (_legacyInlinePhases == null || _legacyInlinePhases.Length == 0)
+                return;
+            if (phaseDefinitions != null && phaseDefinitions.Length > 0 && !AllSlotsNull(phaseDefinitions))
+                return;
+
+            int n = _legacyInlinePhases.Length;
+            phaseDefinitions = new GiantBossPhaseDefinition[n];
+            for (int i = 0; i < n; i++)
+            {
+                phaseDefinitions[i] = GiantBossPhaseDefinition.CreateFromLegacy(_legacyInlinePhases[i]);
+                if (phaseDefinitions[i] != null)
+                    phaseDefinitions[i].name = $"Phase {i + 1}";
+            }
+
+            _legacyInlinePhases = null;
+
+#if UNITY_EDITOR
+            if (phaseDefinitions != null)
+            {
+                foreach (var p in phaseDefinitions)
+                {
+                    if (p != null && UnityEditor.AssetDatabase.GetAssetPath(p).Length == 0)
+                        UnityEditor.AssetDatabase.AddObjectToAsset(p, this);
+                }
+
+                UnityEditor.EditorUtility.SetDirty(this);
+                UnityEditor.AssetDatabase.SaveAssets();
+            }
+#endif
+        }
+
+        private static bool AllSlotsNull(GiantBossPhaseDefinition[] arr)
+        {
+            if (arr == null)
+                return true;
+            for (int i = 0; i < arr.Length; i++)
+            {
+                if (arr[i] != null)
+                    return false;
+            }
+
+            return true;
         }
 
         private void EnsurePhasesPopulated()
         {
-            if (phases != null && phases.Length > 0)
+            TryMigrateLegacyInlinePhases();
+
+            if (phaseDefinitions != null && phaseDefinitions.Length > 0 && !AllSlotsNull(phaseDefinitions))
                 return;
 
-            phases = MigrateFromLegacyFields();
+            phaseDefinitions = MigrateFromLegacyFields();
         }
 
-        private GiantBossPhaseData[] MigrateFromLegacyFields()
+        private GiantBossPhaseDefinition[] MigrateFromLegacyFields()
         {
             float p2Crit = critSpotVulnerableWindowPhase2 > 0f ? critSpotVulnerableWindowPhase2 : critSpotVulnerableWindow;
             float p3Crit = critSpotVulnerableWindowPhase3 > 0f ? critSpotVulnerableWindowPhase3 : p2Crit;
@@ -141,14 +198,14 @@ namespace RogueDeal.Boss
                 critSpotVulnerableWindow   = critSpotVulnerableWindow,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase1,
                 useShieldedHands           = false,
+                overrideSoulRealmFreezePolicy = false,
 
-                // Data-driven structure defaults (Phase 1)
                 stunGateSeconds            = 0f,
                 completionGateSeconds      = 0f,
                 stunByBreakingSoulShield   = false,
                 requireBothFistsDestroyed  = false,
                 requirePhysicalCritShield  = false,
-                requireSoulCritShield      = true,  // Phase 1 ends on crit-shield break (not soul threshold)
+                requireSoulCritShield      = true,
                 requirePhysicalCritSpotHit = false,
                 requireSoulCritSpotHit     = false,
                 physicalBeamsCount         = 0,
@@ -164,8 +221,9 @@ namespace RogueDeal.Boss
                 critSpotVulnerableWindow   = p2Crit,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase2,
                 useShieldedHands           = true,
+                overrideSoulRealmFreezePolicy = true,
+                freezeBossPartsInSoulRealm = false,
 
-                // Data-driven structure defaults (Phase 2)
                 stunGateSeconds            = 0f,
                 completionGateSeconds      = 0f,
                 stunByBreakingSoulShield   = true,
@@ -179,7 +237,11 @@ namespace RogueDeal.Boss
             };
 
             if (phase3SoulThreshold <= 0f)
-                return new[] { phase1, phase2 };
+                return new[]
+                {
+                    GiantBossPhaseDefinition.CreateFromLegacy(phase1),
+                    GiantBossPhaseDefinition.CreateFromLegacy(phase2)
+                };
 
             var phase3 = new GiantBossPhaseData
             {
@@ -190,8 +252,8 @@ namespace RogueDeal.Boss
                 critSpotVulnerableWindow   = p3Crit,
                 critRequiresSoulRealm      = critRequiresSoulRealmPhase3,
                 useShieldedHands           = true,
+                overrideSoulRealmFreezePolicy = false,
 
-                // Data-driven structure defaults (Phase 3)
                 stunGateSeconds            = 0f,
                 completionGateSeconds      = 0f,
                 stunByBreakingSoulShield   = true,
@@ -204,14 +266,19 @@ namespace RogueDeal.Boss
                 soulBeamsCount             = 3
             };
 
-            return new[] { phase1, phase2, phase3 };
+            return new[]
+            {
+                GiantBossPhaseDefinition.CreateFromLegacy(phase1),
+                GiantBossPhaseDefinition.CreateFromLegacy(phase2),
+                GiantBossPhaseDefinition.CreateFromLegacy(phase3)
+            };
         }
 
-        private static GiantBossPhaseData[] CreateDefaultPhases()
+        private static GiantBossPhaseDefinition[] CreateDefaultPhases()
         {
             return new[]
             {
-                new GiantBossPhaseData
+                GiantBossPhaseDefinition.CreateFromLegacy(new GiantBossPhaseData
                 {
                     exitSoulPercentThreshold   = 0.5f,
                     enterBannerMessage         = "",
@@ -219,9 +286,10 @@ namespace RogueDeal.Boss
                     slamGroundedDuration       = 4f,
                     critSpotVulnerableWindow   = 6f,
                     critRequiresSoulRealm      = true,
-                    useShieldedHands           = false
-                },
-                new GiantBossPhaseData
+                    useShieldedHands           = false,
+                    overrideSoulRealmFreezePolicy = false
+                }),
+                GiantBossPhaseDefinition.CreateFromLegacy(new GiantBossPhaseData
                 {
                     exitSoulPercentThreshold   = 0.25f,
                     enterBannerMessage         = "The Soul Warden's fists begin to glow...",
@@ -229,9 +297,11 @@ namespace RogueDeal.Boss
                     slamGroundedDuration       = 8f,
                     critSpotVulnerableWindow   = 6f,
                     critRequiresSoulRealm      = true,
-                    useShieldedHands           = true
-                },
-                new GiantBossPhaseData
+                    useShieldedHands           = true,
+                    overrideSoulRealmFreezePolicy = true,
+                    freezeBossPartsInSoulRealm = false
+                }),
+                GiantBossPhaseDefinition.CreateFromLegacy(new GiantBossPhaseData
                 {
                     exitSoulPercentThreshold   = 0f,
                     enterBannerMessage         = "The veil tears...",
@@ -239,24 +309,30 @@ namespace RogueDeal.Boss
                     slamGroundedDuration       = 8f,
                     critSpotVulnerableWindow   = 6f,
                     critRequiresSoulRealm      = true,
-                    useShieldedHands           = true
-                }
+                    useShieldedHands           = true,
+                    overrideSoulRealmFreezePolicy = false
+                })
             };
         }
 
 #if UNITY_EDITOR
         private void OnValidate()
         {
-            if (phases == null || phases.Length < 2)
+            if (phaseDefinitions == null || phaseDefinitions.Length < 2)
                 return;
 
-            for (int i = 0; i < phases.Length - 1; i++)
+            for (int i = 0; i < phaseDefinitions.Length - 1; i++)
             {
-                float next = phases[i + 1].exitSoulPercentThreshold;
-                if (next <= 0f)
+                var cur = phaseDefinitions[i];
+                var next = phaseDefinitions[i + 1];
+                if (cur == null || next == null)
                     continue;
 
-                if (phases[i].exitSoulPercentThreshold <= next)
+                float nextExit = next.exitSoulPercentThreshold;
+                if (nextExit <= 0f)
+                    continue;
+
+                if (cur.exitSoulPercentThreshold <= nextExit)
                 {
                     Debug.LogWarning(
                         "[GiantBossDefinition] Phase " + (i + 1) + " exitSoulPercentThreshold should usually be " +

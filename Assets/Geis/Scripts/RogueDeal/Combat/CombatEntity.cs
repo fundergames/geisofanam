@@ -269,6 +269,36 @@ namespace RogueDeal.Combat
             Debug.Log($"[CombatEntity] Force-initialized stats on {gameObject.name} (HP: {maxHealth}, ATK: {attack}, DEF: {defense})");
         }
 
+        /// <summary>
+        /// Re-applies numeric stats when <see cref="InitializeStatsWithoutHeroData"/> already ran.
+        /// Used when a definition is pushed again at encounter start (e.g. <see cref="BossPart"/>).
+        /// </summary>
+        public void RefreshStatsWithoutHeroData(float maxHealth, float attack, float defense)
+        {
+            if (entityData == null)
+            {
+                InitializeStatsWithoutHeroData(maxHealth, attack, defense);
+                return;
+            }
+
+            entityData.maxHealth = maxHealth;
+            entityData.currentHealth = maxHealth;
+            entityData.attack = attack;
+            entityData.defense = defense;
+
+            if (_stats != null)
+            {
+                _stats.OnHealthChanged -= OnHealthChanged;
+                _stats.OnDeath -= OnDeath;
+            }
+
+            _stats = new CombatStats(maxHealth, attack, defense);
+            _stats.OnHealthChanged += OnHealthChanged;
+            _stats.OnDeath += OnDeath;
+
+            SyncStatsFromEntityData();
+        }
+
         private void HandleAttackStarted(CombatEventData data)
         {
             if (data.source == this)

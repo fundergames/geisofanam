@@ -159,7 +159,7 @@ namespace RogueDeal.Boss
                     case Step.BreakFists:
                         yield return RunTimedStep(
                             RealmSimulationGroup.Physical,
-                            _boss.Phase3PhysicalCleanupSeconds,
+                            _boss.ResolvePhysicalPinnedFistTimerSeconds(_boss.CurrentPhaseIndex),
                             () => _rightBroken && _leftBroken);
                         if (!(_rightBroken && _leftBroken))
                             HardResetToPinStep();
@@ -177,7 +177,7 @@ namespace RogueDeal.Boss
                     case Step.BreakSoulCritShield:
                         yield return RunTimedStep(
                             RealmSimulationGroup.Soul,
-                            _boss.Phase3SoulShieldSeconds,
+                            _boss.ResolveSoulCritShieldTimerSeconds(_boss.CurrentPhaseIndex),
                             () => _step != Step.BreakSoulCritShield);
                         if (_step == Step.BreakSoulCritShield)
                             HardResetToPinStep();
@@ -309,7 +309,7 @@ namespace RogueDeal.Boss
 
         private IEnumerator FireTrackingBeams(RealmSimulationGroup group, int count)
         {
-            float interval = Mathf.Max(0.02f, _boss.Phase3TrackingBeamInterval);
+            float interval = Mathf.Max(0.02f, _boss.ResolveTrackingBeamInterval(_boss.CurrentPhaseIndex));
 
             for (int i = 0; i < Mathf.Max(0, count); i++)
             {
@@ -356,7 +356,7 @@ namespace RogueDeal.Boss
             if (!hitPlayer)
                 return;
 
-            float dmg = Mathf.Max(0f, _boss.Phase3TrackingBeamDamage);
+            float dmg = Mathf.Max(0f, _boss.ResolveTrackingBeamDamage(_boss.CurrentPhaseIndex));
             if (dmg <= 0f)
                 return;
 

@@ -1,16 +1,15 @@
-using System;
 using UnityEngine;
 
 namespace RogueDeal.Boss
 {
     /// <summary>
-    /// Legacy inline phase blob — only used to deserialize older <see cref="GiantBossDefinition"/> assets
-    /// that stored phases as embedded objects under the former <c>phases</c> field.
-    /// Author new phases as <see cref="GiantBossPhaseDefinition"/> assets and assign them to
-    /// <see cref="GiantBossDefinition.phaseDefinitions"/>.
+    /// Designer-authored asset for one giant boss encounter phase (slam rhythm, crit window, objectives, beams).
+    /// Reference these from <see cref="GiantBossDefinition.phaseDefinitions"/> in order (first = phase 1).
     /// </summary>
-    [Serializable]
-    internal class GiantBossPhaseData
+    [CreateAssetMenu(
+        fileName = "GiantBossPhase_",
+        menuName = "Funder Games/Rogue Deal/Boss/Giant Boss Phase")]
+    public class GiantBossPhaseDefinition : ScriptableObject
     {
         [Header("Phase transition")]
         [Tooltip(
@@ -38,7 +37,7 @@ namespace RogueDeal.Boss
 
         [Header("Hands")]
         [Tooltip("Spawn soul shields on each slam; requires BossPartDefinition.hasSoulShieldInPhase2.")]
-        public bool useShieldedHands = false;
+        public bool useShieldedHands;
 
         [Tooltip("When false (default), Soul Realm freeze policy matches legacy rules (phase index). When true, use Freeze Boss Parts In Soul Realm below.")]
         public bool overrideSoulRealmFreezePolicy;
@@ -48,38 +47,38 @@ namespace RogueDeal.Boss
 
         [Header("Timers (optional)")]
         [Tooltip("Seconds to get both fists into the 'stunned' state for this phase. If <= 0, no stun gate timer.")]
-        public float stunGateSeconds = 0f;
+        public float stunGateSeconds;
 
         [Tooltip("Seconds to complete this phase's full objective chain once started. If <= 0, no completion timer.")]
-        public float completionGateSeconds = 0f;
+        public float completionGateSeconds;
 
-        [Header("Phase objectives (data-driven structure)")]
+        [Header("Phase objectives")]
         [Tooltip("If true, breaking a fist's soul shield counts as 'stunning' that fist for this phase (pins it).")]
-        public bool stunByBreakingSoulShield = false;
+        public bool stunByBreakingSoulShield;
 
         [Tooltip("If true, the player must break both fists (physical HP) during the completion gate.")]
-        public bool requireBothFistsDestroyed = false;
+        public bool requireBothFistsDestroyed;
 
         [Tooltip("If true, a physical-only crit shield must be destroyed during this phase.")]
-        public bool requirePhysicalCritShield = false;
+        public bool requirePhysicalCritShield;
 
         [Tooltip("If true, a soul-only crit shield must be destroyed during this phase.")]
-        public bool requireSoulCritShield = false;
+        public bool requireSoulCritShield;
 
         [Tooltip("If true, the crit spot must take at least one valid hit in Physical realm mode.")]
-        public bool requirePhysicalCritSpotHit = false;
+        public bool requirePhysicalCritSpotHit;
 
         [Tooltip("If true, the crit spot must take at least one valid hit in Soul realm mode.")]
-        public bool requireSoulCritSpotHit = false;
+        public bool requireSoulCritSpotHit;
 
         [Header("Beams (counts)")]
         [Tooltip("Number of physical-realm tracking beams to fire during this phase.")]
-        public int physicalBeamsCount = 0;
+        public int physicalBeamsCount;
 
         [Tooltip("Number of soul-realm tracking beams to fire during this phase.")]
-        public int soulBeamsCount = 0;
+        public int soulBeamsCount;
 
-        [Header("Beams & phase-3 pacing")]
+        [Header("Beams & timers (0 = use GiantBossController fallbacks)")]
         [Tooltip("Seconds between tracking beams. 0 = use GiantBossController fallback values.")]
         public float trackingBeamInterval;
 
@@ -87,11 +86,43 @@ namespace RogueDeal.Boss
         public float trackingBeamDamage;
 
         [Tooltip(
-            "Soul crit shield: restart the objective chain if not broken within this time (Soul sim). 0 = use controller fallback; set controller fallback to 0 for no limit.")]
+            "Soul crit shield: restart the objective chain if not broken within this time (Soul sim). 0 = use controller fallback.")]
         public float soulCritShieldBreakTimerSeconds;
 
         [Tooltip(
             "Pinned fists: restart if both not broken within this time (Physical sim). 0 = use controller fallback.")]
         public float physicalPinnedFistCleanupTimerSeconds;
+
+        internal static GiantBossPhaseDefinition CreateFromLegacy(GiantBossPhaseData src)
+        {
+            if (src == null)
+                return null;
+
+            var d = CreateInstance<GiantBossPhaseDefinition>();
+            d.exitSoulPercentThreshold = src.exitSoulPercentThreshold;
+            d.enterBannerMessage = src.enterBannerMessage;
+            d.timeBetweenSlams = src.timeBetweenSlams;
+            d.slamGroundedDuration = src.slamGroundedDuration;
+            d.critSpotVulnerableWindow = src.critSpotVulnerableWindow;
+            d.critRequiresSoulRealm = src.critRequiresSoulRealm;
+            d.useShieldedHands = src.useShieldedHands;
+            d.overrideSoulRealmFreezePolicy = src.overrideSoulRealmFreezePolicy;
+            d.freezeBossPartsInSoulRealm = src.freezeBossPartsInSoulRealm;
+            d.stunGateSeconds = src.stunGateSeconds;
+            d.completionGateSeconds = src.completionGateSeconds;
+            d.stunByBreakingSoulShield = src.stunByBreakingSoulShield;
+            d.requireBothFistsDestroyed = src.requireBothFistsDestroyed;
+            d.requirePhysicalCritShield = src.requirePhysicalCritShield;
+            d.requireSoulCritShield = src.requireSoulCritShield;
+            d.requirePhysicalCritSpotHit = src.requirePhysicalCritSpotHit;
+            d.requireSoulCritSpotHit = src.requireSoulCritSpotHit;
+            d.physicalBeamsCount = src.physicalBeamsCount;
+            d.soulBeamsCount = src.soulBeamsCount;
+            d.trackingBeamInterval = src.trackingBeamInterval;
+            d.trackingBeamDamage = src.trackingBeamDamage;
+            d.soulCritShieldBreakTimerSeconds = src.soulCritShieldBreakTimerSeconds;
+            d.physicalPinnedFistCleanupTimerSeconds = src.physicalPinnedFistCleanupTimerSeconds;
+            return d;
+        }
     }
 }

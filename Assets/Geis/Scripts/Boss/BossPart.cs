@@ -219,7 +219,13 @@ namespace RogueDeal.Boss
         {
             if (definition == null) return;
 
-            _combatEntity.InitializeStatsWithoutHeroData(definition.maxHealth, 0f, 0f);
+            // Start() runs first; then GiantBossController.SetDefinition at encounter start runs again —
+            // use refresh so CombatEntity does not warn about "Stats already initialized".
+            if (_combatEntity.GetEntityData() == null)
+                _combatEntity.InitializeStatsWithoutHeroData(definition.maxHealth, 0f, 0f);
+            else
+                _combatEntity.RefreshStatsWithoutHeroData(definition.maxHealth, 0f, 0f);
+
             _entityData = _combatEntity.GetEntityData();
             _currentHealth = definition.maxHealth;
         }

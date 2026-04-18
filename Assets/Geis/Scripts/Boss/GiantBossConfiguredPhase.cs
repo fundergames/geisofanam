@@ -3,7 +3,7 @@ using UnityEngine;
 namespace RogueDeal.Boss
 {
     /// <summary>
-    /// Phase behaviour driven entirely by <see cref="GiantBossPhaseData"/> on the definition.
+    /// Phase behaviour driven entirely by <see cref="GiantBossPhaseDefinition"/> on the definition.
     /// Replaces separate Phase1/2/3 classes so new phases are data-only.
     /// </summary>
     public sealed class GiantBossConfiguredPhase : IBossPhase

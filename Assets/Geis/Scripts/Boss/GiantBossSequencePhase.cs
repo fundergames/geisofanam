@@ -8,13 +8,13 @@ namespace RogueDeal.Boss
 {
     /// <summary>
     /// Data-driven phase runner for the Giant Soul Warden encounter.
-    /// Uses <see cref="GiantBossPhaseData"/> fields to enforce timers and objective gates.
+    /// Uses <see cref="GiantBossPhaseDefinition"/> fields to enforce timers and objective gates.
     /// </summary>
     public sealed class GiantBossSequencePhase : IBossPhase
     {
         private readonly int _phaseIndex1Based;
         private GiantBossController _boss;
-        private GiantBossPhaseData _data;
+        private GiantBossPhaseDefinition _data;
 
         private Coroutine _routine;
         private bool _disabled;
@@ -93,7 +93,7 @@ namespace RogueDeal.Boss
                 IsComplete = true;
         }
 
-        private static bool HasExplicitObjectiveChain(GiantBossPhaseData data)
+        private static bool HasExplicitObjectiveChain(GiantBossPhaseDefinition data)
         {
             if (data == null)
                 return false;
@@ -220,8 +220,21 @@ namespace RogueDeal.Boss
                     _boss.RightHandPart?.SetState(BossPartState.Pinned);
                     _boss.LeftHandPart?.SetState(BossPartState.Pinned);
 
+                    float pinnedElapsed = 0f;
+                    float pinnedLimit = _boss.ResolvePhysicalPinnedFistTimerSeconds(_phaseIndex1Based);
+
                     while (_boss != null && !(_rightBroken && _leftBroken))
                     {
+                        if (pinnedLimit > 0f)
+                        {
+                            pinnedElapsed += RealmSimulation.DeltaTime(RealmSimulationGroup.Physical);
+                            if (pinnedElapsed >= pinnedLimit)
+                            {
+                                RestartPhaseFromBeginning();
+                                goto ContinueOuter;
+                            }
+                        }
+
                         if (CompletionTimerExpired())
                         {
                             RestartPhaseFromBeginning();
@@ -268,8 +281,21 @@ namespace RogueDeal.Boss
                     _boss.Phase3SoulCritShield?.ResetShield();
                     _boss.Phase3SoulCritShield?.SetActive(true);
 
+                    float soulShieldElapsed = 0f;
+                    float soulShieldLimit = _boss.ResolveSoulCritShieldTimerSeconds(_phaseIndex1Based);
+
                     while (_boss != null && !_soulCritShieldBroken)
                     {
+                        if (soulShieldLimit > 0f)
+                        {
+                            soulShieldElapsed += RealmSimulation.DeltaTime(RealmSimulationGroup.Soul);
+                            if (soulShieldElapsed >= soulShieldLimit)
+                            {
+                                RestartPhaseFromBeginning();
+                                goto ContinueOuter;
+                            }
+                        }
+
                         if (CompletionTimerExpired())
                         {
                             RestartPhaseFromBeginning();
@@ -419,20 +445,27 @@ namespace RogueDeal.Boss
             if (spot != _boss.CritSpot)
                 return;
 
-            bool inSoulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
-            if (inSoulRealm)
-                _soulCritSpotHit = true;
-            else
-                _physicalCritSpotHit = true;
+            // One-shot objective gates for structured phases
+            if (_data.requirePhysicalCritSpotHit || _data.requireSoulCritSpotHit)
+            {
+                bool inSoulRealm = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+                if (inSoulRealm)
+                    _soulCritSpotHit = true;
+                else
+                    _physicalCritSpotHit = true;
 
-            // Gate hits are "one-and-done"; close the window after the first valid hit.
-            _boss.CritSpot?.SetVulnerable(false);
+                _boss.CritSpot?.SetVulnerable(false);
+                return;
+            }
+
+            // Default: existing soul-drain pipeline (repeat hits until threshold or window ends)
+            _boss.DrainSouls(damage);
         }
 
         private IEnumerator FireTrackingBeams(RealmSimulationGroup group, int count)
         {
             int n = Mathf.Max(0, count);
-            float interval = Mathf.Max(0.02f, _boss.Phase3TrackingBeamInterval);
+            float interval = Mathf.Max(0.02f, _boss.ResolveTrackingBeamInterval(_phaseIndex1Based));
 
             for (int i = 0; i < n; i++)
             {
@@ -478,7 +511,7 @@ namespace RogueDeal.Boss
             if (!hitPlayer)
                 return;
 
-            float dmg = Mathf.Max(0f, _boss.Phase3TrackingBeamDamage);
+            float dmg = Mathf.Max(0f, _boss.ResolveTrackingBeamDamage(_phaseIndex1Based));
             if (dmg <= 0f)
                 return;
 

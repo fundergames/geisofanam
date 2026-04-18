@@ -373,39 +373,45 @@ namespace Geis.Editor
             g.slamRecoveryDuration = 0.5f;
             g.slamDamage = 8f;
             g.slamDamageRadius = 8f;
-            g.phases = new[]
-            {
-                new GiantBossPhaseData
-                {
-                    exitSoulPercentThreshold = 0.55f,
-                    timeBetweenSlams = 0.8f,
-                    slamGroundedDuration = 5f,
-                    critSpotVulnerableWindow = 8f,
-                    critRequiresSoulRealm = true,
-                    useShieldedHands = false
-                },
-                new GiantBossPhaseData
-                {
-                    exitSoulPercentThreshold = 0.28f,
-                    enterBannerMessage = "The Soul Warden's fists begin to glow...",
-                    timeBetweenSlams = 0.8f,
-                    slamGroundedDuration = 10f,
-                    critSpotVulnerableWindow = 8f,
-                    critRequiresSoulRealm = true,
-                    useShieldedHands = true
-                },
-                new GiantBossPhaseData
-                {
-                    exitSoulPercentThreshold = 0f,
-                    enterBannerMessage = "The veil tears...",
-                    timeBetweenSlams = 0.8f,
-                    slamGroundedDuration = 10f,
-                    critSpotVulnerableWindow = 8f,
-                    critRequiresSoulRealm = true,
-                    useShieldedHands = true
-                }
-            };
+
             AssetDatabase.CreateAsset(g, path);
+
+            var p1 = ScriptableObject.CreateInstance<GiantBossPhaseDefinition>();
+            p1.name = "Phase 1";
+            p1.exitSoulPercentThreshold = 0.55f;
+            p1.timeBetweenSlams = 0.8f;
+            p1.slamGroundedDuration = 5f;
+            p1.critSpotVulnerableWindow = 8f;
+            p1.critRequiresSoulRealm = true;
+            p1.useShieldedHands = false;
+
+            var p2 = ScriptableObject.CreateInstance<GiantBossPhaseDefinition>();
+            p2.name = "Phase 2";
+            p2.exitSoulPercentThreshold = 0.28f;
+            p2.enterBannerMessage = "The Soul Warden's fists begin to glow...";
+            p2.timeBetweenSlams = 0.8f;
+            p2.slamGroundedDuration = 10f;
+            p2.critSpotVulnerableWindow = 8f;
+            p2.critRequiresSoulRealm = true;
+            p2.useShieldedHands = true;
+
+            var p3 = ScriptableObject.CreateInstance<GiantBossPhaseDefinition>();
+            p3.name = "Phase 3";
+            p3.exitSoulPercentThreshold = 0f;
+            p3.enterBannerMessage = "The veil tears...";
+            p3.timeBetweenSlams = 0.8f;
+            p3.slamGroundedDuration = 10f;
+            p3.critSpotVulnerableWindow = 8f;
+            p3.critRequiresSoulRealm = true;
+            p3.useShieldedHands = true;
+
+            AssetDatabase.AddObjectToAsset(p1, g);
+            AssetDatabase.AddObjectToAsset(p2, g);
+            AssetDatabase.AddObjectToAsset(p3, g);
+
+            g.phaseDefinitions = new[] { p1, p2, p3 };
+            EditorUtility.SetDirty(g);
+            AssetDatabase.SaveAssets();
             return g;
         }
 

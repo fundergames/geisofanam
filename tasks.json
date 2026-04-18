@@ -1,0 +1,21 @@
+{
+  "title": "Current Goals",
+  "tasks": [
+    {
+      "text": "Warm up stream",
+      "done": false
+    },
+    {
+      "text": "Review combat pass",
+      "done": false
+    },
+    {
+      "text": "Adjust UI spacing",
+      "done": false
+    },
+    {
+      "text": "Prep next task",
+      "done": false
+    }
+  ]
+}
