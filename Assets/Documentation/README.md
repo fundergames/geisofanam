@@ -5,11 +5,7 @@ This folder contains all documentation files for the project.
 ## Combat System Documentation
 
 ### Migration & Cleanup
-- **COMBAT_SYSTEM_CLEANUP_ANALYSIS.md** - Initial analysis of combat system issues
-- **COMBAT_SYSTEM_MIGRATION.md** - Migration guide from old to new system
-- **ADAPTER_MIGRATION_ANALYSIS.md** - Analysis of adapter removal
 - **FINAL_MIGRATION_REPORT.md** - Final migration completion report
-- **CLEANUP_SUMMARY.md** - Summary of code cleanup
 - **FINAL_CLEANUP_REPORT.md** - Final cleanup completion report
 
 ### System Documentation
@@ -23,8 +19,19 @@ This folder contains all documentation files for the project.
 The following docs were removed to reduce stale context load and duplicate migration state:
 - `IMPLEMENTATION_STATUS.md`
 - `MIGRATION_COMPLETE_SUMMARY.md`
+- `COMBAT_SYSTEM_CLEANUP_ANALYSIS.md`
+- `COMBAT_SYSTEM_MIGRATION.md`
+- `ADAPTER_MIGRATION_ANALYSIS.md`
+- `CLEANUP_SUMMARY.md`
 
 Use `FINAL_MIGRATION_REPORT.md` and `FINAL_CLEANUP_REPORT.md` as the migration/cleanup completion references.
+
+## Retention policy (keep context lean)
+
+- Prefer canonical docs in `Assets/Docs/*` for day-to-day implementation context.
+- Keep only stable, currently useful deep-dive guides in this folder.
+- Remove planning/migration snapshots once superseded by final reports.
+- If a file is kept for historical reasons, it should not duplicate current state tracking.
 
 ### Combat System Setup Guides
 - **TARGETING_SYSTEM_SETUP.md** - Targeting system setup guide
