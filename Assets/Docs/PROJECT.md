@@ -15,11 +15,21 @@
 
 ## Project Pillars
 
-*(To be refined — placeholder)*
+1. **Readable dual-realm play**
+   - Physical and soul-realm interactions must be visually and mechanically distinct.
+   - New mechanics should make realm switching meaningful, not cosmetic.
 
-1. **World**: Fantasy setting with distinct regions and factions
-2. **Combat**: Third-person action with targeting, abilities, and modular equipment
-3. **Progression**: Quest-driven narrative and character growth
+2. **Third-person action clarity**
+   - Combat timing, telegraphs, lock-on behavior, and hit feedback should be predictable and legible.
+   - Input mappings must preserve keyboard/gamepad parity for core actions.
+
+3. **Composable content pipeline**
+   - Features should plug into existing systems (weapon definitions, puzzle base classes, feature docs) instead of bespoke one-offs.
+   - Prefer data-driven setup through ScriptableObjects and feature/system docs.
+
+4. **Low-context agent execution**
+   - Routine feature work should be possible by reading `START_HERE.md`, one feature file, and only relevant system docs.
+   - Behavior changes must update the corresponding system doc and feature state.
 
 ## Naming Conventions
 

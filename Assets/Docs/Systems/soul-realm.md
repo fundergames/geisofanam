@@ -77,7 +77,10 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Rules
 
-*(Add explicit project rules here when you want them enforced in reviews.)*
+- Realm-gated timers/coroutines for frozen-world behavior must use `RealmSimulation` helpers instead of raw `Time.deltaTime` + `WaitForSeconds`.
+- Ability activation must enforce both asset realm flags (`AllowActivationInSoulRealm` / `AllowActivationInPhysicalRealm`) and current realm state.
+- Ability origins should come from `SoulRealmManager.GetAbilityContextTransforms` when available; fallback-only origins should be treated as compatibility paths.
+- Systems that must not run during soul realm physical lock must gate interactions through `SoulRealmInteractable.BlockPhysicalInteractions`.
 
 ## Guidelines
 
