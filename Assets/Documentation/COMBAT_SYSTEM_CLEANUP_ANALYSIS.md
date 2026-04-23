@@ -213,7 +213,7 @@ The combat system has evolved through multiple iterations, resulting in overlapp
 1. Remove obsolete code
 2. Update documentation
 3. Run full test suite
-4. Update `IMPLEMENTATION_STATUS.md`
+4. Update combat status summary docs
 
 ## Specific Files to Address
 
@@ -246,7 +246,7 @@ The combat system has evolved through multiple iterations, resulting in overlapp
 - [ ] Test video poker mode (legacy)
 - [ ] Test third-person combat (new)
 - [ ] Update documentation
-- [ ] Update `IMPLEMENTATION_STATUS.md`
+- [ ] Update combat status summary docs
 
 ## Questions to Resolve
 

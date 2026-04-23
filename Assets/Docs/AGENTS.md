@@ -7,9 +7,42 @@ This document instructs Cursor (and Unity Claude Code CLI) how to orchestrate mu
 When a user requests a feature (e.g., "Create a Forest Guardian enemy model"), the AI should:
 
 1. **Detect roles** needed from the request (Design, Architect, 3D Modeler, Rigger, Animator, Engineer, QA, Product, UI/UX)
-2. **Read** `PROJECT.md`, `VisualStyleGuide.md`, and relevant feature files in `Features/`
+2. **Read** `START_HERE.md`, the target feature file, and only the minimum additional docs required for that role/task
 3. **Perform** each role's work sequentially, updating the feature file at each step
 4. **Hand off** by writing to the appropriate section and marking checkboxes
+
+## Minimal Context Loading Policy
+
+Default to the smallest useful context window.
+
+### Existing feature iteration (default)
+
+Read only:
+1. `Assets/Docs/START_HERE.md`
+2. Target feature file `Assets/Docs/Features/<slug>.md`
+3. System docs explicitly required by the feature
+
+### New feature planning
+
+Read only:
+1. `Assets/Docs/START_HERE.md`
+2. `Assets/Docs/PROJECT.md`
+3. `Assets/Docs/Systems/README.md`
+4. The 1-3 system docs directly relevant to the request
+5. One feature template under `Assets/Docs/Features/`
+
+### Cross-system changes
+
+Read only:
+1. `Assets/Docs/START_HERE.md`
+2. Affected system docs under `Assets/Docs/Systems/`
+3. In-flight feature files impacted by the change
+
+### Boundary rules
+
+- Do **not** scan all markdown docs by default.
+- Treat `Assets/Documentation/*.md` as deep-dive/historical unless a blocker requires them.
+- Expand context only when current docs are insufficient or contradictory.
 
 ## Role → Responsibility Mapping
 
@@ -58,7 +91,7 @@ Product and UI/UX can inject at any point. QA/Tester runs last for verification.
 
 ## System Behavior Rules
 
-1. Always read PROJECT.md, VisualStyleGuide.md, and the target feature file before acting
+1. Always read `Assets/Docs/START_HERE.md` and the target feature file before acting
 2. Determine CURRENT ROLE from `current_owner` in the feature file YAML state block
 3. Only perform work for the current role
 4. Do NOT skip roles
@@ -73,6 +106,7 @@ Product and UI/UX can inject at any point. QA/Tester runs last for verification.
    - `last_updated_at`
 6. If requirements are unclear → add to Blockers instead of guessing
 7. If output is incomplete → do NOT mark handoff complete
+8. Do not broaden context beyond role/system needs unless blocked
 
 ## Feature Lifecycle
 
@@ -141,6 +175,7 @@ Discord coordination is supported via `Tools/discord_agent_bot`. Discord is sign
 
 ## Quick Reference
 
+- **Minimal context entry point**: `Assets/Docs/START_HERE.md`
 - **Project context**: `Assets/Docs/PROJECT.md`
 - **System docs (how each system works + rules)**: `Assets/Docs/Systems/README.md` and `Assets/Docs/Systems/*.md`
 - **Art direction**: `Assets/Docs/VisualStyleGuide.md`

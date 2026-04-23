@@ -11,14 +11,20 @@ This folder contains all documentation files for the project.
 - **FINAL_MIGRATION_REPORT.md** - Final migration completion report
 - **CLEANUP_SUMMARY.md** - Summary of code cleanup
 - **FINAL_CLEANUP_REPORT.md** - Final cleanup completion report
-- **MIGRATION_COMPLETE_SUMMARY.md** - Migration completion summary
 
 ### System Documentation
 - **COMBAT_SYSTEM_PROPOSAL.md** - Original combat system architecture proposal
 - **COMBAT_SYSTEM_IMPLEMENTATION_GUIDE.md** - Implementation guide with code examples
 - **COMBAT_SYSTEM_SUMMARY.md** - Executive summary of combat system
-- **IMPLEMENTATION_STATUS.md** - Current implementation status
 - **FUNCTIONALITY_LOSS_AND_BREAKING_CHANGES.md** - Breaking changes documentation
+
+### Pruned / superseded docs
+
+The following docs were removed to reduce stale context load and duplicate migration state:
+- `IMPLEMENTATION_STATUS.md`
+- `MIGRATION_COMPLETE_SUMMARY.md`
+
+Use `FINAL_MIGRATION_REPORT.md` and `FINAL_CLEANUP_REPORT.md` as the migration/cleanup completion references.
 
 ### Combat System Setup Guides
 - **TARGETING_SYSTEM_SETUP.md** - Targeting system setup guide

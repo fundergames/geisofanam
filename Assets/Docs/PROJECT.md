@@ -88,7 +88,7 @@ Assets/
 
 When working on features, use the multi-agent system:
 
-1. Read this file and `Assets/Docs/AGENTS.md` for orchestration rules.
+1. Read `Assets/Docs/START_HERE.md` first, then this file and `Assets/Docs/AGENTS.md`.
 2. Create or update feature files in `Assets/Docs/Features/`.
 3. Follow the handoff flow: Design → Architect → Modeler → Rigger → Animator → Engineer → QA.
 4. Reference `Assets/Docs/VisualStyleGuide.md` for art direction.

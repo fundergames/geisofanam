@@ -12,6 +12,15 @@ This folder holds **one markdown file per gameplay or engine system**: how it wo
 
 If a topic is system-wide and still current, prefer summarizing it here and linking to long-form docs under `Assets/Documentation/` when useful.
 
+## Minimal-context workflow
+
+Use this folder to keep context loading small and predictable:
+
+1. Start with `Assets/Docs/START_HERE.md`.
+2. Read only the system docs directly needed by the active task.
+3. For feature iteration, prefer the feature file plus referenced systems; avoid broad markdown scans.
+4. Treat `Assets/Documentation/*.md` as historical/deep-dive unless the task is blocked without it.
+
 ## Conventions
 
 - **Filename**: `kebab-case.md` matching the system name (e.g. `soul-realm.md`, `input.md`).
