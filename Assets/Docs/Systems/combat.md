@@ -70,7 +70,8 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Related documentation
 
-- `Assets/Documentation/COMBAT_SYSTEM_SUMMARY.md`, `COMBAT_SYSTEM_IMPLEMENTATION_GUIDE.md`, `WEAPON_COLLIDER_SETUP.md`, etc.
+- Active guides: `Assets/Documentation/COMBAT_SYSTEM_IMPLEMENTATION_GUIDE.md`, `WEAPON_COLLIDER_SETUP.md`, etc.
+- Historical references: `Assets/Documentation/Archive/COMBAT_SYSTEM_SUMMARY.md`
 
 ## Changelog
 

@@ -42,6 +42,7 @@ Read only:
 
 - Do **not** scan all markdown docs by default.
 - Treat `Assets/Documentation/*.md` as deep-dive/historical unless a blocker requires them.
+- Treat `Assets/Documentation/Archive/*.md` as archive-only; do not load unless explicitly requested for historical investigation.
 - Expand context only when current docs are insufficient or contradictory.
 
 ## Role → Responsibility Mapping

@@ -52,6 +52,7 @@ When iterating a feature, always trust the feature file state (`status`, `curren
 Default behavior:
 - Prefer `Assets/Docs/*` over `Assets/Documentation/*`.
 - Treat `Assets/Documentation/*` as deep-dive or historical unless explicitly required.
+- Treat `Assets/Documentation/Archive/*` as historical snapshots; do not read by default.
 - Do not scan the whole repo docs set for normal feature work.
 
 Escalate to broader docs only when:
