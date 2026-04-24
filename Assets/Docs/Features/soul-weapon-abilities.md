@@ -1,5 +1,8 @@
 # Soul realm weapon abilities (revised)
 
+> Canonical state fields for this feature live in `Assets/Docs/FeatureRegistry.json`.
+> If this feature is moved back into full role-based pipeline flow, migrate it to the standard frontmatter template.
+
 ## Scope
 
 - **Harp-Bow (Bow weapon definition)**: Soul Marking (Q), Path Reveal (F).

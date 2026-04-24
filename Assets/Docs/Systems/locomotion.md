@@ -54,7 +54,9 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 
 ## Rules
 
-*(Add explicit project rules here when you want them enforced in reviews.)*
+- Keep camera/soul-realm transitions single-owned: modify transition timing in `GeisCameraController` or `SoulRealmManager`, not both for the same effect.
+- Any locomotion or camera change must preserve controller parity (keyboard/mouse and gamepad) and avoid per-device behavior drift.
+- Do not add gameplay side effects in animation events here; combat effects should route through `OnAttackPerformed` and `GeisCombatBridge`.
 
 ## Guidelines
 
@@ -66,4 +68,5 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 
 ## Changelog
 
+- **2026-04-23**: Added explicit anti-regression rules for transition ownership, controller parity, and combat event routing.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.
