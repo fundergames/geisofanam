@@ -62,7 +62,10 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Rules
 
-*(Add explicit project rules here when you want them enforced in reviews.)*
+- New weapons must be authored through `GeisWeaponDefinition`; do not add new content by extending bridge legacy arrays.
+- Any change to weapon slot ordering or input mapping must update both this doc and the player setup docs in `Assets/Documentation/` in the same PR.
+- Combat bridge changes must preserve the `OnAttackPerformed(weaponIndex)` contract from `GeisPlayerAnimationController`.
+- Soul realm interaction gates (`SoulRealmInteractable.BlockPhysicalInteractions`) must not be bypassed by switch/use logic.
 
 ## Guidelines
 
@@ -70,7 +73,8 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Related documentation
 
-- `Assets/Documentation/COMBAT_SYSTEM_SUMMARY.md`, `COMBAT_SYSTEM_IMPLEMENTATION_GUIDE.md`, `WEAPON_COLLIDER_SETUP.md`, etc.
+- Active guides: `Assets/Documentation/COMBAT_SYSTEM_IMPLEMENTATION_GUIDE.md`, `WEAPON_COLLIDER_SETUP.md`, etc.
+- Historical references: `Assets/Documentation/Archive/COMBAT_SYSTEM_SUMMARY.md`
 
 ## Changelog
 

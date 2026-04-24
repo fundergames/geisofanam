@@ -1,10 +1,35 @@
 [
   {
     "slug": "forest-guardian",
+    "title": "Enemy: Forest Guardian",
     "type": "enemy",
     "status": "concept",
     "owner": "Design",
+    "next_owner": "Architect",
     "priority": "high",
+    "doc": "Assets/Docs/Features/forest-guardian.md",
     "last_updated": null
+  },
+  {
+    "slug": "giant-boss-phase3-crit-spot-loop",
+    "title": "Boss: Giant Soul Warden - Phase 3 dual-realm crit loop",
+    "type": "boss",
+    "status": "spec_ready",
+    "owner": "Engineer",
+    "next_owner": "QA",
+    "priority": "high",
+    "doc": "Assets/Docs/Features/giant-boss-phase3-crit-spot-loop.md",
+    "last_updated": "2026-04-15"
+  },
+  {
+    "slug": "soul-weapon-abilities",
+    "title": "Soul realm weapon abilities",
+    "type": "system-feature",
+    "status": "in_engine",
+    "owner": "Engineer",
+    "next_owner": "QA",
+    "priority": "high",
+    "doc": "Assets/Docs/Features/soul-weapon-abilities.md",
+    "last_updated": "2026-04-15"
   }
 ]

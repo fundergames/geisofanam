@@ -55,7 +55,10 @@ Centralize player input: gameplay actions, weapon abilities, and interact prompt
 
 ## Rules
 
-*(Add explicit project rules here when you want them enforced in reviews.)*
+- Do not add gameplay input polling outside `GeisInputReader` or `GeisInteractInput` without documenting the reason in this file.
+- If `.inputactions` changes, regenerate/sync the C# wrapper in the same PR and note changed actions in this doc changelog.
+- New interact actions must maintain keyboard + gamepad parity (or explicitly document why parity is intentionally broken).
+- Do not bypass `SoulRealmWasPressedThisFrame()` / configured realm actions with ad-hoc key checks for realm toggling.
 
 ## Guidelines
 

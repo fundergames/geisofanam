@@ -56,7 +56,10 @@ See `PuzzleRealmMode.cs` — values above; used for accessibility and fade direc
 
 ## Rules
 
-*(Add explicit project rules here when you want them enforced in reviews.)*
+- New triggers/outputs must inherit from puzzle base classes and use `PuzzleRealmMode` checks; avoid ad-hoc realm gating unless there is a documented exception.
+- Realm presentation (`_Dissolve`, tint, material swapping) should remain in puzzle presentation helpers/base classes, not repeated per puzzle.
+- Puzzle interactions that should not work in soul realm must explicitly check `SoulRealmInteractable.BlockPhysicalInteractions`.
+- New trigger/output types must document required layers/tags/collider assumptions either in code comments/tooltips and this doc.
 
 ## Guidelines
 

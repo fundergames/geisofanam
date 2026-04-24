@@ -4,12 +4,16 @@ Reference for 3D Modeler, Rigger, Animator, and other art-related agents. Ensure
 
 ## Art Direction
 
-*(Placeholder — update with actual art direction when defined)*
+Stylized fantasy with readable gameplay-first silhouettes.
+
+- Prioritize readability at gameplay camera distance over surface micro-detail.
+- Favor bold primary forms and restrained secondary detail.
+- Preserve faction identity through color accents and shape language, not noisy materials.
 
 ### Color Palette
 
-- **Primary**: TBD (fantasy palette)
-- **Accent**: TBD
+- **Primary**: Muted natural palette (forest greens, stone grays, desaturated browns)
+- **Accent**: Controlled magical accents (teal/cyan for soul-aligned effects, warm amber for physical/combat highlights)
 - **Environment**: Natural, earthy tones; avoid oversaturation
 - **Characters**: Distinct faction colors; readable silhouettes
 
@@ -18,6 +22,7 @@ Reference for 3D Modeler, Rigger, Animator, and other art-related agents. Ensure
 - URP standard lighting
 - Soft shadows preferred for readability
 - Avoid harsh contrasts unless for dramatic effect
+- Keep gameplay-critical actors readable in mid-contrast conditions (avoid crushed blacks on characters)
 
 ## Technical Specifications
 
