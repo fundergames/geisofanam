@@ -19,35 +19,17 @@ MonoBehaviour:
   - fromState: 1
     inputType: 0
     toState: 2
-  - fromState: 2
-    inputType: 0
-    toState: 0
   - fromState: 1
     inputType: 1
     toState: 3
-  - fromState: 2
-    inputType: 1
-    toState: 4
-  - fromState: 3
-    inputType: 0
-    toState: 0
-  - fromState: 3
-    inputType: 1
-    toState: 0
-  - fromState: 4
-    inputType: 0
-    toState: 0
-  - fromState: 4
-    inputType: 1
-    toState: 0
   clips:
   - {fileID: 7400000, guid: 5136180a1c1e44d17869ea1ff0a0c59e, type: 2}
   - {fileID: 7400000, guid: 8f79d91617a6344f5bdb7f763594f1e2, type: 2}
   - {fileID: 7400000, guid: 20ec379b470d32a4cb3d238cb66afeb4, type: 2}
   - {fileID: 7400000, guid: 70efe019647ee9b4cb0d000560fa942c, type: 2}
-  fallbackClip: {fileID: 0}
+  fallbackClip: {fileID: 19834974856170749, guid: fc02d409915798b4c8a072565d6a96c3, type: 3}
   stateCombatBindings:
-  - combatActionOverride: {fileID: 0}
+  - combatActionOverride: {fileID: 11400000, guid: 367213d445a93cf47a439691c12db1ef, type: 2}
     multiHitNormalizedTimes: []
   - combatActionOverride: {fileID: 0}
     multiHitNormalizedTimes: []
@@ -59,3 +41,16 @@ MonoBehaviour:
     - 0.21
   cancelWindowStart: 0.5
   cancelWindowEnd: 0.7
+  stateTimings:
+  - overrideCancelWindow: 1
+    cancelWindowStart: 0.354
+    cancelWindowEnd: 0.96
+  - overrideCancelWindow: 0
+    cancelWindowStart: 0.5
+    cancelWindowEnd: 0.7
+  - overrideCancelWindow: 0
+    cancelWindowStart: 0.5
+    cancelWindowEnd: 0.7
+  - overrideCancelWindow: 0
+    cancelWindowStart: 0.5
+    cancelWindowEnd: 0.7

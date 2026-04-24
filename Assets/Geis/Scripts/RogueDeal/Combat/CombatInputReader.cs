@@ -67,6 +67,7 @@ namespace RogueDeal.Combat
             // --- Movement & actions (keyboard/mouse) ---
             Vector2 kbMove = Vector2.zero;
             bool kbRun = false, kbDodge = false, kbJump = false, kbAttack = false, kbLockOn = false, kbCrouch = false;
+            bool kbCycleLockOnLeft = false, kbCycleLockOnRight = false;
             Vector2 attackClickPos = Vector2.zero;
             if (keyboard != null)
             {
@@ -78,6 +79,8 @@ namespace RogueDeal.Combat
                 kbDodge = keyboard.spaceKey.wasPressedThisFrame || keyboard.leftCtrlKey.wasPressedThisFrame;
                 kbJump = keyboard.spaceKey.wasPressedThisFrame;
                 kbLockOn = keyboard.qKey.wasPressedThisFrame;
+                kbCycleLockOnLeft = keyboard.leftArrowKey.wasPressedThisFrame;
+                kbCycleLockOnRight = keyboard.rightArrowKey.wasPressedThisFrame;
                 kbCrouch = keyboard.cKey.wasPressedThisFrame;
             }
             if (mouse != null)
@@ -90,6 +93,7 @@ namespace RogueDeal.Combat
             // --- Movement & actions (gamepad or joystick) ---
             Vector2 gpMove = Vector2.zero;
             bool gpRun = false, gpDodge = false, gpJump = false, gpAttack = false, gpLockOn = false, gpCrouch = false;
+            bool gpCycleLockOnLeft = false, gpCycleLockOnRight = false;
             if (gamepad != null)
             {
                 gpMove = gamepad.leftStick.ReadValue();
@@ -98,6 +102,8 @@ namespace RogueDeal.Combat
                 gpDodge = gamepad.rightTrigger.wasPressedThisFrame;  // RT
                 gpAttack = gamepad.buttonWest.wasPressedThisFrame; // X on Xbox, Square on PS
                 gpLockOn = gamepad.rightStickButton.wasPressedThisFrame;
+                gpCycleLockOnLeft = gamepad.dpad.left.wasPressedThisFrame;
+                gpCycleLockOnRight = gamepad.dpad.right.wasPressedThisFrame;
                 gpCrouch = gamepad.buttonEast.wasPressedThisFrame; // B on Xbox, Circle on PS
             }
             else if (joystick != null)
@@ -181,8 +187,8 @@ namespace RogueDeal.Combat
             }
 
             // --- Device switch (last input wins) ---
-            bool kbUsed = kbMove.sqrMagnitude > 0.01f || kbRun || kbDodge || kbJump || kbAttack || kbLockOn || kbCrouch || mouseLookUsed;
-            bool gpUsed = gpMove.sqrMagnitude > 0.01f || gpRun || gpDodge || gpJump || gpAttack || gpLockOn || gpCrouch || gamepadLookUsed;
+            bool kbUsed = kbMove.sqrMagnitude > 0.01f || kbRun || kbDodge || kbJump || kbAttack || kbLockOn || kbCycleLockOnLeft || kbCycleLockOnRight || kbCrouch || mouseLookUsed;
+            bool gpUsed = gpMove.sqrMagnitude > 0.01f || gpRun || gpDodge || gpJump || gpAttack || gpLockOn || gpCycleLockOnLeft || gpCycleLockOnRight || gpCrouch || gamepadLookUsed;
             ActiveInputScheme.Update(kbUsed, gpUsed);
 
             // --- Fill state from active device ---
@@ -195,6 +201,8 @@ namespace RogueDeal.Combat
                 _state.SprintHeld = gpRun;
                 _state.CrouchPressed = gpCrouch;
                 _state.LockOnPressed = gpLockOn;
+                _state.CycleLockOnLeftPressed = gpCycleLockOnLeft;
+                _state.CycleLockOnRightPressed = gpCycleLockOnRight;
                 _state.DodgePressed = dodgeEnabled && gpDodge;
                 _state.JumpPressed = gpJump;
                 _state.AttackPressed = gpAttack;
@@ -209,6 +217,8 @@ namespace RogueDeal.Combat
                 _state.SprintHeld = gpRun;
                 _state.CrouchPressed = gpCrouch;
                 _state.LockOnPressed = gpLockOn;
+                _state.CycleLockOnLeftPressed = gpCycleLockOnLeft;
+                _state.CycleLockOnRightPressed = gpCycleLockOnRight;
                 _state.DodgePressed = dodgeEnabled && gpDodge;
                 _state.JumpPressed = gpJump;
                 _state.AttackPressed = gpAttack;
@@ -223,6 +233,8 @@ namespace RogueDeal.Combat
                 _state.SprintHeld = gpRun;
                 _state.CrouchPressed = gpCrouch;
                 _state.LockOnPressed = gpLockOn;
+                _state.CycleLockOnLeftPressed = gpCycleLockOnLeft;
+                _state.CycleLockOnRightPressed = gpCycleLockOnRight;
                 _state.DodgePressed = dodgeEnabled && gpDodge;
                 _state.JumpPressed = gpJump;
                 _state.AttackPressed = gpAttack;
@@ -237,6 +249,8 @@ namespace RogueDeal.Combat
                 _state.SprintHeld = kbRun;
                 _state.CrouchPressed = kbCrouch;
                 _state.LockOnPressed = kbLockOn;
+                _state.CycleLockOnLeftPressed = kbCycleLockOnLeft;
+                _state.CycleLockOnRightPressed = kbCycleLockOnRight;
                 _state.DodgePressed = dodgeEnabled && kbDodge;
                 _state.JumpPressed = kbJump;
                 _state.AttackPressed = kbAttack;

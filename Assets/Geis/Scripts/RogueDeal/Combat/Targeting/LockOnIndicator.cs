@@ -1,48 +1,58 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace RogueDeal.Combat.Targeting
 {
     /// <summary>
-    /// Visual indicator for lock-on targeting. Shows a red circle with X crosshair on the ground under the locked target.
-    /// Follows the target if it's movable, or stays at ground position for AOE.
+    /// Visual indicator for lock-on targeting. Renders a procedural ring + cross above the target and
+    /// billboards toward the player camera so the active lock stays readable while strafing.
     /// </summary>
     public class LockOnIndicator : MonoBehaviour
     {
-        [Header("Visual Settings")]
-        [Tooltip("Circle line renderer")]
-        [SerializeField] private LineRenderer circleRenderer;
-        
-        [Tooltip("X crosshair renderer (two line renderers)")]
-        [SerializeField] private LineRenderer[] crosshairRenderers = new LineRenderer[2];
-        
         [Header("Appearance")]
-        [Tooltip("Radius of the indicator circle")]
-        [SerializeField] private float indicatorRadius = 1f;
-        
-        [Tooltip("Color of the indicator")]
+        [Tooltip("Radius of the lock-on ring.")]
+        [SerializeField] private float indicatorRadius = 0.6f;
+
+        [Tooltip("Color of the indicator.")]
         [SerializeField] private Color indicatorColor = new Color(1f, 0f, 0f, 0.8f);
-        
-        [Tooltip("Width of the circle ring")]
-        [SerializeField] private float circleWidth = 0.15f;
-        
-        [Tooltip("Width of the X crosshair lines")]
-        [SerializeField] private float crosshairWidth = 0.2f;
-        
-        [Tooltip("Length of the X crosshair lines")]
-        [SerializeField] private float crosshairLength = 1f;
-        
-        [Header("Positioning")]
-        [Tooltip("Offset above ground")]
-        [SerializeField] private float groundOffset = 0.1f;
-        
-        [Tooltip("Should indicator follow target? (false for AOE)")]
-        [SerializeField] private bool followTarget = true;
-        
-        private CombatEntity target;
-        private bool isActive = false;
+
+        [Tooltip("Width of the ring and cross lines.")]
+        [SerializeField] private float lineWidth = 0.03f;
+
+        [Tooltip("Vertical lift applied above the lock-on anchor position.")]
+        [SerializeField] private float anchorHeightOffset = 0.15f;
+
+        [Tooltip("How far to pull the indicator toward the camera so it sits in front of the target.")]
+        [SerializeField] private float cameraFacingOffset = 0.35f;
+
+        [Tooltip("Additional pulse applied to the indicator alpha.")]
+        [SerializeField] private float pulseSpeed = 3f;
+
+        [Tooltip("How much the indicator alpha pulses over time.")]
+        [Range(0f, 1f)]
+        [SerializeField] private float pulseAmount = 0.18f;
+
+        [Header("Editor Tuning")]
+        [Tooltip("When enabled, inspector changes rebuild the indicator immediately so you can tune it while playing.")]
+        [SerializeField] private bool liveUpdateInEditor = true;
+
+        [Header("Visual Settings")]
+        [SerializeField] private LineRenderer circleRenderer;
+        [SerializeField] private LineRenderer crossRenderer;
+
+        private Transform targetAnchor;
+        private bool isActive;
         private Camera mainCamera;
-        
+        private float pulseTime;
+        private float _lastIndicatorRadius = -1f;
+        private float _lastLineWidth = -1f;
+        private float _lastAnchorHeightOffset = -1f;
+        private float _lastCameraFacingOffset = -1f;
+        private float _lastPulseSpeed = -1f;
+        private float _lastPulseAmount = -1f;
+        private Color _lastIndicatorColor = default;
+        private bool _hasAppliedTunableSettings;
+        private const int CircleSegments = 48;
+
         private void Awake()
         {
             mainCamera = Camera.main;
@@ -50,162 +60,187 @@ namespace RogueDeal.Combat.Targeting
             {
                 mainCamera = FindFirstObjectByType<Camera>();
             }
-            
+
             CreateVisuals();
+            ApplyTunableSettings();
             SetActive(false);
         }
-        
+
+        private void OnValidate()
+        {
+            if (!liveUpdateInEditor)
+                return;
+
+            ApplyTunableSettings();
+
+            if (isActive)
+            {
+                UpdatePosition();
+                BillboardToCamera();
+                UpdateVisuals();
+                SetActive(true);
+            }
+        }
+
         private void CreateVisuals()
         {
-            Debug.Log("[LockOnIndicator] Creating visuals...");
-            
-            // Create circle line renderer (like RangeIndicator does)
             if (circleRenderer == null)
             {
                 GameObject circleObj = new GameObject("Circle");
-                circleObj.transform.SetParent(transform);
+                circleObj.transform.SetParent(transform, false);
                 circleObj.transform.localPosition = Vector3.zero;
                 circleRenderer = circleObj.AddComponent<LineRenderer>();
-                circleRenderer.useWorldSpace = true; // Use world space for fixed orientation
+                circleRenderer.useWorldSpace = false;
                 circleRenderer.loop = true;
-                circleRenderer.startWidth = circleWidth;
-                circleRenderer.endWidth = circleWidth;
+                circleRenderer.widthMultiplier = lineWidth;
                 circleRenderer.material = new Material(Shader.Find("Sprites/Default"));
-                circleRenderer.startColor = indicatorColor;
-                circleRenderer.endColor = indicatorColor;
-                circleRenderer.enabled = false; // Start disabled
-                Debug.Log($"[LockOnIndicator] Created circle line renderer");
+                circleRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                circleRenderer.receiveShadows = false;
+                circleRenderer.alignment = LineAlignment.TransformZ;
+                BuildCircle(circleRenderer, indicatorRadius);
+                circleRenderer.enabled = false;
             }
-            
-            // Create X crosshair (two line renderers at 45 degrees)
-            if (crosshairRenderers[0] == null || crosshairRenderers[1] == null)
+
+            if (crossRenderer == null)
             {
-                // First diagonal line (top-left to bottom-right)
-                GameObject crosshair1 = new GameObject("CrosshairLine1");
-                crosshair1.transform.SetParent(transform);
-                crosshair1.transform.localPosition = Vector3.zero;
-                crosshairRenderers[0] = crosshair1.AddComponent<LineRenderer>();
-                crosshairRenderers[0].useWorldSpace = true; // Use world space for fixed orientation
-                crosshairRenderers[0].startWidth = crosshairWidth;
-                crosshairRenderers[0].endWidth = crosshairWidth;
-                crosshairRenderers[0].material = new Material(Shader.Find("Sprites/Default"));
-                crosshairRenderers[0].startColor = indicatorColor;
-                crosshairRenderers[0].endColor = indicatorColor;
-                crosshairRenderers[0].enabled = false;
-                Debug.Log($"[LockOnIndicator] Created crosshair line 1");
-                
-                // Second diagonal line (top-right to bottom-left)
-                GameObject crosshair2 = new GameObject("CrosshairLine2");
-                crosshair2.transform.SetParent(transform);
-                crosshair2.transform.localPosition = Vector3.zero;
-                crosshairRenderers[1] = crosshair2.AddComponent<LineRenderer>();
-                crosshairRenderers[1].useWorldSpace = true; // Use world space for fixed orientation
-                crosshairRenderers[1].startWidth = crosshairWidth;
-                crosshairRenderers[1].endWidth = crosshairWidth;
-                crosshairRenderers[1].material = new Material(Shader.Find("Sprites/Default"));
-                crosshairRenderers[1].startColor = indicatorColor;
-                crosshairRenderers[1].endColor = indicatorColor;
-                crosshairRenderers[1].enabled = false;
-                Debug.Log($"[LockOnIndicator] Created crosshair line 2");
+                GameObject crossObj = new GameObject("Cross");
+                crossObj.transform.SetParent(transform, false);
+                crossObj.transform.localPosition = Vector3.zero;
+                crossRenderer = crossObj.AddComponent<LineRenderer>();
+                crossRenderer.useWorldSpace = false;
+                crossRenderer.loop = false;
+                crossRenderer.widthMultiplier = lineWidth * 0.9f;
+                crossRenderer.material = new Material(Shader.Find("Sprites/Default"));
+                crossRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                crossRenderer.receiveShadows = false;
+                crossRenderer.alignment = LineAlignment.TransformZ;
+                BuildCross(crossRenderer, indicatorRadius * 1.15f);
+                crossRenderer.enabled = false;
             }
-            
-            Debug.Log("[LockOnIndicator] Visuals created successfully!");
         }
-        
-        private void DrawCircle(LineRenderer lr, float radius, int segments = 32)
+
+        private void ApplyTunableSettings()
         {
-            // Make sure circle uses world space for fixed orientation
-            lr.useWorldSpace = true;
-            
-            lr.positionCount = segments + 1;
-            lr.startColor = indicatorColor;
-            lr.endColor = indicatorColor;
-            
-            // Get world position of the indicator
-            Vector3 center = transform.position;
-            
-            float angle = 0f;
-            for (int i = 0; i <= segments; i++)
+            indicatorRadius = Mathf.Max(0.05f, indicatorRadius);
+            lineWidth = Mathf.Max(0.001f, lineWidth);
+            anchorHeightOffset = Mathf.Max(0f, anchorHeightOffset);
+            cameraFacingOffset = Mathf.Max(0f, cameraFacingOffset);
+            pulseSpeed = Mathf.Max(0f, pulseSpeed);
+            pulseAmount = Mathf.Clamp01(pulseAmount);
+
+            if (circleRenderer != null)
             {
-                // Calculate positions in world space relative to world axes
-                float x = Mathf.Sin(Mathf.Deg2Rad * angle) * radius;
-                float z = Mathf.Cos(Mathf.Deg2Rad * angle) * radius;
-                // Add to center position in world space
-                lr.SetPosition(i, center + new Vector3(x, 0, z));
-                angle += 360f / segments;
+                circleRenderer.widthMultiplier = lineWidth;
+                BuildCircle(circleRenderer, indicatorRadius);
+            }
+
+            if (crossRenderer != null)
+            {
+                crossRenderer.widthMultiplier = lineWidth * 0.9f;
+                BuildCross(crossRenderer, indicatorRadius * 1.15f);
+            }
+
+            _lastIndicatorRadius = indicatorRadius;
+            _lastLineWidth = lineWidth;
+            _lastAnchorHeightOffset = anchorHeightOffset;
+            _lastCameraFacingOffset = cameraFacingOffset;
+            _lastPulseSpeed = pulseSpeed;
+            _lastPulseAmount = pulseAmount;
+            _lastIndicatorColor = indicatorColor;
+            _hasAppliedTunableSettings = true;
+        }
+
+        private void BuildCircle(LineRenderer lr, float radius)
+        {
+            lr.positionCount = CircleSegments;
+            float step = Mathf.PI * 2f / CircleSegments;
+            for (int i = 0; i < CircleSegments; i++)
+            {
+                float angle = step * i;
+                lr.SetPosition(i, new Vector3(Mathf.Cos(angle) * radius, Mathf.Sin(angle) * radius, 0f));
             }
         }
-        
-        private void DrawX(LineRenderer lr1, LineRenderer lr2, float length)
+
+        private void BuildCross(LineRenderer lr, float radius)
         {
-            float halfLength = length * 0.5f;
-            
-            // Make sure line renderers use world space for fixed orientation
-            lr1.useWorldSpace = true;
-            lr2.useWorldSpace = true;
-            
-            // Get world positions based on transform position
-            Vector3 center = transform.position;
-            
-            // Calculate directions in world space (relative to world axes, not local)
-            Vector3 worldRight = Vector3.right;
-            Vector3 worldForward = Vector3.forward;
-            
-            // First diagonal: top-left to bottom-right (45 degrees rotated)
-            Vector3 dir1 = (worldRight + worldForward).normalized;
-            lr1.positionCount = 2;
-            lr1.startColor = indicatorColor;
-            lr1.endColor = indicatorColor;
-            lr1.SetPosition(0, center + dir1 * -halfLength);
-            lr1.SetPosition(1, center + dir1 * halfLength);
-            
-            // Second diagonal: top-right to bottom-left (45 degrees rotated the other way)
-            Vector3 dir2 = (worldRight - worldForward).normalized;
-            lr2.positionCount = 2;
-            lr2.startColor = indicatorColor;
-            lr2.endColor = indicatorColor;
-            lr2.SetPosition(0, center + dir2 * -halfLength);
-            lr2.SetPosition(1, center + dir2 * halfLength);
+            float half = radius * 0.55f;
+            lr.positionCount = 5;
+            lr.SetPosition(0, new Vector3(-half, 0f, 0f));
+            lr.SetPosition(1, new Vector3(half, 0f, 0f));
+            lr.SetPosition(2, Vector3.zero);
+            lr.SetPosition(3, new Vector3(0f, -half, 0f));
+            lr.SetPosition(4, new Vector3(0f, half, 0f));
         }
-        
-        private void Update()
+
+        private void LateUpdate()
         {
+            if (liveUpdateInEditor && HaveTunableSettingsChanged())
+            {
+                ApplyTunableSettings();
+
+                if (isActive)
+                {
+                    UpdatePosition();
+                    BillboardToCamera();
+                    UpdateVisuals();
+                    SetActive(true);
+                }
+            }
+
             if (isActive)
             {
                 UpdatePosition();
+                BillboardToCamera();
                 UpdateVisuals();
             }
         }
-        
-        /// <summary>
-        /// Sets the target to lock on to
-        /// </summary>
-        public void SetTarget(CombatEntity targetEntity, bool follow = true)
+
+        private bool HaveTunableSettingsChanged()
         {
-            target = targetEntity;
-            followTarget = follow;
-            isActive = target != null;
-            
+            if (!_hasAppliedTunableSettings)
+                return true;
+
+            return !Mathf.Approximately(_lastIndicatorRadius, indicatorRadius)
+                || !Mathf.Approximately(_lastLineWidth, lineWidth)
+                || !Mathf.Approximately(_lastAnchorHeightOffset, anchorHeightOffset)
+                || !Mathf.Approximately(_lastCameraFacingOffset, cameraFacingOffset)
+                || !Mathf.Approximately(_lastPulseSpeed, pulseSpeed)
+                || !Mathf.Approximately(_lastPulseAmount, pulseAmount)
+                || _lastIndicatorColor != indicatorColor;
+        }
+
+        /// <summary>
+        /// Follows a world-space anchor (e.g. lock-on socket, aim point, or external helper transform).
+        /// </summary>
+        public void SetTarget(Transform anchor)
+        {
+            targetAnchor = anchor;
+            isActive = targetAnchor != null;
+
             if (isActive)
             {
-                // Debug.Log($"[LockOnIndicator] Setting target: {targetEntity?.name ?? "null"} at position {targetEntity?.transform.position}");
                 SetActive(true);
                 UpdatePosition();
-                UpdateVisuals(); // Make sure visuals are updated immediately
-                // Debug.Log($"[LockOnIndicator] Indicator position: {transform.position}, Circle enabled: {circleRenderer?.enabled ?? false}, Crosshair enabled: {(crosshairRenderers[0]?.enabled ?? false) || (crosshairRenderers[1]?.enabled ?? false)}");
+                BillboardToCamera();
+                UpdateVisuals();
             }
             else
             {
                 SetActive(false);
             }
         }
-        
+
+        /// <summary>
+        /// Sets a dedicated world anchor to follow (same as <see cref="SetTarget"/>).
+        /// </summary>
+        public void SetAnchorTarget(Transform anchor) => SetTarget(anchor);
+
         /// <summary>
         /// Clears the lock-on target
         /// </summary>
         public void ClearTarget()
         {
-            target = null;
+            targetAnchor = null;
             isActive = false;
             SetActive(false);
         }
@@ -215,130 +250,85 @@ namespace RogueDeal.Combat.Targeting
         /// </summary>
         public void SetGroundPosition(Vector3 position)
         {
-            target = null;
-            followTarget = false;
+            targetAnchor = null;
             isActive = true;
-            
-            transform.position = position + Vector3.up * groundOffset;
+
+            transform.position = position;
+            BillboardToCamera();
             SetActive(true);
             UpdateVisuals();
         }
-        
+
         private void UpdatePosition()
         {
-            if (target != null && followTarget)
-            {
-                // Get the bottom of the enemy's collider to find ground position
-                Vector3 groundPosition = GetGroundPositionUnderTarget(target);
-                transform.position = groundPosition + Vector3.up * groundOffset;
-            }
+            if (targetAnchor != null)
+                transform.position = GetIndicatorPosition();
         }
-        
+
         /// <summary>
-        /// Gets the ground position under the target by finding the bottom of their collider and raycasting down
+        /// Positions the indicator at the anchor with optional vertical lift for readability.
         /// </summary>
-        private Vector3 GetGroundPositionUnderTarget(CombatEntity targetEntity)
+        private Vector3 GetIndicatorPosition()
         {
-            if (targetEntity == null) return Vector3.zero;
-            
-            // Get all colliders on the target to find the bottom and exclude from raycast
-            Collider[] targetColliders = targetEntity.GetComponentsInChildren<Collider>();
-            HashSet<Collider> targetColliderSet = new HashSet<Collider>(targetColliders);
-            
-            // Find the lowest point of all colliders (the bottom of the enemy)
-            float lowestY = float.MaxValue;
-            Vector3 bottomPosition = targetEntity.transform.position;
-            
-            foreach (var col in targetColliders)
-            {
-                if (col == null || col.isTrigger) continue;
-                
-                Bounds bounds = col.bounds;
-                float bottomY = bounds.min.y; // Bottom of the collider
-                
-                if (bottomY < lowestY)
-                {
-                    lowestY = bottomY;
-                    bottomPosition = new Vector3(bounds.center.x, bottomY, bounds.center.z);
-                }
-            }
-            
-            // If no valid colliders found, use transform position
-            if (lowestY == float.MaxValue)
-            {
-                bottomPosition = targetEntity.transform.position;
-            }
-            
-            // Raycast from slightly above the bottom position down to find the ground
-            Vector3 rayStart = bottomPosition + Vector3.up * 0.5f; // Start slightly above the bottom
-            
-            // Use RaycastAll to find ground, excluding target's own colliders
-            RaycastHit[] hits = Physics.RaycastAll(rayStart, Vector3.down, 5f);
-            
-            // Find the first hit that's not a target collider
-            RaycastHit? groundHit = null;
-            foreach (var hit in hits)
-            {
-                if (!targetColliderSet.Contains(hit.collider))
-                {
-                    groundHit = hit;
-                    break;
-                }
-            }
-            
-            if (groundHit.HasValue)
-            {
-                return groundHit.Value.point;
-            }
-            else
-            {
-                // Fallback: use the bottom position we calculated
-                return bottomPosition;
-            }
+            if (targetAnchor == null)
+                return Vector3.zero;
+
+            return OffsetTowardCamera(targetAnchor.position + Vector3.up * anchorHeightOffset);
         }
-        
+
+        private Vector3 OffsetTowardCamera(Vector3 basePosition)
+        {
+            if (mainCamera == null)
+                mainCamera = Camera.main ?? FindFirstObjectByType<Camera>();
+
+            if (mainCamera == null || cameraFacingOffset <= 0f)
+                return basePosition;
+
+            Vector3 towardCamera = mainCamera.transform.position - basePosition;
+            towardCamera.y = 0f;
+
+            if (towardCamera.sqrMagnitude <= 0.0001f)
+                return basePosition;
+
+            return basePosition + towardCamera.normalized * cameraFacingOffset;
+        }
+
+        private void BillboardToCamera()
+        {
+            if (mainCamera == null)
+                mainCamera = Camera.main ?? FindFirstObjectByType<Camera>();
+
+            if (mainCamera == null)
+                return;
+
+            Vector3 toCamera = transform.position - mainCamera.transform.position;
+            if (toCamera.sqrMagnitude <= 0.0001f)
+                return;
+
+            transform.rotation = Quaternion.LookRotation(toCamera.normalized, Vector3.up);
+        }
+
         private void UpdateVisuals()
         {
-            // Update circle
-            if (circleRenderer != null && circleRenderer.enabled)
-            {
-                DrawCircle(circleRenderer, indicatorRadius, 32);
-            }
-            
-            // Update X crosshair
-            if (crosshairRenderers[0] != null && crosshairRenderers[1] != null && 
-                crosshairRenderers[0].enabled && crosshairRenderers[1].enabled)
-            {
-                DrawX(crosshairRenderers[0], crosshairRenderers[1], crosshairLength);
-            }
+            pulseTime += Time.deltaTime * pulseSpeed;
+            float alphaScale = 1f - pulseAmount + Mathf.Abs(Mathf.Sin(pulseTime)) * pulseAmount;
+            Color currentColor = indicatorColor;
+            currentColor.a *= alphaScale;
+
+            if (circleRenderer != null)
+                circleRenderer.startColor = circleRenderer.endColor = currentColor;
+
+            if (crossRenderer != null)
+                crossRenderer.startColor = crossRenderer.endColor = currentColor;
         }
-        
+
         private void SetActive(bool active)
         {
             if (circleRenderer != null)
-            {
                 circleRenderer.enabled = active;
-                if (active)
-                {
-                    // Debug.Log($"[LockOnIndicator] Circle renderer enabled at position: {transform.position}");
-                    DrawCircle(circleRenderer, indicatorRadius, 32);
-                }
-            }
-            
-            if (crosshairRenderers[0] != null)
-            {
-                crosshairRenderers[0].enabled = active;
-            }
-            
-            if (crosshairRenderers[1] != null)
-            {
-                crosshairRenderers[1].enabled = active;
-            }
-            
-            if (active && crosshairRenderers[0] != null && crosshairRenderers[1] != null)
-            {
-                DrawX(crosshairRenderers[0], crosshairRenderers[1], crosshairLength);
-            }
+
+            if (crossRenderer != null)
+                crossRenderer.enabled = active;
         }
     }
 }

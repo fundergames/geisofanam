@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using RogueDeal.Combat.Core.Data;
@@ -35,6 +36,7 @@ namespace RogueDeal.Combat.Targeting
         
         // Lock-on state (for click-to-select)
         private CombatEntity lockedOnTarget = null;
+        private Transform lockedOnAnchor = null;
         private bool isLockedOn = false;
 
         // Synty-style trigger-based target candidates
@@ -131,15 +133,41 @@ namespace RogueDeal.Combat.Targeting
                 GameObject best = GetBestTargetFromCandidates();
                 if (best != null)
                 {
-                    var entity = best.GetComponentInChildren<LockOnTarget>()?.GetCombatEntity()
+                    var lockOnComponent = GetLockOnComponent(best);
+                    var entity = lockOnComponent?.GetCombatEntity()
                         ?? best.GetComponent<CombatEntity>()
                         ?? best.GetComponentInParent<CombatEntity>();
                     if (entity != null)
                     {
-                        SetLockOn(entity);
+                        SetLockOn(entity, lockOnComponent != null ? lockOnComponent.transform : null);
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// While locked on, cycles to the next valid target to the left or right of the current one.
+        /// Negative direction cycles left, positive cycles right.
+        /// </summary>
+        public void CycleLockOnTarget(int direction)
+        {
+            if (!isLockedOn || lockedOnTarget == null)
+                return;
+
+            var orderedTargets = GetOrderedTargetEntities();
+            if (orderedTargets.Count <= 1)
+                return;
+
+            int currentIndex = orderedTargets.IndexOf(lockedOnTarget);
+            if (currentIndex < 0)
+            {
+                SetLockOn(orderedTargets[0], FindLockOnAnchor(orderedTargets[0]));
+                return;
+            }
+
+            int step = direction < 0 ? -1 : 1;
+            int nextIndex = (currentIndex + step + orderedTargets.Count) % orderedTargets.Count;
+            SetLockOn(orderedTargets[nextIndex], FindLockOnAnchor(orderedTargets[nextIndex]));
         }
 
         /// <summary>
@@ -151,19 +179,14 @@ namespace RogueDeal.Combat.Targeting
 
             if (!isLockedOn)
             {
-                // Update which target would be highlighted as "best" when not locked
-                foreach (var go in _targetCandidates)
-                {
-                    var lockOn = go.GetComponent<LockOnTarget>();
-                    lockOn?.Highlight(go == newBestTarget, false);
-                }
+                RefreshHighlights(newBestTarget, null);
             }
             else
             {
                 // When locked: highlight locked target, or clear lock if it left range
-                if (lockedOnTarget != null && _targetCandidates.Contains(lockedOnTarget.gameObject))
+                if (lockedOnTarget != null && ContainsTargetCandidate(lockedOnTarget))
                 {
-                    lockedOnTarget.GetComponentInChildren<LockOnTarget>()?.Highlight(true, true);
+                    RefreshHighlights(null, lockedOnTarget);
                 }
                 else
                 {
@@ -174,8 +197,9 @@ namespace RogueDeal.Combat.Targeting
 
         private GameObject GetBestTargetFromCandidates()
         {
-            if (_targetCandidates.Count == 0) return null;
-            if (_targetCandidates.Count == 1) return _targetCandidates[0];
+            var validCandidates = GetValidTargetCandidates();
+            if (validCandidates.Count == 0) return null;
+            if (validCandidates.Count == 1) return validCandidates[0].candidateObject;
 
             GameObject best = null;
             float bestScore = 0f;
@@ -184,25 +208,12 @@ namespace RogueDeal.Combat.Targeting
             Vector3 camPos = mainCamera != null ? mainCamera.transform.position : playerPos;
             Vector3 camForward = mainCamera != null ? mainCamera.transform.forward : transform.forward;
 
-            foreach (var target in _targetCandidates)
+            foreach (var candidate in validCandidates)
             {
-                if (target == null || !target.activeInHierarchy)
-                    continue;
-
-                var entity = target.GetComponentInChildren<LockOnTarget>()?.GetCombatEntity()
-                    ?? target.GetComponent<CombatEntity>()
-                    ?? target.GetComponentInParent<CombatEntity>();
-                if (entity != null)
-                {
-                    var data = entity.GetEntityData();
-                    if (data == null || !data.IsAlive)
-                        continue;
-                }
-
-                float distance = Vector3.Distance(playerPos, target.transform.position);
+                float distance = Vector3.Distance(playerPos, candidate.entity.transform.position);
                 float distanceScore = distance > 0.001f ? (1f / distance) * 100f : 1000f;
 
-                Vector3 targetDir = (target.transform.position - camPos).normalized;
+                Vector3 targetDir = (candidate.entity.transform.position - camPos).normalized;
                 float angleInView = Vector3.Dot(targetDir, camForward);
                 float angleScore = angleInView * 40f;
 
@@ -210,7 +221,7 @@ namespace RogueDeal.Combat.Targeting
                 if (totalScore > bestScore)
                 {
                     bestScore = totalScore;
-                    best = target;
+                    best = candidate.candidateObject;
                 }
             }
 
@@ -291,21 +302,6 @@ namespace RogueDeal.Combat.Targeting
                     return;
                 }
                 
-                // Check if target is out of range
-                if (combatEntity != null)
-                {
-                    var attackerData = combatEntity.GetEntityData();
-                    if (attackerData != null && attackerData.equippedWeapon != null)
-                    {
-                        float maxRange = GetMaxRange(attackerData);
-                        float distance = Vector3.Distance(combatEntity.transform.position, lockedOnTarget.transform.position);
-                        if (distance > maxRange)
-                        {
-                            ClearLockOn();
-                            return;
-                        }
-                    }
-                }
             }
         }
         
@@ -390,7 +386,7 @@ namespace RogueDeal.Combat.Targeting
                                 else
                                 {
                                     // Clicked different target - lock on
-                                    SetLockOn(hitEntity);
+                                    SetLockOn(hitEntity, FindLockOnAnchor(hitEntity));
                                 }
                             }
                         }
@@ -450,20 +446,31 @@ namespace RogueDeal.Combat.Targeting
             return isLockedOn && lockedOnTarget != null;
         }
         
-        private void SetLockOn(CombatEntity target)
+        private void SetLockOn(CombatEntity target, Transform anchor = null)
         {
+            if (lockedOnTarget == target)
+            {
+                isLockedOn = target != null;
+                lockedOnAnchor = target != null ? (anchor ?? FindLockOnAnchor(target)) : null;
+                RefreshHighlights(null, lockedOnTarget);
+                return;
+            }
+
+            if (lockedOnTarget != null)
+                GetLockOnComponent(lockedOnTarget)?.Highlight(false, false);
+
             lockedOnTarget = target;
+            lockedOnAnchor = target != null ? (anchor ?? FindLockOnAnchor(target)) : null;
             isLockedOn = true;
+            RefreshHighlights(null, lockedOnTarget);
         }
         
         private void ClearLockOn()
         {
-            if (lockedOnTarget != null)
-            {
-                lockedOnTarget.GetComponentInChildren<LockOnTarget>()?.Highlight(false, false);
-            }
             lockedOnTarget = null;
+            lockedOnAnchor = null;
             isLockedOn = false;
+            RefreshHighlights(null, null);
         }
 
         /// <summary>
@@ -471,7 +478,16 @@ namespace RogueDeal.Combat.Targeting
         /// </summary>
         public Transform GetLockOnTargetTransform()
         {
-            return lockedOnTarget != null ? lockedOnTarget.transform : null;
+            if (lockedOnTarget == null)
+                return null;
+
+            if (lockedOnAnchor != null)
+                return lockedOnAnchor;
+
+            if (lockedOnTarget.hitPoint != null)
+                return lockedOnTarget.hitPoint;
+
+            return lockedOnTarget.transform;
         }
         
         /// <summary>
@@ -491,6 +507,152 @@ namespace RogueDeal.Combat.Targeting
             }
             
             return 2f; // Default melee range
+        }
+
+        private void RefreshHighlights(GameObject bestCandidate, CombatEntity lockedTarget)
+        {
+            foreach (var candidate in _targetCandidates)
+            {
+                if (candidate == null)
+                    continue;
+
+                var lockOn = GetLockOnComponent(candidate);
+                if (lockOn == null)
+                    continue;
+
+                bool isLockedCandidate = lockedTarget != null && lockOn.GetCombatEntity() == lockedTarget;
+                bool isBestCandidate = bestCandidate != null && candidate == bestCandidate;
+                lockOn.Highlight(isLockedCandidate || isBestCandidate, isLockedCandidate);
+            }
+        }
+
+        private bool ContainsTargetCandidate(CombatEntity entity)
+        {
+            if (entity == null)
+                return false;
+
+            foreach (var candidate in _targetCandidates)
+            {
+                if (candidate == null || !candidate.activeInHierarchy)
+                    continue;
+
+                if (TryGetCandidateEntity(candidate, out var candidateEntity) && candidateEntity == entity)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private LockOnTarget GetLockOnComponent(GameObject candidate)
+        {
+            if (candidate == null)
+                return null;
+
+            return candidate.GetComponent<LockOnTarget>()
+                ?? candidate.GetComponentInChildren<LockOnTarget>()
+                ?? candidate.GetComponentInParent<LockOnTarget>();
+        }
+
+        private LockOnTarget GetLockOnComponent(CombatEntity entity)
+        {
+            if (entity == null)
+                return null;
+
+            foreach (var candidate in _targetCandidates)
+            {
+                if (candidate == null)
+                    continue;
+
+                var lockOn = GetLockOnComponent(candidate);
+                if (lockOn != null && lockOn.GetCombatEntity() == entity)
+                    return lockOn;
+            }
+
+            return entity.GetComponent<LockOnTarget>()
+                ?? entity.GetComponentInChildren<LockOnTarget>()
+                ?? entity.GetComponentInParent<LockOnTarget>();
+        }
+
+        private List<(GameObject candidateObject, CombatEntity entity)> GetValidTargetCandidates()
+        {
+            var validTargets = new List<(GameObject candidateObject, CombatEntity entity)>();
+
+            foreach (var candidate in _targetCandidates)
+            {
+                if (candidate == null || !candidate.activeInHierarchy)
+                    continue;
+
+                if (!TryGetCandidateEntity(candidate, out var entity))
+                    continue;
+
+                validTargets.Add((candidate, entity));
+            }
+
+            return validTargets;
+        }
+
+        private List<CombatEntity> GetOrderedTargetEntities()
+        {
+            return GetValidTargetCandidates()
+                .OrderBy(candidate => GetHorizontalAngle(candidate.entity.transform.position))
+                .ThenBy(candidate => Vector3.SqrMagnitude(candidate.entity.transform.position - transform.position))
+                .Select(candidate => candidate.entity)
+                .ToList();
+        }
+
+        private bool TryGetCandidateEntity(GameObject candidate, out CombatEntity entity)
+        {
+            entity = GetLockOnComponent(candidate)?.GetCombatEntity()
+                ?? candidate.GetComponent<CombatEntity>()
+                ?? candidate.GetComponentInParent<CombatEntity>();
+
+            if (entity == null)
+                return false;
+
+            var data = entity.GetEntityData();
+            return data != null && data.IsAlive;
+        }
+
+        private Transform FindLockOnAnchor(CombatEntity entity)
+        {
+            if (entity == null)
+                return null;
+
+            var lockOnComponent = GetLockOnComponent(entity);
+            if (lockOnComponent != null)
+                return lockOnComponent.transform;
+
+            if (entity.hitPoint != null)
+                return entity.hitPoint;
+
+            return entity.transform;
+        }
+
+        private float GetHorizontalAngle(Vector3 targetPosition)
+        {
+            Vector3 origin = transform.position;
+            Vector3 toTarget = targetPosition - origin;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude <= 0.0001f)
+                return 0f;
+
+            Vector3 referenceForward = mainCamera != null ? mainCamera.transform.forward : transform.forward;
+            Vector3 referenceRight = mainCamera != null ? mainCamera.transform.right : transform.right;
+            referenceForward.y = 0f;
+            referenceRight.y = 0f;
+
+            if (referenceForward.sqrMagnitude <= 0.0001f)
+                referenceForward = transform.forward;
+            if (referenceRight.sqrMagnitude <= 0.0001f)
+                referenceRight = Vector3.Cross(Vector3.up, referenceForward).normalized;
+
+            referenceForward.Normalize();
+            referenceRight.Normalize();
+            toTarget.Normalize();
+
+            float horizontal = Vector3.Dot(toTarget, referenceRight);
+            float vertical = Vector3.Dot(toTarget, referenceForward);
+            return Mathf.Atan2(horizontal, vertical);
         }
     }
 }

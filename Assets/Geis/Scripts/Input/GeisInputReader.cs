@@ -34,6 +34,12 @@ namespace Geis.InputSystem
         /// <summary>Player/SoulRealm (Tab, gamepad LB).</summary>
         public InputAction SoulRealm => _controls != null ? _controls.Player.SoulRealm : null;
 
+        /// <summary>Player/LightAttack (LMB, E, gamepad RT). Poll <c>IsPressed()</c> for robust hold detection on analog triggers.</summary>
+        public InputAction LightAttack => _controls != null ? _controls.Player.LightAttack : null;
+
+        /// <summary>Player/HeavyAttack (R).</summary>
+        public InputAction HeavyAttack => _controls != null ? _controls.Player.HeavyAttack : null;
+
         public Action onAimActivated;
         public Action onAimDeactivated;
 
@@ -43,6 +49,8 @@ namespace Geis.InputSystem
         public Action onJumpPerformed;
 
         public Action onLockOnToggled;
+        public Action onLockOnCycleLeft;
+        public Action onLockOnCycleRight;
 
         public Action onSprintActivated;
         public Action onSprintDeactivated;
@@ -56,6 +64,10 @@ namespace Geis.InputSystem
         public Action onWalkToggled;
 
         public Action onLightAttackPerformed;
+        /// <summary>Fires when the light-attack button is first pressed (started phase). Used by bow charge when LightAttack is mapped to RT.</summary>
+        public Action onLightAttackStarted;
+        /// <summary>Fires when the light-attack button is released (canceled phase). Used by bow charge-release when LightAttack is mapped to RT.</summary>
+        public Action onLightAttackReleased;
         public Action onHeavyAttackPerformed;
         /// <summary>Fires when the heavy-attack button is first pressed (started phase). Used by bow charge.</summary>
         public Action onHeavyAttackStarted;
@@ -134,6 +146,8 @@ namespace Geis.InputSystem
                 return;
 
             var gp = Gamepad.current;
+            if (gp == null && Gamepad.all.Count > 0)
+                gp = Gamepad.all[0];
             if (gp != null && gp.buttonEast.wasPressedThisFrame)
             {
                 if (_debugDodgeInput)
@@ -164,6 +178,15 @@ namespace Geis.InputSystem
 
                     TryInvokeDodgeOnce();
                 }
+            }
+
+            if (gp != null)
+            {
+                if (gp.dpad.left.wasPressedThisFrame)
+                    onLockOnCycleLeft?.Invoke();
+
+                if (gp.dpad.right.wasPressedThisFrame)
+                    onLockOnCycleRight?.Invoke();
             }
 
             if (_debugInteractWest && GeisInteractInput.WasGamepadWestInteractPressedThisFrame())
@@ -337,6 +360,11 @@ namespace Geis.InputSystem
         /// </summary>
         public void OnLightAttack(InputAction.CallbackContext context)
         {
+            if (context.started)
+                onLightAttackStarted?.Invoke();
+            else if (context.canceled)
+                onLightAttackReleased?.Invoke();
+
             if (!context.performed) return;
             onLightAttackPerformed?.Invoke();
         }

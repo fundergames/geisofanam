@@ -18,6 +18,9 @@ namespace RogueDeal.Boss
     ///
     /// <b>Edit Mode:</b> Enable <see cref="previewTwoBoneIkInEditMode"/> to draw an analytic two-bone arm chain
     /// to each slam anchor (Unity does not run <see cref="OnAnimatorIK"/> while not playing).
+    ///
+    /// <b>Workspace limits:</b> Before calling Unity IK, goals are clamped to two-bone reach, an optional
+    /// forward cone (no behind-the-back targets), and a max wrist rotation delta vs. the animated hand.
     /// </summary>
     [DisallowMultipleComponent]
     [ExecuteAlways]
@@ -39,9 +42,49 @@ namespace RogueDeal.Boss
         [SerializeField] private Transform rightElbowHint;
         [SerializeField] private Transform leftElbowHint;
 
+        [Header("Hand IK — orientation (fist drives wrist)")]
+        [Tooltip(
+            "If set, this transform's **world rotation** drives humanoid hand IK; position still comes from the BossPart. " +
+            "Leave empty to use the BossPart's own rotation. Tip: add an empty child under the fist, align its axes to the palm/knuckles, " +
+            "and assign it here so you can tune wrist pose without moving the hit volume.")]
+        [SerializeField] private Transform rightHandIkRotationSource;
+        [SerializeField] private Transform leftHandIkRotationSource;
+
+        [Tooltip(
+            "When enabled, hand **rotation** IK uses weight 1 whenever slam IK is active, even if Slam IK Weight is blended. " +
+            "Stops the clip from partially twisting the wrist while the fist anchor dictates orientation.")]
+        [SerializeField] private bool enforceFullHandRotationIk = true;
+
+        [Tooltip(
+            "If ≥ 0, overrides rotation IK weight (0–1) while slam IK is active. -1 = use Slam IK Weight, or full 1 when Enforce Full Hand Rotation IK is on.")]
+        [SerializeField] private float slamIkRotationWeightOverride = -1f;
+
         [Tooltip("IK blend while the hand is in an active slam phase.")]
         [Range(0f, 1f)]
         [SerializeField] private float slamIkWeight = 1f;
+
+        [Tooltip(
+            "When on, hand IK uses Slam IK Weight for **every** BossPart state (Idle, Broken, etc.) so you can pose and tune anchors anytime. " +
+            "Turn off to only IK during slam-related states (Slamming / Grounded / Shielded / Pinned).")]
+        [SerializeField] private bool applyHandIkInAllBossPartStates = true;
+
+        [Header("Hand IK — human workspace limits")]
+        [Tooltip("Clamp IK position so the shoulder→hand distance stays within upper+lower arm reach (stops hyper-extension / folded elbows).")]
+        [SerializeField] private bool clampIkToArmReach = true;
+
+        [Tooltip("Clamp shoulder→hand direction to a cone around torso forward so anchors cannot swing behind the back.")]
+        [SerializeField] private bool clampIkToForwardCone = true;
+
+        [Tooltip("Max angle (degrees) from torso forward to the shoulder→hand direction. Smaller = stricter “in front” arc.")]
+        [Range(45f, 160f)]
+        [SerializeField] private float maxHandReachAngleFromForwardDegrees = 115f;
+
+        [Tooltip("Optional. Cone uses this transform’s forward; otherwise UpperChest → Chest → Spine.")]
+        [SerializeField] private Transform torsoForwardReference;
+
+        [Tooltip("Max degrees IK hand rotation may deviate from the current animated hand pose (limits impossible wrist twist). Use 180 to disable.")]
+        [Range(0f, 180f)]
+        [SerializeField] private float maxHandRotationDegreesFromAnimation = 60f;
 
         [Header("Debug")]
         [SerializeField] private bool warnIfAnchorIsUnderHandBone = true;
@@ -240,8 +283,10 @@ namespace RogueDeal.Boss
             BossPart part)
         {
             float w = GetIkWeight(part);
+            float rotW = ComputeHandRotationIkWeight(w);
+
             animator.SetIKPositionWeight(goal, w);
-            animator.SetIKRotationWeight(goal, w);
+            animator.SetIKRotationWeight(goal, rotW);
 
             if (w <= 0.0001f || part == null)
             {
@@ -250,8 +295,14 @@ namespace RogueDeal.Boss
             }
 
             Transform t = part.transform;
-            animator.SetIKPosition(goal, t.position);
-            animator.SetIKRotation(goal, t.rotation);
+            Transform rotSource = goal == AvatarIKGoal.RightHand ? rightHandIkRotationSource : leftHandIkRotationSource;
+            Quaternion handRotation = rotSource != null ? rotSource.rotation : t.rotation;
+
+            Vector3 ikPos = t.position;
+            ClampHandIkGoalToHumanWorkspace(goal, ref ikPos, ref handRotation);
+
+            animator.SetIKPosition(goal, ikPos);
+            animator.SetIKRotation(goal, handRotation);
 
             if (elbowHintTransform != null)
             {
@@ -266,10 +317,109 @@ namespace RogueDeal.Boss
             return w;
         }
 
+        /// <summary>
+        /// Sanitizes fist anchor position/rotation before Unity’s humanoid IK so goals stay in a normal
+        /// reach + forward workspace and wrist twist stays near the animated pose.
+        /// </summary>
+        private void ClampHandIkGoalToHumanWorkspace(AvatarIKGoal goal, ref Vector3 worldPos, ref Quaternion worldRot)
+        {
+            if (animator == null || !animator.isHuman)
+                return;
+            if (!clampIkToArmReach && !clampIkToForwardCone && maxHandRotationDegreesFromAnimation >= 179.5f)
+                return;
+
+            HumanBodyBones upperId = goal == AvatarIKGoal.RightHand
+                ? HumanBodyBones.RightUpperArm
+                : HumanBodyBones.LeftUpperArm;
+            HumanBodyBones lowerId = goal == AvatarIKGoal.RightHand
+                ? HumanBodyBones.RightLowerArm
+                : HumanBodyBones.LeftLowerArm;
+            HumanBodyBones handId = goal == AvatarIKGoal.RightHand
+                ? HumanBodyBones.RightHand
+                : HumanBodyBones.LeftHand;
+
+            Transform upper = animator.GetBoneTransform(upperId);
+            Transform lower = animator.GetBoneTransform(lowerId);
+            Transform handBone = animator.GetBoneTransform(handId);
+            if (upper == null || lower == null || handBone == null)
+                return;
+
+            Vector3 shoulderPos = upper.position;
+            float upperLen = Vector3.Distance(upper.position, lower.position);
+            float lowerLen = Vector3.Distance(lower.position, handBone.position);
+            if (upperLen < 1e-4f || lowerLen < 1e-4f)
+                return;
+
+            const float pad = 0.02f;
+            float minReach = Mathf.Abs(upperLen - lowerLen) + pad;
+            float maxReach = upperLen + lowerLen - pad;
+            if (minReach >= maxReach)
+                return;
+
+            Vector3 toGoal = worldPos - shoulderPos;
+            float dist = toGoal.magnitude;
+            Vector3 dir = dist > 1e-5f ? toGoal / dist : GetTorsoReferenceForward();
+
+            if (clampIkToForwardCone)
+            {
+                Vector3 refFwd = GetTorsoReferenceForward();
+                float maxRad = maxHandReachAngleFromForwardDegrees * Mathf.Deg2Rad;
+                dir = Vector3.RotateTowards(refFwd, dir, maxRad, 0f);
+            }
+
+            if (clampIkToArmReach)
+                dist = Mathf.Clamp(Mathf.Max(dist, 1e-5f), minReach, maxReach);
+            else if (dist < 1e-5f)
+                dist = minReach;
+
+            worldPos = shoulderPos + dir * dist;
+
+            if (maxHandRotationDegreesFromAnimation < 179.5f)
+            {
+                Quaternion baseRot = handBone.rotation;
+                float angle = Quaternion.Angle(baseRot, worldRot);
+                if (angle > maxHandRotationDegreesFromAnimation && angle > 1e-4f)
+                    worldRot = Quaternion.Slerp(baseRot, worldRot, maxHandRotationDegreesFromAnimation / angle);
+            }
+        }
+
+        private Vector3 GetTorsoReferenceForward()
+        {
+            if (torsoForwardReference != null)
+                return torsoForwardReference.forward.normalized;
+
+            Transform t = animator.GetBoneTransform(HumanBodyBones.UpperChest);
+            if (t == null)
+                t = animator.GetBoneTransform(HumanBodyBones.Chest);
+            if (t == null)
+                t = animator.GetBoneTransform(HumanBodyBones.Spine);
+            if (t != null)
+                return t.forward.normalized;
+
+            return animator.transform.forward.normalized;
+        }
+
+        private float ComputeHandRotationIkWeight(float positionIkWeight)
+        {
+            if (positionIkWeight <= 0.0001f)
+                return 0f;
+
+            if (slamIkRotationWeightOverride >= 0f)
+                return Mathf.Clamp01(slamIkRotationWeightOverride);
+
+            if (enforceFullHandRotationIk)
+                return 1f;
+
+            return positionIkWeight;
+        }
+
         private float GetIkWeight(BossPart part)
         {
             if (part == null || slamIkWeight <= 0f)
                 return 0f;
+
+            if (applyHandIkInAllBossPartStates)
+                return slamIkWeight;
 
             switch (part.State)
             {
@@ -365,8 +515,8 @@ namespace RogueDeal.Boss
             if (a == null || !a.isHuman)
                 return;
 
-            DrawHandDebug(a, "R", _rightHandBone, rightHandPart, rightElbowHint, _dbgRightIkWeight, new Color(1f, 0.45f, 0.15f));
-            DrawHandDebug(a, "L", _leftHandBone, leftHandPart, leftElbowHint, _dbgLeftIkWeight, new Color(0.25f, 0.75f, 1f));
+            DrawHandDebug(a, "R", _rightHandBone, rightHandPart, rightElbowHint, _dbgRightIkWeight, new Color(1f, 0.45f, 0.15f), isRight: true);
+            DrawHandDebug(a, "L", _leftHandBone, leftHandPart, leftElbowHint, _dbgLeftIkWeight, new Color(0.25f, 0.75f, 1f), isRight: false);
         }
 
 #if UNITY_EDITOR
@@ -517,7 +667,8 @@ namespace RogueDeal.Boss
             BossPart part,
             Transform elbowHint,
             float ikWeight,
-            Color color)
+            Color color,
+            bool isRight)
         {
             Transform hand = a.GetBoneTransform(handBone);
             if (part == null && hand == null)
@@ -547,11 +698,15 @@ namespace RogueDeal.Boss
                 float r = 0.12f + ikWeight * 0.08f;
                 Gizmos.DrawWireSphere(anchorPos, r);
 
+                if (ikWeight > 0.01f)
+                    DrawIkHandOrientationRig(anchorPos, isRight ? rightHandIkRotationSource : leftHandIkRotationSource, part.transform);
+
 #if UNITY_EDITOR
                 Handles.color = color;
+                float rotW = ComputeHandRotationIkWeight(ikWeight);
                 Handles.Label(
                     anchorPos + debugLabelOffset + Vector3.up * 0.12f,
-                    $"{label} anchor ({part.name})\nstate={part.State}\nIK w={ikWeight:F2}");
+                    $"{label} anchor ({part.name})\nstate={part.State}\nIK pos w={ikWeight:F2} rot w={rotW:F2}");
 #endif
             }
 
@@ -563,6 +718,27 @@ namespace RogueDeal.Boss
                 Handles.Label(elbowHint.position + debugLabelOffset, $"{label} elbow hint");
 #endif
             }
+        }
+
+        /// <summary>RGB axes at the anchor showing the quaternion passed to SetIKRotation (fist / optional rotation source).</summary>
+        private static void DrawIkHandOrientationRig(Vector3 anchorPos, Transform rotationSource, Transform bossPartTransform)
+        {
+            Quaternion q = rotationSource != null ? rotationSource.rotation : bossPartTransform.rotation;
+#if UNITY_EDITOR
+            float len = HandleUtility.GetHandleSize(anchorPos) * 0.15f;
+#else
+            float len = 0.25f;
+#endif
+            Vector3 px = q * Vector3.right * len;
+            Vector3 py = q * Vector3.up * len;
+            Vector3 pz = q * Vector3.forward * len;
+
+            Gizmos.color = new Color(1f, 0.25f, 0.25f, 0.9f);
+            Gizmos.DrawLine(anchorPos, anchorPos + px);
+            Gizmos.color = new Color(0.35f, 1f, 0.35f, 0.9f);
+            Gizmos.DrawLine(anchorPos, anchorPos + py);
+            Gizmos.color = new Color(0.35f, 0.55f, 1f, 0.9f);
+            Gizmos.DrawLine(anchorPos, anchorPos + pz);
         }
     }
 }

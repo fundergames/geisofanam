@@ -36,6 +36,14 @@ namespace Geis.Combat
         [SerializeField]
         private Animator manualAnimator;
 
+        [Tooltip("Preferred right-hand prop socket names to search before falling back to hand bones.")]
+        [SerializeField]
+        private string[] rightHandSocketNames = { "Prop_R_Socket", "Prop_R" };
+
+        [Tooltip("Preferred left-hand prop socket names to search before falling back to hand bones.")]
+        [SerializeField]
+        private string[] leftHandSocketNames = { "Prop_L_Socket", "Prop_L" };
+
         [Tooltip("Bone names to search for right-hand weapon attachment")]
         [FormerlySerializedAs("attachmentBoneNames")]
         [SerializeField]
@@ -59,6 +67,16 @@ namespace Geis.Combat
         /// Current weapon index (0-3). -1 if none equipped.
         /// </summary>
         public int CurrentWeaponIndex => _currentWeaponIndex;
+
+        /// <summary>
+        /// Live instantiated weapon prefab for the currently equipped slot, if any.
+        /// </summary>
+        public GameObject CurrentWeaponInstance => _currentWeaponInstance;
+
+        /// <summary>
+        /// Weapon definition for the currently equipped slot, if assigned.
+        /// </summary>
+        public GeisWeaponDefinition CurrentWeaponDefinition => GetWeaponDefinition(_currentWeaponIndex);
 
         private CombatEntity _combatEntity;
 
@@ -173,7 +191,9 @@ namespace Geis.Combat
                 _rightHandAttachment = manualAttachmentPoint;
             else
             {
-                _rightHandAttachment = FindHandByBoneNames(_animator, rightHandBoneNames);
+                _rightHandAttachment = FindHandByBoneNames(_animator, rightHandSocketNames);
+                if (_rightHandAttachment == null)
+                    _rightHandAttachment = FindHandByBoneNames(_animator, rightHandBoneNames);
                 if (_rightHandAttachment == null && useAnimatorHandFallback && _animator.avatar != null)
                     _rightHandAttachment = _animator.GetBoneTransform(HumanBodyBones.RightHand);
                 if (_rightHandAttachment == null)
@@ -184,7 +204,9 @@ namespace Geis.Combat
                 _leftHandAttachment = manualLeftAttachmentPoint;
             else
             {
-                _leftHandAttachment = FindHandByBoneNames(_animator, leftHandBoneNames);
+                _leftHandAttachment = FindHandByBoneNames(_animator, leftHandSocketNames);
+                if (_leftHandAttachment == null)
+                    _leftHandAttachment = FindHandByBoneNames(_animator, leftHandBoneNames);
                 if (_leftHandAttachment == null && useAnimatorHandFallback && _animator.avatar != null)
                     _leftHandAttachment = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
                 if (_leftHandAttachment == null)

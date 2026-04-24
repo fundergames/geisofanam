@@ -94,6 +94,9 @@ namespace Geis.Locomotion
         [SerializeField]
         [Tooltip("Seconds to ease camera yaw/pitch back to the orientation when exit hold started, after releasing bumper early.")]
         private float _soulRealmExitHoldReleaseSmoothTime = 0.22f;
+        [SerializeField]
+        [Tooltip("Logs baseline vs current camera state on soul realm entry & exit. Turn on temporarily to diagnose framing drift issues.")]
+        private bool _debugSoulRealmCameraState;
 
         private bool _soulRealmBaselineCaptured;
         private bool _soulRealmExitHoldActive;
@@ -110,6 +113,12 @@ namespace Geis.Locomotion
         private float _soulRealmBaselineCurrentAngleX;
         private float _soulRealmBaselineCurrentAngleY;
         private Vector3 _soulRealmBaselineLastPosition;
+        // Rig / zoom smoothed values captured at entry. If aim-shoulder zoom was mid-transition on entry, restoring
+        // these on exit prevents the camera from visibly lerping to a different height/distance/FOV over several frames.
+        private float _soulRealmBaselineRigDistance;
+        private float _soulRealmBaselineRigHorizontalOffset;
+        private float _soulRealmBaselineRigHeight;
+        private float _soulRealmBaselineFieldOfView;
 
         private float _soulRealmHoldStartTargetAngleX;
         private float _soulRealmHoldStartTargetAngleY;
@@ -127,7 +136,22 @@ namespace Geis.Locomotion
             _soulRealmBaselineCurrentAngleX = _currentAngleX;
             _soulRealmBaselineCurrentAngleY = _currentAngleY;
             _soulRealmBaselineLastPosition = _lastPosition;
+            _soulRealmBaselineRigDistance = _rigDistanceSmoothed;
+            _soulRealmBaselineRigHorizontalOffset = _rigHorizontalOffsetSmoothed;
+            _soulRealmBaselineRigHeight = _rigHeightSmoothed;
+            _soulRealmBaselineFieldOfView = _fieldOfViewSmoothed;
             _soulRealmBaselineCaptured = true;
+
+            if (_debugSoulRealmCameraState)
+            {
+                Debug.Log(
+                    $"[GeisCameraController] SoulRealm ENTER baseline — pivot={_soulRealmBaselinePivotPosition} " +
+                    $"angles(cur)=({_currentAngleX:F2},{_currentAngleY:F2}) " +
+                    $"rig(d,h,hOff)=({_rigDistanceSmoothed:F3},{_rigHeightSmoothed:F3},{_rigHorizontalOffsetSmoothed:F3}) " +
+                    $"fov={_fieldOfViewSmoothed:F1} " +
+                    $"bodyLookAt={(_playerTarget != null ? _playerTarget.position.ToString() : "null")}",
+                    this);
+            }
         }
 
         /// <summary>First frame the player starts holding SoulRealm to exit — captures rotation to lerp from during the hold.</summary>
@@ -184,6 +208,32 @@ namespace Geis.Locomotion
             _lastPosition = _soulRealmBaselineLastPosition;
             _lastAngleX = _currentAngleX;
             _lastAngleY = _currentAngleY;
+
+            // Hard-restore rig + FOV smoothing state so aim-shoulder zoom (or any other in-flight rig transition)
+            // doesn't drift the camera to a different height/distance over the next few LateUpdate frames.
+            _rigDistanceSmoothed = _soulRealmBaselineRigDistance;
+            _rigHorizontalOffsetSmoothed = _soulRealmBaselineRigHorizontalOffset;
+            _rigHeightSmoothed = _soulRealmBaselineRigHeight;
+            _fieldOfViewSmoothed = _soulRealmBaselineFieldOfView;
+            if (_syntyCamera != null)
+            {
+                _syntyCamera.localPosition = new Vector3(_rigHorizontalOffsetSmoothed, _rigHeightSmoothed, _rigDistanceSmoothed * -1f);
+                _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
+            }
+            if (_mainCamera != null)
+                _mainCamera.fieldOfView = _fieldOfViewSmoothed;
+
+            if (_debugSoulRealmCameraState)
+            {
+                Debug.Log(
+                    $"[GeisCameraController] SoulRealm EXIT applied — pivot={transform.position} " +
+                    $"angles(cur)=({_currentAngleX:F2},{_currentAngleY:F2}) " +
+                    $"rig(d,h,hOff)=({_rigDistanceSmoothed:F3},{_rigHeightSmoothed:F3},{_rigHorizontalOffsetSmoothed:F3}) " +
+                    $"fov={_fieldOfViewSmoothed:F1} " +
+                    $"bodyLookAt={(_playerTarget != null ? _playerTarget.position.ToString() : "null")} " +
+                    $"IsAiming={(_playerAnimation != null ? _playerAnimation.IsAiming.ToString() : "null")}",
+                    this);
+            }
         }
 
         /// <inheritdoc cref="Start" />
@@ -411,6 +461,9 @@ namespace Geis.Locomotion
                 _lockOnTarget = newLockOnTarget;
             }
         }
+
+        /// <summary>Authoritative world-space lock-on pivot used by the Geis camera.</summary>
+        public Transform LockOnTargetTransform => _lockOnTarget;
 
         /// <summary>Gameplay camera used for screen-space VFX (e.g. soul-realm exit hold).</summary>
         public Camera MainCamera => _mainCamera;

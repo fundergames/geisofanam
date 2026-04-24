@@ -43,6 +43,7 @@ namespace RogueDeal.Combat.Presentation
         private CombatEntity _aimRayHitEntity;
         /// <summary>Attacker for <see cref="CombatEvents.TriggerDamageApplied"/>.</summary>
         private CombatEntity _sourceEntity;
+        private float _damageMultiplier = 1f;
         private float lifetime = 0f;
         private bool hasArrived = false;
         private Rigidbody rb;
@@ -74,11 +75,18 @@ namespace RogueDeal.Combat.Presentation
         /// <summary>
         /// Initializes the projectile with target, speed, effects, and attacker data
         /// </summary>
-        public void Initialize(Transform target, float speed, BaseEffect[] effects, CombatEntityData attackerData, CombatEntity sourceEntity = null)
+        public void Initialize(
+            Transform target,
+            float speed,
+            BaseEffect[] effects,
+            CombatEntityData attackerData,
+            CombatEntity sourceEntity = null,
+            float damageMultiplier = 1f)
         {
             _soulMarkSteeringHoming = false;
             _aimRayHitEntity = null;
             _sourceEntity = sourceEntity;
+            _damageMultiplier = Mathf.Max(0f, damageMultiplier);
             this.target = target;
             this.speed = speed;
             this.effects = effects;
@@ -111,11 +119,13 @@ namespace RogueDeal.Combat.Presentation
             BaseEffect[] effects,
             CombatEntityData attackerData,
             CombatEntity sourceEntity = null,
-            CombatEntity damageEntityFromAimRay = null)
+            CombatEntity damageEntityFromAimRay = null,
+            float damageMultiplier = 1f)
         {
             _soulMarkSteeringHoming = true;
             _aimRayHitEntity = damageEntityFromAimRay;
             _sourceEntity = sourceEntity;
+            _damageMultiplier = Mathf.Max(0f, damageMultiplier);
             this.target = target;
             this.speed = speed;
             this.effects = effects;
@@ -143,13 +153,15 @@ namespace RogueDeal.Combat.Presentation
             BaseEffect[] effects,
             CombatEntityData attackerData,
             CombatEntity entityHitByAimRay = null,
-            CombatEntity sourceEntity = null)
+            CombatEntity sourceEntity = null,
+            float damageMultiplier = 1f)
         {
             _soulMarkSteeringHoming = false;
             _aimMarker = new GameObject("_ArrowAimMarker");
             _aimMarker.transform.position = aimWorldPoint;
             _aimRayHitEntity = entityHitByAimRay;
             _sourceEntity = sourceEntity;
+            _damageMultiplier = Mathf.Max(0f, damageMultiplier);
             this.target = _aimMarker.transform;
             this.speed = speed;
             this.effects = effects;
@@ -291,6 +303,8 @@ namespace RogueDeal.Combat.Presentation
                             if (effect == null) continue;
 
                             var calculated = effect.Calculate(attackerData, targetData, attackerData.equippedWeapon);
+                            if (calculated != null && calculated.effectType == EffectType.Damage && _damageMultiplier != 1f)
+                                calculated.damageAmount *= _damageMultiplier;
                             if (calculated.wasCritical)
                                 wasCritical = true;
                             effect.Apply(targetData, calculated);
@@ -356,7 +370,7 @@ namespace RogueDeal.Combat.Presentation
             return true;
         }
 
-        private static void PreviewEffectsOutcome(
+        private void PreviewEffectsOutcome(
             BaseEffect[] effectsList,
             CombatEntityData attacker,
             CombatEntityData target,
@@ -374,6 +388,8 @@ namespace RogueDeal.Combat.Presentation
                 if (effect == null) continue;
 
                 var calculated = effect.Calculate(attacker, target, weapon);
+                if (calculated != null && calculated.effectType == EffectType.Damage && _damageMultiplier != 1f)
+                    calculated.damageAmount *= _damageMultiplier;
                 if (calculated.wasCritical)
                     anyCrit = true;
                 if (calculated.damageAmount > 0f)

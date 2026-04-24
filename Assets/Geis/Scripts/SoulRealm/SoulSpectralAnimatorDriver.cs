@@ -198,6 +198,8 @@ namespace Geis.SoulRealm
                 animator.SetFloat(Animator.StringToHash("BowDrawCharge"), bodyLocomotion.BowDrawChargeNormalized);
             if (AnimatorParameterGuard.HasParameter(animator, "BowAiming"))
                 animator.SetBool(Animator.StringToHash("BowAiming"), bodyLocomotion.IsAiming);
+            if (AnimatorParameterGuard.HasParameter(animator, "BowChargedShotReady"))
+                animator.SetBool(Animator.StringToHash("BowChargedShotReady"), bodyLocomotion.IsBowChargedShotReady);
         }
 
         private void UpdateMovementInputFlags()

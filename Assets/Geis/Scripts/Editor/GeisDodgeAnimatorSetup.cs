@@ -27,6 +27,10 @@ namespace Geis.EditorTools
 
         private static readonly string[] StateNames = { "Dodge_Front", "Dodge_Back", "Dodge_Left", "Dodge_Right" };
 
+        private const string ForwardRollStateName = "Dodge_Forward_Roll";
+        private const int ForwardRollDirection = 4;
+        private const string ForwardRollGeneratedClipPath = "Assets/Geis/Animations/Dodge/Dodge_Forward_Roll_Generated.anim";
+
         [MenuItem("Geis/Animator/Setup Dodge Rolls (AC_Polygon_Masculine_Geis)")]
         public static void SetupDodgeOnGeisAnimator()
         {
@@ -124,6 +128,176 @@ namespace Geis.EditorTools
             }
 
             return null;
+        }
+
+        /// <summary>
+        /// Bakes a reversed copy of <c>Dodge_Back</c>'s clip as a .anim asset and wires a new <c>Dodge_Forward_Roll</c>
+        /// state into the animator, triggered when DodgeDirection == 4. Unity blocks <c>Animator.speed = -1</c> at
+        /// runtime unless the recorder is enabled, so we pre-bake the reversed clip and just Play() it forward.
+        /// </summary>
+        [MenuItem("Geis/Animator/Setup Forward Roll (Reverse-baked Dodge_Back)")]
+        public static void SetupForwardRoll()
+        {
+            var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
+            if (controller == null)
+            {
+                Debug.LogError($"[GeisDodgeAnimatorSetup] Missing controller at {ControllerPath}");
+                return;
+            }
+
+            var root = controller.layers[0].stateMachine;
+            var backState = FindStateRecursive(root, "Dodge_Back");
+            AnimationClip sourceClip = backState != null ? backState.motion as AnimationClip : null;
+            if (sourceClip == null)
+            {
+                // Fall back to the FBX directly if the state isn't wired yet.
+                sourceClip = LoadFirstAnimationClip(DodgeFbxPaths[1]);
+            }
+
+            if (sourceClip == null)
+            {
+                Debug.LogError(
+                    "[GeisDodgeAnimatorSetup] Could not locate source Dodge_Back clip. Run 'Setup Dodge Rolls' first.");
+                return;
+            }
+
+            var reversedClip = BuildReversedClip(sourceClip);
+            reversedClip.name = "Dodge_Forward_Roll_Generated";
+
+            // Overwrite any previously-generated asset so re-running the menu stays idempotent.
+            var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(ForwardRollGeneratedClipPath);
+            if (existing != null)
+            {
+                EditorUtility.CopySerialized(reversedClip, existing);
+                reversedClip = existing;
+            }
+            else
+            {
+                AssetDatabase.CreateAsset(reversedClip, ForwardRollGeneratedClipPath);
+            }
+            AssetDatabase.SaveAssets();
+            reversedClip = AssetDatabase.LoadAssetAtPath<AnimationClip>(ForwardRollGeneratedClipPath);
+
+            AddParameterIfMissing(controller, "DodgeDirection", AnimatorControllerParameterType.Int);
+            AddParameterIfMissing(controller, "Dodge", AnimatorControllerParameterType.Trigger);
+
+            var idleState = FindStateRecursive(root, IdleReturnStateName);
+            if (idleState == null)
+            {
+                Debug.LogError($"[GeisDodgeAnimatorSetup] Could not find state '{IdleReturnStateName}'.");
+                return;
+            }
+
+            var forwardRoll = FindStateRecursive(root, ForwardRollStateName);
+            if (forwardRoll == null)
+            {
+                forwardRoll = root.AddState(ForwardRollStateName);
+            }
+            forwardRoll.motion = reversedClip;
+
+            // Idle return transition on clip completion (match the other dodge leaves).
+            bool hasIdleReturn = false;
+            foreach (var t in forwardRoll.transitions)
+            {
+                if (t.destinationState == idleState)
+                {
+                    hasIdleReturn = true;
+                    break;
+                }
+            }
+            if (!hasIdleReturn)
+            {
+                var toIdle = forwardRoll.AddTransition(idleState);
+                toIdle.hasExitTime = true;
+                toIdle.exitTime = 0.92f;
+                toIdle.duration = 0.12f;
+                toIdle.hasFixedDuration = true;
+            }
+
+            // AnyState transition: Dodge trigger + DodgeDirection == 4.
+            bool hasAnyState = false;
+            foreach (var t in root.anyStateTransitions)
+            {
+                if (t.destinationState == forwardRoll)
+                {
+                    hasAnyState = true;
+                    break;
+                }
+            }
+            if (!hasAnyState)
+            {
+                var any = root.AddAnyStateTransition(forwardRoll);
+                any.AddCondition(AnimatorConditionMode.If, 0, "Dodge");
+                any.AddCondition(AnimatorConditionMode.Equals, ForwardRollDirection, "DodgeDirection");
+                any.duration = 0.05f;
+                any.hasExitTime = false;
+                any.hasFixedDuration = true;
+            }
+
+            EditorUtility.SetDirty(controller);
+            AssetDatabase.SaveAssets();
+            Debug.Log(
+                $"[GeisDodgeAnimatorSetup] Forward roll set up. Clip: {ForwardRollGeneratedClipPath}, state: {ForwardRollStateName} (DodgeDirection == {ForwardRollDirection}).");
+        }
+
+        /// <summary>
+        /// Produces a reversed <see cref="AnimationClip"/> by mirroring every float/quaternion/vector curve and every
+        /// object-reference keyframe across the clip's length, negating tangents so tween shapes still match.
+        /// Keeps the source clip's settings (loop, root-motion flags, etc.) in lock-step with the original.
+        /// </summary>
+        private static AnimationClip BuildReversedClip(AnimationClip source)
+        {
+            var reversed = new AnimationClip
+            {
+                frameRate = source.frameRate,
+                legacy = source.legacy,
+                wrapMode = source.wrapMode,
+                localBounds = source.localBounds,
+            };
+
+            var settings = AnimationUtility.GetAnimationClipSettings(source);
+            AnimationUtility.SetAnimationClipSettings(reversed, settings);
+
+            float length = source.length;
+
+            foreach (var binding in AnimationUtility.GetCurveBindings(source))
+            {
+                var curve = AnimationUtility.GetEditorCurve(source, binding);
+                if (curve == null || curve.keys.Length == 0)
+                    continue;
+
+                var src = curve.keys;
+                var rKeys = new Keyframe[src.Length];
+                for (int i = 0; i < src.Length; i++)
+                {
+                    var k = src[src.Length - 1 - i];
+                    var nk = new Keyframe(length - k.time, k.value, -k.outTangent, -k.inTangent)
+                    {
+                        weightedMode = k.weightedMode,
+                        inWeight = k.outWeight,
+                        outWeight = k.inWeight,
+                    };
+                    rKeys[i] = nk;
+                }
+                AnimationUtility.SetEditorCurve(reversed, binding, new AnimationCurve(rKeys));
+            }
+
+            foreach (var binding in AnimationUtility.GetObjectReferenceCurveBindings(source))
+            {
+                var keys = AnimationUtility.GetObjectReferenceCurve(source, binding);
+                if (keys == null || keys.Length == 0)
+                    continue;
+
+                var rKeys = new ObjectReferenceKeyframe[keys.Length];
+                for (int i = 0; i < keys.Length; i++)
+                {
+                    var k = keys[keys.Length - 1 - i];
+                    rKeys[i] = new ObjectReferenceKeyframe { time = length - k.time, value = k.value };
+                }
+                AnimationUtility.SetObjectReferenceCurve(reversed, binding, rKeys);
+            }
+
+            return reversed;
         }
     }
 }

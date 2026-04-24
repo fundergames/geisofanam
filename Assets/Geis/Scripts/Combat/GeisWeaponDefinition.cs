@@ -1,6 +1,7 @@
 // Geis of Anam - Unified weapon definition. Single source of truth for visuals, combos, and damage.
 // Single asset for prefab + GeisComboData + RogueDeal Weapon/CombatAction.
 
+using System;
 using UnityEngine;
 using RogueDeal.Combat.Core.Data;
 using Geis.SoulRealm.WeaponAbilities;
@@ -31,6 +32,14 @@ namespace Geis.Combat
 
         /// <summary>Animator hand this weapon’s prefab should parent to.</summary>
         public WeaponAttachmentHand AttachmentHand => attachmentHand;
+
+        /// <summary>
+        /// Identifies the bow weapon without relying on a specific slot index.
+        /// </summary>
+        public bool IsBowWeapon =>
+            (!string.IsNullOrWhiteSpace(displayName)
+                && displayName.IndexOf("bow", StringComparison.OrdinalIgnoreCase) >= 0)
+            || name.IndexOf("bow", StringComparison.OrdinalIgnoreCase) >= 0;
 
         [Header("Combo Animations")]
         [Tooltip("Combo graph and clips. Per-state CombatAction / multi-hit times live on this asset (State Combat Bindings).")]

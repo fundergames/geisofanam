@@ -19,27 +19,9 @@ MonoBehaviour:
   - fromState: 1
     inputType: 0
     toState: 2
-  - fromState: 2
-    inputType: 0
-    toState: 0
   - fromState: 1
     inputType: 1
     toState: 3
-  - fromState: 2
-    inputType: 1
-    toState: 4
-  - fromState: 3
-    inputType: 0
-    toState: 0
-  - fromState: 3
-    inputType: 1
-    toState: 0
-  - fromState: 4
-    inputType: 0
-    toState: 0
-  - fromState: 4
-    inputType: 1
-    toState: 0
   clips:
   - {fileID: 7400000, guid: 4dbaf207952dd405299b4e7d61236b11, type: 2}
   - {fileID: 7400000, guid: ad57f5ef63622492a8cdcadbd952afd9, type: 2}
@@ -53,3 +35,7 @@ MonoBehaviour:
     multiHitNormalizedTimes: []
   cancelWindowStart: 0.5
   cancelWindowEnd: 0.7
+  stateTimings:
+  - overrideCancelWindow: 1
+    cancelWindowStart: 0.301
+    cancelWindowEnd: 0.825

@@ -1,12 +1,18 @@
 // Geis of Anam - Bow weapon controller.
-// Hold LT (aim) for shoulder camera + crosshair. With bow equipped, RT draw/release always looses an arrow (aim optional).
+// Hold LT (aim) for shoulder camera + crosshair. While aiming with the bow equipped, RT draws the bow and
+// releasing RT looses an arrow. Returning from draw falls back to LT aim if still held, otherwise bow idle.
+// RT is bound to LightAttack (see GeisControls.inputactions). We *poll* IsPressed() on the LightAttack action each frame
+// and detect the rising/falling edge ourselves instead of using started/canceled callbacks — analog triggers can momentarily
+// dip below the button release point while held, which otherwise re-fires canceled and spawns phantom arrows.
 // Arrows travel toward the camera aim point (raycast hit or max range), not to the nearest enemy.
 //
 // Animation: Synty AnimationBowCombat (Polygon) — Bow_Draw layer uses A_POLY_BOW_Stand_Shoot_Reload_Neut (see AC_Polygon_Masculine_Geis).
 // Naming and optional variants (Lng/Rcv/Cmp): GeisBowSyntyAnimationRefs. For sustained draw while holding RT, enable Loop Time on the Reload clip in the FBX import settings.
 
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Geis.InputSystem;
 using Geis.Locomotion;
@@ -27,7 +33,8 @@ namespace Geis.Combat
     /// </summary>
     public class GeisBowController : MonoBehaviour
     {
-        private const int BowSlotIndex = 3;
+        private static readonly int BowDrawingAnimatorHash = Animator.StringToHash("BowDrawing");
+        private static readonly int BowDrawChargeAnimatorHash = Animator.StringToHash("BowDrawCharge");
 
         [Header("References")]
         [Tooltip("GeisInputReader on the player")]
@@ -50,6 +57,10 @@ namespace Geis.Combat
         [SerializeField] private GameObject _arrowPrefab;
         [Tooltip("Spawn point for arrows (e.g. bow-tip bone). Leave null to use a default offset above the player.")]
         [SerializeField] private Transform _arrowLaunchPoint;
+        [Tooltip("Optional visual arrow nocked on the bow. Direct reference (wins over name lookup). Shown while RT is held, hidden on release.")]
+        [SerializeField] private GameObject _drawArrowVisual;
+        [Tooltip("Fallback: name of the draw-arrow GameObject to search for under the live player hierarchy (typically a disabled child of the bow's string bone, e.g. Wep_Longbow_String_01/ArrowVisual).")]
+        [SerializeField] private string _drawArrowVisualName = "ArrowVisual";
         [Tooltip("Base arrow travel speed (units/sec)")]
         [SerializeField] private float _arrowSpeed = 22f;
         [Tooltip("Maximum range of the aim raycast and arrow flight")]
@@ -58,10 +69,12 @@ namespace Geis.Combat
         [SerializeField] private LayerMask _aimRaycastLayers = ~0;
 
         [Header("Charged Shot")]
-        [Tooltip("How long RT must be held to reach full charge")]
+        [Tooltip("How long RT must be held to reach the charged-shot shake / full charge state")]
         [SerializeField] private float _maxChargeTime = 1.5f;
         [Tooltip("Speed multiplier applied at full charge (1 = same speed as quick shot)")]
         [SerializeField] private float _chargedSpeedMultiplier = 1.75f;
+        [Tooltip("Damage multiplier applied when the arrow is released after reaching full charge")]
+        [SerializeField] private float _chargedDamageMultiplier = 1.5f;
 
         [Header("Aim UI")]
         [Tooltip("Screen-center crosshair while aiming with the bow (matches camera aim ray).")]
@@ -81,6 +94,9 @@ namespace Geis.Combat
 
         private bool _isCharging;
         private float _chargeStartTime;
+        private bool _lightAttackWasPressed;
+        private readonly List<Animator> _equippedBowAnimators = new List<Animator>();
+        private GameObject _cachedBowAnimatorWeaponRoot;
 
         private void Awake()
         {
@@ -97,23 +113,18 @@ namespace Geis.Combat
 
             if (_cameraController == null)
                 _cameraController = FindFirstObjectByType<GeisCameraController>();
-        }
 
-        private void OnEnable()
-        {
-            if (_inputReader == null) return;
-            _inputReader.onHeavyAttackStarted  += OnShootStarted;
-            _inputReader.onHeavyAttackReleased += OnShootReleased;
+            SetDrawArrowVisible(false);
         }
 
         private void OnDisable()
         {
-            if (_inputReader == null) return;
-            _inputReader.onHeavyAttackStarted  -= OnShootStarted;
-            _inputReader.onHeavyAttackReleased -= OnShootReleased;
             _isCharging = false;
+            _lightAttackWasPressed = false;
             ClearBowDrawAnimatorState();
+            SetEquippedBowAnimatorState(false, 0f);
             SetCrosshairVisible(false);
+            SetDrawArrowVisible(false);
         }
 
         private void Update()
@@ -121,21 +132,48 @@ namespace Geis.Combat
             if (_playerController == null)
                 return;
 
+            PollLightAttackEdges();
+
             if (_isCharging && IsBowEquipped)
             {
-                float charge01 = _maxChargeTime > 0f
-                    ? Mathf.Clamp01((Time.time - _chargeStartTime) / _maxChargeTime)
-                    : 1f;
-                _playerController.SetBowDrawState(true, charge01);
+                float charge01 = GetChargeRatio();
+                _playerController.SetBowDrawState(true, charge01, IsChargedShotReady);
+                SetEquippedBowAnimatorState(true, charge01);
             }
             else
+            {
                 ClearBowDrawAnimatorState();
+                SetEquippedBowAnimatorState(false, 0f);
+            }
+        }
+
+        /// <summary>
+        /// Edge-detects the LightAttack action by polling <c>IsPressed()</c>. One hold = one start + one release,
+        /// regardless of analog-trigger jitter around the Input System release threshold.
+        /// </summary>
+        private void PollLightAttackEdges()
+        {
+            if (_inputReader == null)
+                return;
+            InputAction action = _inputReader.LightAttack;
+            if (action == null)
+                return;
+
+            bool pressed = action.IsPressed();
+            if (pressed == _lightAttackWasPressed)
+                return;
+
+            _lightAttackWasPressed = pressed;
+            if (pressed)
+                OnShootStarted();
+            else
+                OnShootReleased();
         }
 
         private void ClearBowDrawAnimatorState()
         {
             if (_playerController != null)
-                _playerController.SetBowDrawState(false, 0f);
+                _playerController.SetBowDrawState(false, 0f, false);
         }
 
         private void LateUpdate()
@@ -151,21 +189,121 @@ namespace Geis.Combat
 
         private void OnShootStarted()
         {
-            if (!IsBowEquipped) return;
+            if (!IsAimingWithBow) return;
             _isCharging = true;
             _chargeStartTime = Time.time;
+            SetDrawArrowVisible(true);
             onChargeStarted?.Invoke();
         }
 
         private void OnShootReleased()
         {
             if (!_isCharging) return;
+            float chargeRatio = GetChargeRatio();
+            bool chargedShotReady = chargeRatio >= 0.999f;
+
             _isCharging = false;
+            SetDrawArrowVisible(false);
 
             if (!IsBowEquipped) return;
 
-            float chargeRatio = Mathf.Clamp01((Time.time - _chargeStartTime) / _maxChargeTime);
-            FireArrow(chargeRatio);
+            FireArrow(chargeRatio, chargedShotReady ? _chargedDamageMultiplier : 1f);
+        }
+
+        private void SetDrawArrowVisible(bool visible)
+        {
+            GameObject go = ResolveDrawArrowVisual(requireLookup: visible);
+            if (go != null && go.activeSelf != visible)
+                go.SetActive(visible);
+        }
+
+        private void SetEquippedBowAnimatorState(bool drawing, float chargeNormalized01)
+        {
+            IReadOnlyList<Animator> bowAnimators = ResolveEquippedBowAnimators();
+            if (bowAnimators == null || bowAnimators.Count == 0)
+                return;
+
+            float clampedCharge = Mathf.Clamp01(chargeNormalized01);
+            for (int i = 0; i < bowAnimators.Count; i++)
+            {
+                Animator animator = bowAnimators[i];
+                if (AnimatorHasParameter(animator, "BowDrawing"))
+                    animator.SetBool(BowDrawingAnimatorHash, drawing);
+                if (AnimatorHasParameter(animator, "BowDrawCharge"))
+                    animator.SetFloat(BowDrawChargeAnimatorHash, clampedCharge);
+            }
+        }
+
+        private IReadOnlyList<Animator> ResolveEquippedBowAnimators()
+        {
+            GameObject weaponInstance = _weaponSwitcher != null ? _weaponSwitcher.CurrentWeaponInstance : null;
+            if (weaponInstance == null)
+            {
+                _cachedBowAnimatorWeaponRoot = null;
+                _equippedBowAnimators.Clear();
+                return _equippedBowAnimators;
+            }
+
+            if (_cachedBowAnimatorWeaponRoot == weaponInstance && _equippedBowAnimators.Count > 0)
+                return _equippedBowAnimators;
+
+            _cachedBowAnimatorWeaponRoot = weaponInstance;
+            _equippedBowAnimators.Clear();
+
+            Animator[] animators = weaponInstance.GetComponentsInChildren<Animator>(true);
+            for (int i = 0; i < animators.Length; i++)
+            {
+                if (AnimatorHasParameter(animators[i], "BowDrawing")
+                    || AnimatorHasParameter(animators[i], "BowDrawCharge"))
+                    _equippedBowAnimators.Add(animators[i]);
+            }
+
+            return _equippedBowAnimators;
+        }
+
+        private static bool AnimatorHasParameter(Animator animator, string parameterName)
+        {
+            if (animator == null || animator.runtimeAnimatorController == null)
+                return false;
+
+            foreach (var parameter in animator.parameters)
+            {
+                if (parameter.name == parameterName)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Lazily resolves the nocked-arrow visual. Prefers the inspector reference, otherwise searches the player
+        /// hierarchy (including inactive children on the runtime-instantiated bow) for a GameObject named
+        /// <see cref="_drawArrowVisualName"/>.
+        /// </summary>
+        private GameObject ResolveDrawArrowVisual(bool requireLookup)
+        {
+            if (_drawArrowVisual != null)
+                return _drawArrowVisual;
+
+            if (!requireLookup || string.IsNullOrEmpty(_drawArrowVisualName))
+                return null;
+
+            Transform found = FindChildRecursiveIncludeInactive(transform, _drawArrowVisualName);
+            if (found != null)
+                _drawArrowVisual = found.gameObject;
+            return _drawArrowVisual;
+        }
+
+        private static Transform FindChildRecursiveIncludeInactive(Transform parent, string childName)
+        {
+            if (parent == null) return null;
+            if (parent.name == childName) return parent;
+            for (int i = 0; i < parent.childCount; i++)
+            {
+                Transform hit = FindChildRecursiveIncludeInactive(parent.GetChild(i), childName);
+                if (hit != null) return hit;
+            }
+            return null;
         }
 
         // ──────────────────────────────────────────────────────────────────────────
@@ -173,12 +311,25 @@ namespace Geis.Combat
         // ──────────────────────────────────────────────────────────────────────────
 
         private bool IsBowEquipped =>
-            _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == BowSlotIndex;
+            _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponDefinition != null
+            && _weaponSwitcher.CurrentWeaponDefinition.IsBowWeapon;
 
         private bool IsAimingWithBow =>
             _playerController != null && _playerController.IsAiming && IsBowEquipped;
 
-        private void FireArrow(float chargeRatio)
+        private bool IsChargedShotReady => GetChargeRatio() >= 0.999f;
+
+        private float GetChargeRatio()
+        {
+            if (!_isCharging)
+                return 0f;
+
+            return _maxChargeTime > 0f
+                ? Mathf.Clamp01((Time.time - _chargeStartTime) / _maxChargeTime)
+                : 1f;
+        }
+
+        private void FireArrow(float chargeRatio, float damageMultiplier)
         {
             if (_arrowPrefab == null)
             {
@@ -186,7 +337,9 @@ namespace Geis.Combat
                 return;
             }
 
-            var bowDefForCd = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(BowSlotIndex) : null;
+            var bowDefForCd = _weaponSwitcher != null ? _weaponSwitcher.CurrentWeaponDefinition : null;
+            if (bowDefForCd == null || !bowDefForCd.IsBowWeapon)
+                return;
             CombatAction bowCombatAction = bowDefForCd != null ? bowDefForCd.GetCombatAction() : null;
             if (_combatExecutor != null && bowCombatAction != null)
             {
@@ -209,6 +362,8 @@ namespace Geis.Combat
                 initialShotDirection.Normalize();
 
             var arrow = Instantiate(_arrowPrefab, spawnPos, Quaternion.identity);
+            if (!arrow.activeSelf)
+                arrow.SetActive(true);
             var projectile = arrow.GetComponent<Projectile>();
             if (projectile == null)
             {
@@ -235,11 +390,12 @@ namespace Geis.Combat
                     effects,
                     entityData,
                     _combatEntity,
-                    aimHitEntity);
+                    aimHitEntity,
+                    damageMultiplier);
             }
             else
             {
-                projectile.InitializeAimPoint(aimPoint, speed, effects, entityData, aimHitEntity, _combatEntity);
+                projectile.InitializeAimPoint(aimPoint, speed, effects, entityData, aimHitEntity, _combatEntity, damageMultiplier);
             }
 
             if (_combatExecutor != null && bowCombatAction != null)
@@ -322,7 +478,9 @@ namespace Geis.Combat
 
         private BaseEffect[] ResolveEffects()
         {
-            var def = _weaponSwitcher != null ? _weaponSwitcher.GetWeaponDefinition(BowSlotIndex) : null;
+            var def = _weaponSwitcher != null ? _weaponSwitcher.CurrentWeaponDefinition : null;
+            if (def == null || !def.IsBowWeapon)
+                return System.Array.Empty<BaseEffect>();
             var action = def?.GetCombatAction();
             return action?.effects ?? System.Array.Empty<BaseEffect>();
         }

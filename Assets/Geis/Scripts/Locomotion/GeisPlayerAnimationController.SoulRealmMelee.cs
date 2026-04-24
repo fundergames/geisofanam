@@ -33,7 +33,7 @@ namespace Geis.Locomotion
             if (_attackStateTimeout > 0f)
             {
                 if (_useDataDrivenCombo && comboData != null)
-                    _comboInputBuffered = inputType;
+                    SetComboInputBuffer(inputType);
                 return true;
             }
 
@@ -44,7 +44,7 @@ namespace Geis.Locomotion
             {
                 _firstAttackInputType = inputType;
                 _currentComboState = 0;
-                _comboInputBuffered = null;
+                ClearComboInputBuffer();
                 SoulRealmTriggerComboAttackEnter(spec, comboData);
                 return true;
             }
@@ -53,7 +53,7 @@ namespace Geis.Locomotion
             {
                 _firstAttackInputType = inputType;
                 _currentComboState = 0;
-                _comboInputBuffered = null;
+                ClearComboInputBuffer();
                 spec.SetTrigger(_attack1Hash);
                 _attackStateTimeout = 1.5f;
                 int weaponIdx = GetWeaponIndexForMusic();
@@ -94,19 +94,23 @@ namespace Geis.Locomotion
                 return;
 
             _attackStateTimeout -= Time.deltaTime;
+
+            // Prune stale buffers just like the physical body UpdateAttackState so soul-realm melee feels identical.
+            if (_comboInputBuffered.HasValue && !IsBufferFresh(_comboInputBufferedAt))
+                ClearComboInputBuffer();
+
             GeisComboData comboData = GetCurrentComboData();
 
             if (_useDataDrivenCombo && comboData != null)
             {
                 AnimatorStateInfo info = spec.GetCurrentAnimatorStateInfo(0);
                 float normalizedTime = info.normalizedTime % 1f;
-                bool inCancelWindow = normalizedTime >= comboData.CancelWindowStart &&
-                                      normalizedTime <= comboData.CancelWindowEnd;
+                comboData.GetCancelWindow(_currentComboState, out float cancelWindowStart, out float cancelWindowEnd);
+                bool inCancelWindow = normalizedTime >= cancelWindowStart &&
+                                      normalizedTime <= cancelWindowEnd;
 
-                if (inCancelWindow && _comboInputBuffered.HasValue)
+                if (inCancelWindow && TryConsumeComboInputBuffer(out var input))
                 {
-                    GeisComboInputType input = _comboInputBuffered.Value;
-                    _comboInputBuffered = null;
                     if (comboData.TryGetNextState(_currentComboState, input, out int nextState))
                     {
                         _currentComboState = nextState;
@@ -124,7 +128,7 @@ namespace Geis.Locomotion
             if (_attackStateTimeout <= 0f)
             {
                 _currentComboState = 0;
-                _comboInputBuffered = null;
+                ClearComboInputBuffer();
             }
         }
     }

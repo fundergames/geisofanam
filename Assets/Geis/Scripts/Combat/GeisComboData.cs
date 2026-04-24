@@ -44,6 +44,24 @@ namespace Geis.Combat
         public float[] multiHitNormalizedTimes;
     }
 
+/// <summary>
+/// Optional per combo state timing overrides.
+/// </summary>
+[System.Serializable]
+public class GeisComboStateTiming
+{
+    [Tooltip("If true, this combo step uses its own cancel window instead of the shared defaults below.")]
+    public bool overrideCancelWindow;
+
+    [Tooltip("Normalized time (0-1) when this step's cancel window opens.")]
+    [Range(0f, 1f)]
+    public float cancelWindowStart = 0.5f;
+
+    [Tooltip("Normalized time (0-1) when this step's cancel window closes.")]
+    [Range(0f, 1f)]
+    public float cancelWindowEnd = 0.7f;
+}
+
     /// <summary>
     /// Data-driven combo definition per weapon. Transition table + clip assignments.
     /// Add new branches by adding transitions and clips; no animator changes.
@@ -81,6 +99,10 @@ namespace Geis.Combat
         [SerializeField]
         private float cancelWindowEnd = 0.7f;
 
+        [Tooltip("Optional per-step cancel windows. Parallel to clips[]; enable Override Cancel Window on a step to customize that attack.")]
+        [SerializeField]
+        private GeisComboStateTiming[] stateTimings = new GeisComboStateTiming[0];
+
         /// <summary>
         /// Try to find a transition from currentState with the given input. Returns true and out nextState if found.
         /// </summary>
@@ -114,6 +136,25 @@ namespace Geis.Combat
         public float CancelWindowStart => cancelWindowStart;
         public float CancelWindowEnd => cancelWindowEnd;
         public int ClipCount => clips != null ? clips.Length : 0;
+
+        /// <summary>
+        /// Resolve the cancel window for the current combo state, falling back to the shared defaults.
+        /// </summary>
+        public void GetCancelWindow(int state, out float start, out float end)
+        {
+            start = Mathf.Clamp01(cancelWindowStart);
+            end = Mathf.Clamp01(cancelWindowEnd);
+
+            GeisComboStateTiming timing = GetTiming(state);
+            if (timing != null && timing.overrideCancelWindow)
+            {
+                start = Mathf.Clamp01(timing.cancelWindowStart);
+                end = Mathf.Clamp01(timing.cancelWindowEnd);
+            }
+
+            if (end < start)
+                end = start;
+        }
 
         /// <summary>
         /// Combat action for this combo step: binding override if set, otherwise <paramref name="weaponDefault"/>.
@@ -151,6 +192,13 @@ namespace Geis.Combat
             if (stateCombatBindings == null || state < 0 || state >= stateCombatBindings.Length)
                 return null;
             return stateCombatBindings[state];
+        }
+
+        private GeisComboStateTiming GetTiming(int state)
+        {
+            if (stateTimings == null || state < 0 || state >= stateTimings.Length)
+                return null;
+            return stateTimings[state];
         }
     }
 }

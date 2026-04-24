@@ -840,20 +840,6 @@ namespace RogueDeal.Boss
             if (hand == null)
                 return;
 
-            Vector3 damageCenter = GetSlamDamageSphereCenter(hand);
-            float damageR = definition.slamDamageRadius;
-
-            Gizmos.color = damageColor;
-            Gizmos.DrawWireSphere(damageCenter, damageR);
-
-            string dmgLine = definition.slamDamageAction == null
-                ? $"Damage: {definition.slamDamage}"
-                : $"Action: {(string.IsNullOrEmpty(definition.slamDamageAction.actionName) ? definition.slamDamageAction.name : definition.slamDamageAction.actionName)}";
-
-            UnityEditor.Handles.Label(
-                damageCenter + Vector3.up * Mathf.Max(0.2f, damageR * 0.28f),
-                $"{handLabel} slam\n{dmgLine}\nRadius: {damageR:F2} m");
-
             // Shockwave uses fist-local offset; radii match TryPlaySlamShockwave / BossSlamShockwaveVfx.
             Vector3 shockCenter = hand.transform.TransformPoint(slamShockwavePositionOffset);
             float endR = slamShockwaveEndRadius > 0f ? slamShockwaveEndRadius : definition.slamDamageRadius;

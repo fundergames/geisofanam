@@ -18,7 +18,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!4 &3570937812868550136
 Transform:
   m_ObjectHideFlags: 0
@@ -74,10 +74,13 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 99770256e9635be498f9c90df5baacaa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.Presentation.Projectile
+  debugHits: 0
   speed: 10
   arrivalThreshold: 0.5
   maxLifetime: 10
   soulMarkHomingTurnRateDegreesPerSecond: 150
+  soulMarkHomingTurnRateFarDegreesPerSecond: 96
+  soulMarkHomingSteerBlendExponent: 1.35
 --- !u!135 &-5000000000000000001
 SphereCollider:
   m_ObjectHideFlags: 0

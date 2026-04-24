@@ -665,7 +665,12 @@ namespace Geis.SoulRealm
             if (cameraController != null && bodyLookAtTransform != null)
             {
                 cameraController.SetFollowTarget(bodyLookAtTransform);
+                // Restore yaw/pitch from the pre-entry baseline so view direction snaps back cleanly, then re-anchor
+                // the orbit pivot to the body's CURRENT look-at. Otherwise the baseline's captured pivot world-pos can
+                // be slightly offset from where the body is now (ground ride, capsule settle, etc.) and LateUpdate
+                // smooths from the stale position toward the body — producing a visible drift (commonly downward).
                 cameraController.ApplySoulRealmBaselineSnapshot();
+                cameraController.SnapFollowPositionKeepView(bodyLookAtTransform);
             }
 
             ApplyFreezeToWorld(false);

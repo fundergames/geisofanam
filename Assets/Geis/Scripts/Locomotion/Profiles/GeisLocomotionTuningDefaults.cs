@@ -12,6 +12,12 @@ namespace Geis.Locomotion
         public const float SpeedChangeDamping = 10f;
         public const float RotationSmoothing = 10f;
 
+        // Action-feel responsiveness tuning (Phase 4).
+        public const float AccelRate = 25f;
+        public const float DecelRate = 15f;
+        public const float SprintInstantFraction = 0.85f;
+        public const float MaxTurnDegPerSecond = 720f;
+
         public const float ButtonHoldThreshold = 0.15f;
         public const float ForwardStrafeMinThreshold = -55f;
         public const float ForwardStrafeMaxThreshold = 125f;
@@ -27,6 +33,8 @@ namespace Geis.Locomotion
         public const float JumpForce = 10f;
         public const float GravityMultiplier = 2f;
         public const float FallingBlendRampSeconds = 0.65f;
+        public const float CoyoteTimeSeconds = 0.10f;
+        public const float JumpBufferSeconds = 0.15f;
 
         public const float HeadLookLimitDegrees = 60f;
 
@@ -35,5 +43,17 @@ namespace Geis.Locomotion
         public const float DodgeInputDeadzone = 0.05f;
         public const float DodgeFallbackDuration = 1.2f;
         public const bool RequireMovementInputForDodge = false;
+
+        // Attack/dodge cancel-window tuning (Phases 1-3).
+        public const float AttackMoveCancelStickThreshold = 0.5f;
+        public const float AttackRecoveryExitNormalizedTime = 0.85f;
+        public const float AttackExitVelocityCarry = 0.6f;
+        public const float DodgeRecoveryStartNormalizedTime = 0.65f;
+        public const float DodgeMoveCancelStickThreshold = 0.3f;
+        public const float DodgeExitVelocityCarry = 0.75f;
+        public const float InputBufferSeconds = 0.18f;
+        public const float DodgeDoubleTapWindow = 0.25f;
+        public const bool DodgeDoubleTapRollEnabled = true;
+        public const float RollDistanceMultiplier = 1f;
     }
 }
