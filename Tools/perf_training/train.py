@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """
-Performance Intelligence — FPS prediction training pipeline.
+Performance Intelligence — FPS prediction training pipeline (v2).
 
-Loads all capture CSVs exported from the Unity Performance Intelligence window,
-trains a gradient-boosted regressor to predict estimatedFPS, and prints
-evaluation metrics. Optionally exports the model to ONNX for Unity Sentis.
+Trains a model to predict average FPS from SCENE COMPOSITION — i.e. from
+data you can measure before running the scene (object counts, lights,
+materials, etc.) rather than from runtime measurements like CPU frame time.
+
+Each session folder must contain both capture.json (scene census) and
+capture.csv (per-frame metrics). One training row is built per session.
 
 Usage:
     cd Tools/perf_training
@@ -17,37 +20,55 @@ Usage:
 
 import argparse
 import glob
+import json
 import os
 import sys
 
 import numpy as np
 import pandas as pd
+from sklearn.linear_model import Ridge
 from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.model_selection import LeaveOneOut, cross_val_score
 from sklearn.metrics import mean_absolute_error, r2_score
-from sklearn.model_selection import cross_val_score, train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 
 # ---------------------------------------------------------------------------
-# Configuration
+# Schema
 # ---------------------------------------------------------------------------
 
-# Candidate feature columns in order of preference.
-# The script uses whichever subset has data; columns that are all-NaN are dropped.
-CANDIDATE_FEATURES = [
-    "drawCalls",
-    "batches",
-    "triangles",
-    "cpuMainThreadMs",
-    "totalReservedMemory",
-    "monoUsedSize",
-    "gcAllocBytes",
-    "setPassCalls",
-    "vertices",
-    "renderThreadMs",
+# Scene census fields extracted from capture.json → sceneCensus.
+# These are the pre-run predictors: you can measure them with SceneCensus.Capture()
+# without ever entering Play Mode. A useful model takes these as input.
+SCENE_CENSUS_FEATURES = [
+    "activeGameObjects",
+    "activeRenderers",
+    "meshRenderers",
+    "skinnedMeshRenderers",
+    "particleSystems",
+    "lights",
+    "realtimeLights",
+    "shadowCastingLights",
+    "cameras",
+    "canvases",
+    "rigidbodies",
+    "colliders",
+    "animators",
+    "uniqueMaterials",
+    "uniqueShaders",
+    "estimatedTriangleCount",
 ]
 
-TARGET_COL = "estimatedFPS"
+# Runtime render stats averaged across the session.
+# These are NOT used as predictors (you'd need to run the scene to get them),
+# but they're included in the output table for reference.
+RUNTIME_STAT_COLS = [
+    "drawCalls", "batches", "triangles", "setPassCalls",
+    "vertices", "cpuMainThreadMs",
+]
 
-# Path from this script to the Unity captures folder (two dirs up = project root)
+TARGET_COL = "avgFPS"
+
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 DEFAULT_CAPTURES_DIR = os.path.normpath(
     os.path.join(_SCRIPT_DIR, "..", "..",
@@ -55,129 +76,197 @@ DEFAULT_CAPTURES_DIR = os.path.normpath(
 )
 
 # ---------------------------------------------------------------------------
-# Data loading
+# Loading
 # ---------------------------------------------------------------------------
 
-def load_captures(captures_dir: str) -> pd.DataFrame:
-    """Glob all capture.csv files under captures_dir and concat them."""
-    pattern = os.path.join(captures_dir, "**", "capture.csv")
-    csv_files = glob.glob(pattern, recursive=True)
+def load_session(session_dir: str) -> dict | None:
+    """
+    Load one session directory.
+    Returns a dict with scene census fields + avg FPS, or None if unusable.
+    """
+    json_path = os.path.join(session_dir, "capture.json")
+    csv_path  = os.path.join(session_dir, "capture.csv")
 
-    if not csv_files:
-        print(f"\nNo capture CSVs found in:\n  {os.path.abspath(captures_dir)}")
-        print("\nTo generate captures:")
-        print("  1. Open Unity → Window > Performance Intelligence")
-        print("  2. Enter Play Mode, click Start Capture")
-        print("  3. After capture finishes, click Export Latest Capture")
-        sys.exit(1)
+    if not os.path.exists(json_path) or not os.path.exists(csv_path):
+        return None
 
-    print(f"Found {len(csv_files)} capture session(s):\n")
-    dfs = []
-    for path in sorted(csv_files):
-        df = pd.read_csv(path)
-        session_id = os.path.basename(os.path.dirname(path))
-        scene = df["sceneName"].iloc[0] if "sceneName" in df.columns else "unknown"
-        print(f"  {session_id[:8]}…  scene={scene:<30s}  frames={len(df)}")
-        dfs.append(df)
+    # ── Scene census from JSON ────────────────────────────────────────────
+    with open(json_path, encoding="utf-8") as f:
+        raw = json.load(f)
 
-    combined = pd.concat(dfs, ignore_index=True)
-    print(f"\nTotal frames loaded: {len(combined)}")
-    return combined
+    sc = raw.get("sceneCensus") or {}
 
-
-# ---------------------------------------------------------------------------
-# Cleaning
-# ---------------------------------------------------------------------------
-
-def clean(df: pd.DataFrame) -> pd.DataFrame:
-    """Replace -1 sentinels with NaN and remove invalid FPS rows."""
-    # -1 means 'metric unavailable on this platform' in the capture format
+    # ── Frame averages from CSV ───────────────────────────────────────────
+    df = pd.read_csv(csv_path)
     df = df.replace(-1, np.nan).replace(-1.0, np.nan)
+    df = df[(df["estimatedFPS"] > 0) & (df["estimatedFPS"] < 500)]
 
-    before = len(df)
-    df = df[df[TARGET_COL].notna() & (df[TARGET_COL] > 0) & (df[TARGET_COL] < 500)]
-    dropped = before - len(df)
-    if dropped:
-        print(f"Dropped {dropped} rows with invalid FPS")
+    if len(df) < 10:
+        return None
 
-    return df
+    row = {
+        "sessionId":  raw.get("sessionId", "")[:8],
+        "sceneName":  sc.get("sceneName", "unknown"),
+        "frameCount": len(df),
+        TARGET_COL:   float(df["estimatedFPS"].mean()),
+    }
+
+    # Scene census fields
+    for field in SCENE_CENSUS_FEATURES:
+        row[field] = sc.get(field, np.nan)
+
+    # Runtime averages (reference only, not used as features)
+    for col in RUNTIME_STAT_COLS:
+        if col in df.columns:
+            vals = df[col].dropna()
+            row[f"avg_{col}"] = float(vals.mean()) if len(vals) > 0 else np.nan
+
+    return row
 
 
-def report_availability(df: pd.DataFrame, candidates: list[str]) -> list[str]:
-    """Print per-column availability and return columns with >50% valid data."""
-    print("\nFeature availability (% rows with valid data):\n")
-    usable = []
-    for col in candidates:
-        if col not in df.columns:
-            continue
-        pct = df[col].notna().mean() * 100
-        bar = "█" * int(pct / 5)
-        mark = "✓" if pct >= 50 else "✗"
-        print(f"  {mark} {col:<30s} {bar:<20s} {pct:5.1f}%")
-        if pct >= 50:
-            usable.append(col)
+def load_all_sessions(captures_dir: str) -> pd.DataFrame:
+    """Load every session directory under captures_dir."""
+    # A session dir is any direct subdirectory that contains capture.json
+    session_dirs = [
+        d for d in glob.glob(os.path.join(captures_dir, "*"))
+        if os.path.isdir(d) and os.path.exists(os.path.join(d, "capture.json"))
+    ]
 
-    if not usable:
-        print("\nNo features have >50% valid data.")
-        print("Tip: drawCalls, batches, triangles are usually available on PC builds.")
+    if not session_dirs:
+        print(f"\nNo session folders found in:\n  {os.path.abspath(captures_dir)}")
+        print("\nEach session needs both capture.json and capture.csv.")
+        print("Click 'Export Latest Capture' in the Performance Intelligence window.")
         sys.exit(1)
 
-    print(f"\nUsing {len(usable)} feature(s): {usable}")
-    return usable
+    rows = []
+    skipped = 0
+    for d in sorted(session_dirs):
+        row = load_session(d)
+        if row:
+            rows.append(row)
+        else:
+            skipped += 1
 
+    if not rows:
+        print("All sessions were unusable (missing JSON, CSV, or too few frames).")
+        sys.exit(1)
+
+    if skipped:
+        print(f"Skipped {skipped} incomplete session(s).")
+
+    return pd.DataFrame(rows)
+
+# ---------------------------------------------------------------------------
+# Summary table
+# ---------------------------------------------------------------------------
+
+def print_session_table(df: pd.DataFrame):
+    """Print a readable per-session overview."""
+    print(f"\n{'Scene':<45s} {'Frames':>7} {'AvgFPS':>8} {'Tris':>10} {'Lights':>7} {'Mats':>6}")
+    print("─" * 85)
+    for _, r in df.iterrows():
+        scene = str(r["sceneName"])[:44]
+        tris  = int(r.get("estimatedTriangleCount", 0) or 0)
+        lights = int(r.get("lights", 0) or 0)
+        mats  = int(r.get("uniqueMaterials", 0) or 0)
+        print(f"  {scene:<43s} {int(r['frameCount']):>7} {r[TARGET_COL]:>8.1f} {tris:>10,} {lights:>7} {mats:>6}")
+    print()
+
+# ---------------------------------------------------------------------------
+# Feature selection
+# ---------------------------------------------------------------------------
+
+def select_features(df: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
+    """Return scene census columns with non-zero variance and no NaNs."""
+    candidates = [c for c in SCENE_CENSUS_FEATURES if c in df.columns]
+
+    # Drop columns with any NaN
+    complete = [c for c in candidates if df[c].notna().all()]
+
+    # Drop zero-variance columns (same value in every session = no signal)
+    varied = [c for c in complete if df[c].nunique() > 1]
+
+    dropped = set(candidates) - set(varied)
+    if dropped:
+        print(f"Dropped {len(dropped)} constant/incomplete feature(s): {sorted(dropped)}")
+
+    return varied, df[varied + [TARGET_COL]].dropna()
 
 # ---------------------------------------------------------------------------
 # Training
 # ---------------------------------------------------------------------------
 
-def train(df: pd.DataFrame, feature_cols: list[str]):
-    """Build feature matrix, train model, print metrics. Returns (model, features)."""
-    subset = df[feature_cols + [TARGET_COL]].dropna()
+def choose_model(n_samples: int):
+    """Ridge for small N, gradient boosting for larger datasets."""
+    if n_samples < 40:
+        return Pipeline([("scaler", StandardScaler()), ("model", Ridge(alpha=1.0))])
+    return GradientBoostingRegressor(n_estimators=100, max_depth=3, random_state=42)
 
-    if len(subset) < 20:
-        print(f"\nOnly {len(subset)} complete rows after dropping NaN — need at least 20.")
-        print("Collect more captures or check that profiler metrics are enabled.")
+
+def train(df: pd.DataFrame, feature_cols: list[str]):
+    """Train and evaluate a FPS predictor. Returns (model, feature_cols)."""
+    X = df[feature_cols].values
+    y = df[TARGET_COL].values
+    n = len(X)
+
+    print(f"Training on {n} sessions × {len(feature_cols)} scene features")
+
+    if n < 5:
+        print(f"\nOnly {n} sessions — need at least 5 for meaningful evaluation.")
+        print("Collect more captures across different scenes and run again.")
         sys.exit(1)
 
-    X = subset[feature_cols].values
-    y = subset[TARGET_COL].values
+    model = choose_model(n)
+    model_name = "Ridge regression" if n < 40 else "Gradient Boosting"
+    print(f"Model: {model_name} (auto-selected for n={n})\n")
 
-    print(f"\nTraining on {len(X)} samples × {len(feature_cols)} features")
+    # Cross-validation: LOOCV for small N, 5-fold for larger
+    if n < 20:
+        cv = LeaveOneOut()
+        cv_label = "leave-one-out"
+    else:
+        cv = min(5, n // 4)
+        cv_label = f"{cv}-fold"
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42
-    )
+    cv_scores = cross_val_score(model, X, y, cv=cv, scoring="r2")
 
-    model = GradientBoostingRegressor(
-        n_estimators=100, max_depth=4, learning_rate=0.1, random_state=42
-    )
-    model.fit(X_train, y_train)
+    # Final fit on all data for feature importances
+    model.fit(X, y)
+    y_pred = model.predict(X)
 
-    y_pred = model.predict(X_test)
+    print("── Evaluation ─────────────────────────────────────────────")
+    print(f"  CV R² ({cv_label}):    {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+    print(f"  Train R²:              {r2_score(y, y_pred):.3f}  (in-sample, informational)")
+    print(f"  Train MAE:             {mean_absolute_error(y, y_pred):.1f} fps")
 
-    print("\n── Evaluation ─────────────────────────────────────────────")
-    print(f"  R²   (1.0 = perfect fit):      {r2_score(y_test, y_pred):.3f}")
-    print(f"  MAE  (avg FPS error):           {mean_absolute_error(y_test, y_pred):.2f} fps")
+    if n < 20:
+        print(f"\n  Note: {n} sessions is too few for a reliable model.")
+        print("  CV R² will be noisy. Collect 40+ sessions for stable results.")
 
-    k = min(5, max(2, len(X) // 10))
-    cv = cross_val_score(model, X, y, cv=k, scoring="r2")
-    print(f"  CV R² ({k}-fold):                {cv.mean():.3f} ± {cv.std():.3f}")
+    # Per-session predictions
+    print("\n── Per-Session Predictions ────────────────────────────────")
+    print(f"  {'Scene':<40s} {'Actual':>8} {'Predicted':>10} {'Error':>8}")
+    print("  " + "─" * 68)
+    for i, (_, row) in enumerate(df.iterrows()):
+        err = y_pred[i] - y[i]
+        scene = str(row["sceneName"])[:39]
+        print(f"  {scene:<40s} {y[i]:>8.1f} {y_pred[i]:>10.1f} {err:>+8.1f}")
 
-    print("\n── Feature Importances ────────────────────────────────────")
-    ranked = sorted(zip(feature_cols, model.feature_importances_), key=lambda x: -x[1])
-    for name, imp in ranked:
-        bar = "█" * max(1, int(imp * 50))
-        print(f"  {name:<30s} {bar} {imp:.3f}")
+    # Feature correlations (more meaningful than importances at small N)
+    print("\n── Feature Correlations with FPS ──────────────────────────")
+    corrs = df[feature_cols + [TARGET_COL]].corr()[TARGET_COL].drop(TARGET_COL)
+    for feat, corr in corrs.abs().sort_values(ascending=False).items():
+        sign = "+" if corrs[feat] >= 0 else "-"
+        bar  = "█" * max(1, int(abs(corr) * 30))
+        print(f"  {feat:<30s}  {sign}{bar} {corrs[feat]:+.3f}")
 
     return model, feature_cols
-
 
 # ---------------------------------------------------------------------------
 # ONNX export
 # ---------------------------------------------------------------------------
 
 def export_onnx(model, feature_cols: list[str], output_path: str):
-    """Export the sklearn model to ONNX. Requires skl2onnx + onnx packages."""
     try:
         from skl2onnx import convert_sklearn
         from skl2onnx.common.data_types import FloatTensorType
@@ -187,22 +276,20 @@ def export_onnx(model, feature_cols: list[str], output_path: str):
         return
 
     n = len(feature_cols)
+    # unwrap Pipeline if needed
+    export_model = model.named_steps["model"] if hasattr(model, "named_steps") else model
     proto = convert_sklearn(
-        model,
+        export_model,
         name="perf_fps_predictor",
         initial_types=[("input", FloatTensorType([None, n]))],
     )
     with open(output_path, "wb") as f:
         f.write(proto.SerializeToString())
 
-    print(f"\n── ONNX Export ────────────────────────────────────────────")
-    print(f"  Saved to:  {os.path.abspath(output_path)}")
-    print(f"  Input:     float32[N, {n}]")
-    print(f"  Features:  {feature_cols}")
-    print(f"  Output:    float32[N, 1]  (predicted FPS)")
-    print("\n  Load in Unity via Unity Sentis (ModelLoader.Load) to use")
-    print("  with IPerformancePredictor.")
-
+    print(f"\n── ONNX Export ─────────────────────────────────────────────")
+    print(f"  Saved:    {os.path.abspath(output_path)}")
+    print(f"  Input:    float32[N, {n}]  — {feature_cols}")
+    print(f"  Output:   float32[N, 1]   — predicted avg FPS")
 
 # ---------------------------------------------------------------------------
 # Entry point
@@ -210,36 +297,29 @@ def export_onnx(model, feature_cols: list[str], output_path: str):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="Train an FPS predictor from Unity Performance Intelligence captures."
+        description="Train a scene-composition → FPS predictor from Unity captures."
     )
-    parser.add_argument(
-        "--captures",
-        default=DEFAULT_CAPTURES_DIR,
-        metavar="DIR",
-        help=f"Path to Captures directory (default: {DEFAULT_CAPTURES_DIR})",
-    )
-    parser.add_argument(
-        "--export",
-        default=None,
-        metavar="FILE.onnx",
-        help="Export trained model to ONNX for Unity Sentis",
-    )
+    parser.add_argument("--captures", default=DEFAULT_CAPTURES_DIR, metavar="DIR")
+    parser.add_argument("--export", default=None, metavar="FILE.onnx")
     args = parser.parse_args()
 
-    print("Performance Intelligence — Training Pipeline")
+    print("Performance Intelligence — Training Pipeline v2")
     print("=" * 55)
+    print("Goal: predict FPS from scene composition (pre-run features)\n")
 
-    df      = load_captures(args.captures)
-    df      = clean(df)
-    usable  = report_availability(df, CANDIDATE_FEATURES)
-    model, feature_cols = train(df, usable)
+    df              = load_all_sessions(args.captures)
+    print(f"Loaded {len(df)} session(s)\n")
+    print_session_table(df)
+
+    feature_cols, clean_df = select_features(df)
+    model, feature_cols    = train(clean_df, feature_cols)
 
     if args.export:
         export_onnx(model, feature_cols, args.export)
 
     print("\nDone.")
     if not args.export:
-        print("Tip: add --export model.onnx to write an ONNX file for Unity Sentis.")
+        print("Tip: --export model.onnx to write an ONNX file for Unity Sentis.")
 
 
 if __name__ == "__main__":
