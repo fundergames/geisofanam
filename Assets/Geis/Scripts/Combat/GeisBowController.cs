@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 // Geis of Anam - Bow weapon controller.
 // Hold LT (aim) for shoulder camera + crosshair. While aiming with the bow equipped, RT draws the bow and
 // releasing RT looses an arrow. Returning from draw falls back to LT aim if still held, otherwise bow idle.

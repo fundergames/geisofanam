@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 // Geis of Anam - Weapon equipping via keys 1-4 (Unarmed, Knife, Sword, Bow).
 // Gamepad: D-pad up cycles to the next weapon.
 // Uses GeisWeaponDefinition[] as the single source for prefab, combo, and damage.
@@ -263,8 +276,12 @@ namespace Geis.Combat
 
             var def = weaponSlots[slotIndex];
             Transform parent = GetAttachmentParent(def);
-            if (SoulRealmManager.Instance != null &&
-                SoulRealmManager.Instance.TryGetSpectralWeaponAttachTransform(out Transform spectralHand))
+            if (SoulRealmManager.Instance != null
+                && SoulRealmManager.Instance.TryGetSpectralAttachmentTransform(
+                    _animator,
+                    parent,
+                    def != null ? def.AttachmentHand : WeaponAttachmentHand.RightHand,
+                    out Transform spectralHand))
                 parent = spectralHand;
 
             GameObject prefab = null;

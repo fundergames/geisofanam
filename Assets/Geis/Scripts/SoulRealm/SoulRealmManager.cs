@@ -1,5 +1,19 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 using System;
 using System.Collections.Generic;
+using Geis.Combat;
 using Geis.InputSystem;
 using Geis.Locomotion;
 using Geis.Puzzles;
@@ -95,10 +109,12 @@ namespace Geis.SoulRealm
 
         private Vector3 _bodyPositionAtEntry;
         private Quaternion _bodyRotationAtEntry;
+        private Transform _bodyFollowTargetAtEntry;
         private GameObject _spectralVisualInstance;
         private Transform _spectralMeshSourceRoot;
         private Animator _spectralAnimator;
-        private Transform _spectralWeaponAttach;
+        private Transform _spectralRightWeaponAttach;
+        private Transform _spectralLeftWeaponAttach;
 
         public bool IsSoulRealmActive => _isSoulRealm;
 
@@ -125,8 +141,9 @@ namespace Geis.SoulRealm
             }
 
             ownerTransform = bodyLocomotion != null ? bodyLocomotion.transform : transform;
-            originWorld = bodyLookAtTransform != null
-                ? bodyLookAtTransform.position
+            Transform bodyAbilityTarget = ResolveBodyFollowTarget();
+            originWorld = bodyAbilityTarget != null
+                ? bodyAbilityTarget.position
                 : ownerTransform.position + Vector3.up * 1.25f;
         }
 
@@ -350,11 +367,12 @@ namespace Geis.SoulRealm
                     if (cameraController != null)
                         cameraController.SetSoulRealmExitHoldProgress(p);
 
-                    if (_followPivot != null && _ghostLookAt != null && bodyLookAtTransform != null)
+                    Transform bodyReturnTarget = ResolveBodyFollowTarget();
+                    if (_followPivot != null && _ghostLookAt != null && bodyReturnTarget != null)
                     {
-                        _followPivot.transform.position = Vector3.Lerp(_ghostLookAt.position, bodyLookAtTransform.position, p);
+                        _followPivot.transform.position = Vector3.Lerp(_ghostLookAt.position, bodyReturnTarget.position, p);
                         _followPivot.transform.rotation =
-                            Quaternion.Slerp(_ghostLookAt.rotation, bodyLookAtTransform.rotation, p);
+                            Quaternion.Slerp(_ghostLookAt.rotation, bodyReturnTarget.rotation, p);
                     }
 
                     if (cameraController != null)
@@ -399,6 +417,7 @@ namespace Geis.SoulRealm
             _exitHoldTimer = 0f;
             _exitHoldHeld = false;
             _lastSoulRealmTapTime = -999f;
+            _bodyFollowTargetAtEntry = ResolveBodyFollowTarget();
 
             if (bodyLocomotion != null)
             {
@@ -546,17 +565,57 @@ namespace Geis.SoulRealm
             return true;
         }
 
-        /// <summary>Right-hand (or best effort) transform on the spectral rig for weapon prefabs in soul realm.</summary>
-        public bool TryGetSpectralWeaponAttachTransform(out Transform hand)
+        /// <summary>
+        /// Resolves the matching attachment on the spectral clone for a body attachment transform. Prefers the
+        /// exact cloned path first so custom prop sockets still work in soul realm, then falls back to hand-based
+        /// spectral sockets.
+        /// </summary>
+        public bool TryGetSpectralAttachmentTransform(
+            Animator bodyAnimSource,
+            Transform bodyAttachment,
+            WeaponAttachmentHand attachmentHand,
+            out Transform hand)
         {
-            hand = _spectralWeaponAttach;
+            hand = null;
+            if (!_isSoulRealm || _spectralAnimator == null)
+                return false;
+
+            if (bodyAttachment != null)
+            {
+                if (TryResolveSpectralCloneTransform(
+                        bodyAnimSource != null ? bodyAnimSource.transform : null,
+                        _spectralAnimator.transform,
+                        bodyAttachment,
+                        out hand))
+                    return true;
+
+                if (TryResolveSpectralCloneTransform(
+                        _spectralMeshSourceRoot,
+                        _spectralVisualInstance != null ? _spectralVisualInstance.transform : null,
+                        bodyAttachment,
+                        out hand))
+                    return true;
+            }
+
+            return TryGetSpectralWeaponAttachTransform(attachmentHand, out hand);
+        }
+
+        /// <summary>Hand-specific (or best-effort) transform on the spectral rig for weapon prefabs in soul realm.</summary>
+        public bool TryGetSpectralWeaponAttachTransform(WeaponAttachmentHand attachmentHand, out Transform hand)
+        {
+            hand = attachmentHand == WeaponAttachmentHand.LeftHand
+                ? _spectralLeftWeaponAttach
+                : _spectralRightWeaponAttach;
+            if (hand == null && attachmentHand == WeaponAttachmentHand.LeftHand)
+                hand = _spectralRightWeaponAttach;
             return _isSoulRealm && hand != null;
         }
 
         private void CacheSpectralAnimatorRefs(GameObject spectralInstance, Animator bodyAnimSource)
         {
             _spectralAnimator = null;
-            _spectralWeaponAttach = null;
+            _spectralRightWeaponAttach = null;
+            _spectralLeftWeaponAttach = null;
             if (spectralInstance == null)
                 return;
 
@@ -564,23 +623,112 @@ namespace Geis.SoulRealm
             if (_spectralAnimator == null)
                 return;
 
-            if (bodyAnimSource != null && bodyAnimSource.avatar != null && bodyAnimSource.avatar.isHuman)
+            _spectralRightWeaponAttach = ResolveSpectralWeaponAttach(
+                _spectralAnimator,
+                bodyAnimSource,
+                HumanBodyBones.RightHand,
+                RightHandSocketNames,
+                RightHandBoneNames);
+            _spectralLeftWeaponAttach = ResolveSpectralWeaponAttach(
+                _spectralAnimator,
+                bodyAnimSource,
+                HumanBodyBones.LeftHand,
+                LeftHandSocketNames,
+                LeftHandBoneNames);
+
+            if (_spectralLeftWeaponAttach == null)
+                _spectralLeftWeaponAttach = _spectralRightWeaponAttach;
+        }
+
+        private static readonly string[] RightHandSocketNames = { "Prop_R_Socket", "Prop_R" };
+        private static readonly string[] LeftHandSocketNames = { "Prop_L_Socket", "Prop_L" };
+        private static readonly string[] RightHandBoneNames = { "weapon_r", "hand_r", "Hand_R", "Weapon" };
+        private static readonly string[] LeftHandBoneNames = { "weapon_l", "hand_l", "Hand_L", "Weapon_L" };
+
+        private static Transform ResolveSpectralWeaponAttach(
+            Animator spectralAnimator,
+            Animator bodyAnimSource,
+            HumanBodyBones fallbackBone,
+            string[] socketNames,
+            string[] boneNames)
+        {
+            if (spectralAnimator == null)
+                return null;
+
+            Transform attach = FindFirstChildByNames(spectralAnimator.transform, socketNames);
+            if (attach == null)
+                attach = FindFirstChildByNames(spectralAnimator.transform, boneNames);
+
+            if (attach == null
+                && bodyAnimSource != null
+                && bodyAnimSource.avatar != null
+                && bodyAnimSource.avatar.isHuman)
             {
-                var bone = _spectralAnimator.GetBoneTransform(HumanBodyBones.RightHand);
-                if (bone != null)
-                    _spectralWeaponAttach = bone;
+                attach = spectralAnimator.GetBoneTransform(fallbackBone);
             }
 
-            if (_spectralWeaponAttach == null)
+            return attach;
+        }
+
+        private static Transform FindFirstChildByNames(Transform root, string[] names)
+        {
+            if (root == null || names == null)
+                return null;
+
+            for (int i = 0; i < names.Length; i++)
             {
-                var t = _spectralAnimator.transform.Find("weapon_r");
-                if (t == null) t = FindChildRecursive(_spectralAnimator.transform, "weapon_r");
-                if (t == null) t = FindChildRecursive(_spectralAnimator.transform, "Hand_R");
-                _spectralWeaponAttach = t;
+                Transform match = FindChildRecursive(root, names[i]);
+                if (match != null)
+                    return match;
             }
 
-            if (_spectralWeaponAttach == null)
-                _spectralWeaponAttach = _spectralAnimator.GetBoneTransform(HumanBodyBones.RightHand);
+            return null;
+        }
+
+        private static bool TryResolveSpectralCloneTransform(
+            Transform sourceRoot,
+            Transform cloneRoot,
+            Transform sourceTransform,
+            out Transform cloneTransform)
+        {
+            cloneTransform = null;
+            if (sourceRoot == null || cloneRoot == null || sourceTransform == null)
+                return false;
+            if (!IsSameOrChildOf(sourceTransform, sourceRoot))
+                return false;
+
+            string relativePath = BuildRelativePath(sourceRoot, sourceTransform);
+            cloneTransform = string.IsNullOrEmpty(relativePath)
+                ? cloneRoot
+                : cloneRoot.Find(relativePath);
+            return cloneTransform != null;
+        }
+
+        private static bool IsSameOrChildOf(Transform candidate, Transform root)
+        {
+            for (Transform current = candidate; current != null; current = current.parent)
+            {
+                if (current == root)
+                    return true;
+            }
+
+            return false;
+        }
+
+        private static string BuildRelativePath(Transform root, Transform leaf)
+        {
+            if (root == null || leaf == null || leaf == root)
+                return string.Empty;
+
+            var names = new List<string>();
+            for (Transform current = leaf; current != null && current != root; current = current.parent)
+                names.Add(current.name);
+
+            if (names.Count == 0)
+                return string.Empty;
+
+            names.Reverse();
+            return string.Join("/", names);
         }
 
         private static Transform FindChildRecursive(Transform root, string name)
@@ -643,7 +791,8 @@ namespace Geis.SoulRealm
             SoulSpectralGhostVisual.Despawn(_spectralVisualInstance);
             _spectralVisualInstance = null;
             _spectralAnimator = null;
-            _spectralWeaponAttach = null;
+            _spectralRightWeaponAttach = null;
+            _spectralLeftWeaponAttach = null;
 
             if (ghostRoot != null)
             {
@@ -662,16 +811,19 @@ namespace Geis.SoulRealm
             if (bodyLocomotion != null)
                 bodyLocomotion.PrepareBodyAfterSoulRealmExit();
 
-            if (cameraController != null && bodyLookAtTransform != null)
+            Transform bodyReturnTarget = ResolveBodyFollowTarget();
+            if (cameraController != null && bodyReturnTarget != null)
             {
-                cameraController.SetFollowTarget(bodyLookAtTransform);
+                cameraController.SetFollowTarget(bodyReturnTarget);
                 // Restore yaw/pitch from the pre-entry baseline so view direction snaps back cleanly, then re-anchor
                 // the orbit pivot to the body's CURRENT look-at. Otherwise the baseline's captured pivot world-pos can
                 // be slightly offset from where the body is now (ground ride, capsule settle, etc.) and LateUpdate
                 // smooths from the stale position toward the body — producing a visible drift (commonly downward).
                 cameraController.ApplySoulRealmBaselineSnapshot();
-                cameraController.SnapFollowPositionKeepView(bodyLookAtTransform);
+                cameraController.SnapFollowPositionKeepView(bodyReturnTarget);
             }
+
+            _bodyFollowTargetAtEntry = null;
 
             ApplyFreezeToWorld(false);
 
@@ -683,11 +835,12 @@ namespace Geis.SoulRealm
 
         private float ComputeExitSeparationDistance()
         {
-            if (_ghostLookAt == null || bodyLookAtTransform == null)
+            Transform bodyReturnTarget = ResolveBodyFollowTarget();
+            if (_ghostLookAt == null || bodyReturnTarget == null)
                 return exitHoldReferenceDistance;
 
             Vector3 a = _ghostLookAt.position;
-            Vector3 b = bodyLookAtTransform.position;
+            Vector3 b = bodyReturnTarget.position;
             if (exitHoldUseHorizontalDistance)
             {
                 a.y = 0f;
@@ -708,6 +861,20 @@ namespace Geis.SoulRealm
             float minD = Mathf.Max(1f, exitHoldMinDuration);
             float maxD = Mathf.Max(minD, exitHoldMaxDuration);
             return Mathf.Clamp(t, minD, maxD);
+        }
+
+        private Transform ResolveBodyFollowTarget()
+        {
+            if (_isSoulRealm && _bodyFollowTargetAtEntry != null)
+                return _bodyFollowTargetAtEntry;
+
+            if (_bodyFollowTargetAtEntry != null)
+                return _bodyFollowTargetAtEntry;
+
+            if (cameraController != null && cameraController.FollowTargetTransform != null)
+                return cameraController.FollowTargetTransform;
+
+            return bodyLookAtTransform;
         }
 
         private static void ApplyFreezeToWorld(bool frozen)

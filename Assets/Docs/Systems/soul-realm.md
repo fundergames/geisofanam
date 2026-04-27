@@ -14,9 +14,11 @@ Soul realm mode (ghost vs. frozen body), world freeze hooks, weapon-bound supern
 - **Singleton**: `Instance`; raises static `SoulRealmStateChanged` when entering/exiting (puzzles, ability controller, presentation subscribe).
 - **State**: `IsSoulRealmActive`, `SoulRealmBlend` (0/1), exit hold progress APIs (`SoulRealmExitHoldProgress01`, `IsSoulRealmExitHoldInProgress`, etc.).
 - **Movement**: `AllowGhostMovement` — during enter grace, ghost can move; after grace, holding **SoulRealm** input blocks ghost movement (exit path). Body locomotion suppressed via `ShouldSuppressBodyLocomotion` while active.
+- **Camera return target**: On entry, capture the camera controller's current follow target and use that same transform for exit-hold interpolation and final restore. Do not reconstruct the return pivot from a separate look-at lookup, or the camera can fall back to the body root/feet on exit.
 - **Abilities / VFX origin**: `GetAbilityContextTransforms(out ownerTransform, out originWorld)` — in soul realm uses **ghost** root and chest-height style origin; otherwise body locomotion and look-at. **Weapon ability activation** should use this when the manager exists.
 - **Freeze registry**: `SoulRealmFreezeTarget` list for selective world freeze (implementation detail in manager code).
 - **Delta time**: Internal cap `SoulRealmMaxDeltaPerFrame` on soul-realm timers to avoid huge `deltaTime` spikes completing exit in one frame.
+- **Spectral weapon attachment**: `TryGetSpectralAttachmentTransform(...)` should mirror the chosen body attachment transform onto the spectral clone first so custom prop sockets/binders survive realm switching; only fall back to left/right hand socket lookup when no cloned match exists.
 
 ### Realm-scoped simulation (`RealmSimulation`)
 
@@ -92,5 +94,7 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Changelog
 
+- **2026-04-27**: Spectral weapon attachment now mirrors the body rig's attachment transform onto the spectral clone before falling back to left/right hand lookup, fixing soul-realm parenting on models that do not share the same prop-bone binder setup.
+- **2026-04-27**: Soul-realm exit now reuses the camera's captured pre-entry follow target for hold lerp and final restore, fixing occasional feet-level camera framing after returning to the body.
 - **2026-04-02**: Spectral locomotion uses ghost grounded (not body’s frozen Jump/Fall state) for air vs ground animator blend; ghost syncs vertical velocity on entry; grounded refreshed after teleport to body.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.

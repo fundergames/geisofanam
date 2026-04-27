@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 // Geis of Anam - Copy of Synty SamplePlayerAnimationController as starting point.
 // Original: Synty.AnimationBaseLocomotion.Samples.SamplePlayerAnimationController
 
@@ -469,6 +482,7 @@ namespace Geis.Locomotion
         private GaitState _currentGait;
         [SerializeField] private LockOnIndicator _lockOnIndicator;
         private Transform _targetLockOnPos;
+        private bool _ownsTargetLockOnPos;
         private Vector3 _currentRotation = new Vector3(0f, 0f, 0f);
         private Vector3 _moveDirection;
         private Vector3 _previousRotation;
@@ -561,7 +575,7 @@ namespace Geis.Locomotion
 
         /// <summary>Same value as the <c>IsStrafing</c> animator float — for spectral mirror / tooling.</summary>
         public bool LocomotionAnimatorUsesStrafeStyle => UseStrafeStyleLocomotionFacing;
-        /// <summary>True while aim (LT) is held — used by bow / ranged.</summary>
+        /// <summary>True while aim (LT) is held. Melee weapons may still set this, so camera-specific behavior should prefer bow-gated helpers.</summary>
         public bool IsAiming => _isAiming;
 
         /// <summary>True while bow RT is held (draw). Drives optional <c>BowDrawing</c> / <c>BowDrawCharge</c> animator parameters.</summary>
@@ -573,9 +587,13 @@ namespace Geis.Locomotion
         /// <summary>0–1 bow draw charge from <see cref="SetBowDrawState"/> — mirrored onto the spectral animator in soul realm.</summary>
         public float BowDrawChargeNormalized => _bowDrawCharge;
 
-        private bool IsBowEquipped =>
+        /// <summary>True when the currently equipped weapon definition is the bow.</summary>
+        public bool IsBowEquipped =>
             _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponDefinition != null
             && _weaponSwitcher.CurrentWeaponDefinition.IsBowWeapon;
+
+        /// <summary>True when the camera should use the tighter aim shoulder rig/FOV.</summary>
+        public bool ShouldUseBowAimZoom => IsBowEquipped && _isAiming;
 
         private bool IsBowMovementForcedWalk =>
             IsBowEquipped && (_isAiming || _isBowDrawing);
@@ -693,16 +711,7 @@ namespace Geis.Locomotion
         {
             EnsurePersistentLockOnIndicator();
 
-            _targetLockOnPos = _cameraController != null ? _cameraController.LockOnTargetTransform : null;
-            if (_targetLockOnPos == null)
-                _targetLockOnPos = transform.Find("TargetLockOnPos");
-            if (_targetLockOnPos == null)
-            {
-                var go = new GameObject("TargetLockOnPos");
-                go.transform.SetParent(transform);
-                go.transform.localPosition = Vector3.zero;
-                _targetLockOnPos = go.transform;
-            }
+            _targetLockOnPos = EnsureWorldSpaceLockOnAnchor();
 
             _inputReader.onLockOnToggled += ToggleLockOn;
             _inputReader.onLockOnCycleLeft += CycleLockOnLeft;
@@ -758,6 +767,25 @@ namespace Geis.Locomotion
         }
 
         /// <summary>
+        /// Uses a detached helper for lock-on so root motion on the player never drags the world-space reticle anchor.
+        /// </summary>
+        private Transform EnsureWorldSpaceLockOnAnchor()
+        {
+            Transform existingAnchor = _cameraController != null ? _cameraController.LockOnTargetTransform : null;
+            if (existingAnchor != null && existingAnchor.parent == null)
+            {
+                _ownsTargetLockOnPos = false;
+                return existingAnchor;
+            }
+
+            Vector3 initialPosition = existingAnchor != null ? existingAnchor.position : transform.position;
+            var go = new GameObject("TargetLockOnPos_Runtime");
+            go.transform.position = initialPosition;
+            _ownsTargetLockOnPos = true;
+            return go.transform;
+        }
+
+        /// <summary>
         /// Called by <see cref="Geis.Combat.GeisBowController"/> while RT is held. Add Bool <c>BowDrawing</c> and optional Float <c>BowDrawCharge</c> (0–1) on the Animator for draw clips / blend trees.
         /// Add Bool <c>BowAiming</c> for LT + bow equipped (Synty ToAiming / aim hold / ToBowDown on the Bow_Draw layer).
         /// Optional Bool <c>BowChargedShotReady</c> can drive a charged-shot shake pose once the draw has fully charged.
@@ -785,6 +813,12 @@ namespace Geis.Locomotion
                 Destroy(_comboOverrideController);
                 _comboOverrideController = null;
             }
+
+            if (_ownsTargetLockOnPos && _targetLockOnPos != null)
+            {
+                Destroy(_targetLockOnPos.gameObject);
+                _targetLockOnPos = null;
+            }
         }
 
         /// <summary>
@@ -795,6 +829,14 @@ namespace Geis.Locomotion
         {
             if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.ShouldSuppressBodyLocomotion)
                 return;
+
+            // Combo attacks own the player's grounded commitment window; jump presses during Attack should be ignored
+            // instead of being buffered and leaking into the post-combo locomotion/fall transition.
+            if (_currentState == AnimationState.Attack)
+            {
+                _jumpBufferedAt = -1f;
+                return;
+            }
 
             _jumpBufferedAt = Time.unscaledTime;
 
@@ -1520,6 +1562,7 @@ namespace Geis.Locomotion
             _velocity.x = 0f;
             _velocity.z = 0f;
             ClearMovementInputStateForAttack();
+            _jumpBufferedAt = -1f;
 
             if (_useDataDrivenCombo && _animator != null && HasAnimatorParameter("Attack")
                 && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState")))

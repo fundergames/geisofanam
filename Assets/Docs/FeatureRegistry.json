@@ -1,5 +1,16 @@
 [
   {
+    "slug": "combo-jump-lockout",
+    "title": "Gameplay: lock jump during melee combos",
+    "type": "system-feature",
+    "status": "qa_ready",
+    "owner": "QA",
+    "next_owner": "Approved",
+    "priority": "medium",
+    "doc": "Assets/Docs/Features/combo-jump-lockout.md",
+    "last_updated": "2026-04-27"
+  },
+  {
     "slug": "forest-guardian",
     "title": "Enemy: Forest Guardian",
     "type": "enemy",

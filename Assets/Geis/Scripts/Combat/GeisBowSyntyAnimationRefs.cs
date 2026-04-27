@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 // Geis of Anam — Reference for Synty AnimationBowCombat (Polygon) assets used with bow gameplay.
 // PDF: Assets/Synty/AnimationBowCombat/Documentation/ANIMATION_BowCombat_UserGuide.pdf
 

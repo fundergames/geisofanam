@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -47,6 +60,8 @@ namespace Geis.Combat.Editor
         private string _previewMessage = "Build a preview path with Light/Heavy inputs.";
         private int _previewSelectedStep;
         private float _previewNormalizedTime;
+        private bool _previewTimeDrivenByScrub;
+        [SerializeField] private bool _loopIdlePreview = true;
         private bool _loopPreview;
         private bool _playingPreview;
         private readonly List<int> _playbackStates = new List<int>();
@@ -445,6 +460,9 @@ namespace Geis.Combat.Editor
             if (_playingPreview && _previewStates.Count > 0 && _previewSelectedStep >= 0 && _previewSelectedStep < _previewStates.Count)
                 return Mathf.Repeat(_previewNormalizedTime, 1f);
 
+            if (_previewTimeDrivenByScrub || !_loopIdlePreview)
+                return Mathf.Clamp01(_previewNormalizedTime);
+
             double loopedTime = EditorApplication.timeSinceStartup % clipLength;
             return Mathf.Clamp01((float)(loopedTime / clipLength));
         }
@@ -721,6 +739,7 @@ namespace Geis.Combat.Editor
             if (GUILayout.Button("Sample Selected State"))
             {
                 _previewSelectedStep = Mathf.Max(0, _previewStates.FindIndex(state => state == _selectedState));
+                _previewTimeDrivenByScrub = true;
                 SampleState(_selectedState, _previewNormalizedTime);
             }
 
@@ -741,7 +760,15 @@ namespace Geis.Combat.Editor
             EditorGUI.BeginChangeCheck();
             _previewNormalizedTime = EditorGUILayout.Slider("Normalized Time", _previewNormalizedTime, 0f, 1f);
             if (EditorGUI.EndChangeCheck())
+            {
+                _previewTimeDrivenByScrub = true;
                 SamplePreviewState(_previewNormalizedTime);
+            }
+
+            _loopIdlePreview = EditorGUILayout.ToggleLeft(
+                new GUIContent("Loop animation when not scrubbing"),
+                _loopIdlePreview,
+                EditorStyles.miniLabel);
 
             if (_previewTarget == null)
             {
@@ -1561,6 +1588,7 @@ namespace Geis.Combat.Editor
             _playbackStepIndex = 0;
             _playbackStepStartedAt = EditorApplication.timeSinceStartup;
             _playingPreview = true;
+            _previewTimeDrivenByScrub = false;
             _previewSelectedStep = 0;
             SampleState(_playbackStates[0], 0f);
         }
@@ -1616,7 +1644,10 @@ namespace Geis.Combat.Editor
 
         private bool ShouldAnimateSelectedNodePreview()
         {
-            return _previewTarget != null && GetClipForStateSerialized(_selectedState) != null;
+            return !_previewTimeDrivenByScrub
+                && _loopIdlePreview
+                && _previewTarget != null
+                && GetClipForStateSerialized(_selectedState) != null;
         }
 
         private float GetPlaybackAdvanceTime(int state, float clipDuration)
@@ -1650,6 +1681,8 @@ namespace Geis.Combat.Editor
 
         private void SamplePreviewState(float normalizedTime)
         {
+            _previewTimeDrivenByScrub = true;
+
             if (_previewStates.Count == 0)
             {
                 SampleState(_selectedState, normalizedTime);

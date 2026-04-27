@@ -1,3 +1,16 @@
+/*
+ * Copyright (c) 2026 Funder Games
+ *
+ * All rights reserved.
+ *
+ * This software and associated documentation files are proprietary and confidential.
+ * Unauthorized copying, modification, distribution, or use of this software,
+ * via any medium, is strictly prohibited without explicit written permission.
+ *
+ * This code is provided for personal use only by authorized recipients.
+ * It may not be redistributed, sublicensed, or sold in any form.
+ */
+
 // Geis of Anam - Copy of Synty SampleCameraController as starting point.
 // Original: Synty.AnimationBaseLocomotion.Samples.SampleCameraController
 
@@ -422,7 +435,7 @@ namespace Geis.Locomotion
             float targetH = _cameraHorizontalOffset;
             float targetHeight = _cameraHeightOffset;
             float targetFov = _defaultFieldOfView;
-            if (_enableAimShoulderZoom && _playerAnimation != null && _playerAnimation.IsAiming)
+            if (_enableAimShoulderZoom && _playerAnimation != null && _playerAnimation.ShouldUseBowAimZoom)
             {
                 targetRigDist = Mathf.Max(0.35f, _aimShoulderCameraDistance);
                 targetH = _cameraHorizontalOffset + _aimShoulderHorizontalOffset;
@@ -464,6 +477,9 @@ namespace Geis.Locomotion
 
         /// <summary>Authoritative world-space lock-on pivot used by the Geis camera.</summary>
         public Transform LockOnTargetTransform => _lockOnTarget;
+
+        /// <summary>Current orbit follow pivot that soul-realm transitions should restore to on exit.</summary>
+        public Transform FollowTargetTransform => _playerTarget;
 
         /// <summary>Gameplay camera used for screen-space VFX (e.g. soul-realm exit hold).</summary>
         public Camera MainCamera => _mainCamera;
