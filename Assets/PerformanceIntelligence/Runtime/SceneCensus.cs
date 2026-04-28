@@ -47,8 +47,18 @@ namespace PerformanceIntelligence
         /// for one-shot editor/tool use, not per-frame runtime calls.
         /// </summary>
         public long estimatedTriangleCount;
+        public int unreadableMeshCount;
 
         // ──────────────────────────────────────────────────────────────────────
+
+        private static T[] FindObjectsCompat<T>() where T : UnityEngine.Object
+        {
+#if UNITY_2022_2_OR_NEWER
+            return UnityEngine.Object.FindObjectsByType<T>(FindObjectsSortMode.None);
+#else
+            return UnityEngine.Object.FindObjectsOfType<T>();
+#endif
+        }
 
         /// <summary>
         /// Scans the currently active scene and returns a populated <see cref="SceneCensus"/>.
@@ -63,19 +73,19 @@ namespace PerformanceIntelligence
             };
 
             // Active GameObjects (FindObjectsByType only returns active objects by default)
-            var allGOs = FindObjectsByType<GameObject>(FindObjectsSortMode.None);
+            var allGOs = FindObjectsCompat<GameObject>();
             census.activeGameObjects = allGOs.Length;
 
             // Renderer types
-            var renderers = FindObjectsByType<Renderer>(FindObjectsSortMode.None);
+            var renderers = FindObjectsCompat<Renderer>();
             census.activeRenderers      = renderers.Length;
-            census.meshRenderers        = FindObjectsByType<MeshRenderer>(FindObjectsSortMode.None).Length;
-            census.skinnedMeshRenderers = FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None).Length;
+            census.meshRenderers        = FindObjectsCompat<MeshRenderer>().Length;
+            census.skinnedMeshRenderers = FindObjectsCompat<SkinnedMeshRenderer>().Length;
 
-            census.particleSystems = FindObjectsByType<ParticleSystem>(FindObjectsSortMode.None).Length;
+            census.particleSystems = FindObjectsCompat<ParticleSystem>().Length;
 
             // Lights
-            var allLights = FindObjectsByType<Light>(FindObjectsSortMode.None);
+            var allLights = FindObjectsCompat<Light>();
             census.lights = allLights.Length;
             int realtimeCount = 0, shadowCount = 0;
             foreach (var light in allLights)
@@ -87,11 +97,11 @@ namespace PerformanceIntelligence
             census.shadowCastingLights = shadowCount;
 
             // Scene components
-            census.cameras    = FindObjectsByType<Camera>(FindObjectsSortMode.None).Length;
-            census.canvases   = FindObjectsByType<Canvas>(FindObjectsSortMode.None).Length;
-            census.rigidbodies = FindObjectsByType<Rigidbody>(FindObjectsSortMode.None).Length;
-            census.colliders  = FindObjectsByType<Collider>(FindObjectsSortMode.None).Length;
-            census.animators  = FindObjectsByType<Animator>(FindObjectsSortMode.None).Length;
+            census.cameras    = FindObjectsCompat<Camera>().Length;
+            census.canvases   = FindObjectsCompat<Canvas>().Length;
+            census.rigidbodies = FindObjectsCompat<Rigidbody>().Length;
+            census.colliders  = FindObjectsCompat<Collider>().Length;
+            census.animators  = FindObjectsCompat<Animator>().Length;
 
             // Unique materials and shaders
             var matSet = new HashSet<Material>();
@@ -111,15 +121,43 @@ namespace PerformanceIntelligence
 
             // Estimated triangle count from mesh data
             long triCount = 0;
-            foreach (var mf in FindObjectsByType<MeshFilter>(FindObjectsSortMode.None))
-                if (mf.sharedMesh != null)
-                    triCount += mf.sharedMesh.triangles.Length / 3;
-            foreach (var smr in FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None))
-                if (smr.sharedMesh != null)
-                    triCount += smr.sharedMesh.triangles.Length / 3;
+            int unreadableMeshes = 0;
+            foreach (var mf in FindObjectsCompat<MeshFilter>())
+            {
+                if (mf.sharedMesh == null) continue;
+                triCount += TryGetTriangleCount(mf.sharedMesh, ref unreadableMeshes);
+            }
+            foreach (var smr in FindObjectsCompat<SkinnedMeshRenderer>())
+            {
+                if (smr.sharedMesh == null) continue;
+                triCount += TryGetTriangleCount(smr.sharedMesh, ref unreadableMeshes);
+            }
             census.estimatedTriangleCount = triCount;
+            census.unreadableMeshCount = unreadableMeshes;
 
             return census;
+        }
+
+        private static int TryGetTriangleCount(Mesh mesh, ref int unreadableMeshes)
+        {
+            if (mesh == null) return 0;
+
+            // Non-readable meshes are common in shipping content; skip without log spam.
+            if (!mesh.isReadable)
+            {
+                unreadableMeshes++;
+                return 0;
+            }
+
+            try
+            {
+                return mesh.triangles.Length / 3;
+            }
+            catch
+            {
+                unreadableMeshes++;
+                return 0;
+            }
         }
     }
 }

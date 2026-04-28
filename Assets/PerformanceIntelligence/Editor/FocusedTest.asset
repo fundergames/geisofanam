@@ -1,0 +1,39 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a63987ae31c4445db8d780a9b2faa819, type: 3}
+  m_Name: FocusedTest
+  m_EditorClassIdentifier: PerformanceIntelligence.Runtime::PerformanceIntelligence.Testing.PerformanceTestConfig
+  sceneTests:
+  - enabled: 1
+    sceneName: Demo_Layout_Houses_With_Interiors
+    scenePath: Assets/External/Synty/PolygonFantasyKingdom/Scenes/Demo_Layout_Houses_With_Interiors.unity
+    cameraPaths: []
+    notes: 
+    sceneAsset: {fileID: 102900000, guid: 8628dfddd4d59ab42a0f10d2359cf19f, type: 3}
+  - enabled: 1
+    sceneName: Demo_ExteriorOnly_Optimized
+    scenePath: Assets/External/Synty/PolygonFantasyKingdom/Scenes/Demo_ExteriorOnly_Optimized.unity
+    cameraPaths: []
+    notes: 
+    sceneAsset: {fileID: 102900000, guid: 5840491f9dde1b349bd9dde4b6f2d7b7, type: 3}
+  qualityPresets:
+  - {fileID: 11400000, guid: ea791356b8493450f8420f913a79b614, type: 2}
+  - {fileID: 11400000, guid: 0fe218eabc4d141b6bb1918672273855, type: 2}
+  - {fileID: 11400000, guid: 9a0499bde41c24298b867c1e675d5216, type: 2}
+  runsPerConfiguration: 3
+  warmupDurationSeconds: 2
+  captureDurationSeconds: 10
+  outputFolder: Assets/PerformanceIntelligence/Data/Captures
+  runInEditorPlayMode: 1
+  exportCsv: 1
+  exportJson: 1
+  generateMarkdownReport: 1

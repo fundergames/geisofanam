@@ -23,6 +23,7 @@ import glob
 import json
 import os
 import sys
+from typing import Optional
 
 import numpy as np
 import pandas as pd
@@ -30,7 +31,7 @@ from sklearn.linear_model import Ridge
 from sklearn.ensemble import GradientBoostingRegressor
 from sklearn.model_selection import LeaveOneOut, cross_val_score
 from sklearn.metrics import mean_absolute_error, r2_score
-from sklearn.preprocessing import StandardScaler
+from sklearn.preprocessing import RobustScaler, FunctionTransformer
 from sklearn.pipeline import Pipeline
 
 # ---------------------------------------------------------------------------
@@ -75,11 +76,21 @@ DEFAULT_CAPTURES_DIR = os.path.normpath(
                  "Assets", "PerformanceIntelligence", "Data", "Captures")
 )
 
+
+def _log1p_nonnegative(X):
+    """
+    Stabilize heavy-tailed count features before scaling.
+    Scene census metrics are counts/estimates and should be >= 0, but we clip
+    defensively to avoid invalid values if malformed input slips in.
+    """
+    X = np.asarray(X, dtype=np.float64)
+    return np.log1p(np.clip(X, a_min=0.0, a_max=None))
+
 # ---------------------------------------------------------------------------
 # Loading
 # ---------------------------------------------------------------------------
 
-def load_session(session_dir: str) -> dict | None:
+def load_session(session_dir: str) -> Optional[dict]:
     """
     Load one session directory.
     Returns a dict with scene census fields + avg FPS, or None if unusable.
@@ -91,7 +102,7 @@ def load_session(session_dir: str) -> dict | None:
         return None
 
     # ── Scene census from JSON ────────────────────────────────────────────
-    with open(json_path, encoding="utf-8") as f:
+    with open(json_path, encoding="utf-8-sig") as f:
         raw = json.load(f)
 
     sc = raw.get("sceneCensus") or {}
@@ -190,7 +201,10 @@ def select_features(df: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
     if dropped:
         print(f"Dropped {len(dropped)} constant/incomplete feature(s): {sorted(dropped)}")
 
-    return varied, df[varied + [TARGET_COL]].dropna()
+    keep_cols = varied + [TARGET_COL]
+    if "sceneName" in df.columns:
+        keep_cols.append("sceneName")
+    return varied, df[keep_cols].dropna()
 
 # ---------------------------------------------------------------------------
 # Training
@@ -199,7 +213,11 @@ def select_features(df: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
 def choose_model(n_samples: int):
     """Ridge for small N, gradient boosting for larger datasets."""
     if n_samples < 40:
-        return Pipeline([("scaler", StandardScaler()), ("model", Ridge(alpha=1.0))])
+        return Pipeline([
+            ("log1p", FunctionTransformer(_log1p_nonnegative, validate=False)),
+            ("scaler", RobustScaler(quantile_range=(10.0, 90.0))),
+            ("model", Ridge(alpha=1.0, solver="svd")),
+        ])
     return GradientBoostingRegressor(n_estimators=100, max_depth=3, random_state=42)
 
 
@@ -220,22 +238,29 @@ def train(df: pd.DataFrame, feature_cols: list[str]):
     model_name = "Ridge regression" if n < 40 else "Gradient Boosting"
     print(f"Model: {model_name} (auto-selected for n={n})\n")
 
-    # Cross-validation: LOOCV for small N, 5-fold for larger
+    # Cross-validation: LOOCV for small N, 5-fold for larger.
+    # R² is undefined for single-sample test folds (LOOCV), so use MAE there.
     if n < 20:
         cv = LeaveOneOut()
-        cv_label = "leave-one-out"
+        cv_label = "leave-one-out MAE"
+        cv_metric = "neg_mean_absolute_error"
     else:
         cv = min(5, n // 4)
-        cv_label = f"{cv}-fold"
+        cv_label = f"{cv}-fold R²"
+        cv_metric = "r2"
 
-    cv_scores = cross_val_score(model, X, y, cv=cv, scoring="r2")
+    cv_scores = cross_val_score(model, X, y, cv=cv, scoring=cv_metric)
 
     # Final fit on all data for feature importances
     model.fit(X, y)
     y_pred = model.predict(X)
 
     print("── Evaluation ─────────────────────────────────────────────")
-    print(f"  CV R² ({cv_label}):    {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
+    if n < 20:
+        cv_mae = -cv_scores
+        print(f"  CV MAE ({cv_label}):   {cv_mae.mean():.1f} ± {cv_mae.std():.1f} fps")
+    else:
+        print(f"  CV R² ({cv_label}):    {cv_scores.mean():.3f} ± {cv_scores.std():.3f}")
     print(f"  Train R²:              {r2_score(y, y_pred):.3f}  (in-sample, informational)")
     print(f"  Train MAE:             {mean_absolute_error(y, y_pred):.1f} fps")
 
