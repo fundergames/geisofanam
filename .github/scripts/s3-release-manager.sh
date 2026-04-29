@@ -70,7 +70,7 @@ s3_get_if_exists() {
 json_field_or_empty() {
   local file="$1"
   local field="$2"
-  python - "$file" "$field" <<'PY'
+  python3 - "$file" "$field" <<'PY'
 import json
 import sys
 

@@ -7,6 +7,7 @@ Unity project consuming **Funder Core** via the Package Manager.
 This repository now includes modular GitHub Actions workflows and a reusable script:
 
 - `.github/workflows/unity-webgl-s3.yml`
+- `.github/workflows/reusable-unity-webgl-release.yml`
 - `.github/workflows/promote-webgl-release.yml`
 - `.github/workflows/rollback-webgl-release.yml`
 - `.github/scripts/s3-release-manager.sh`
@@ -41,6 +42,40 @@ Optional channel copy (for simple hosting/CDN setups):
    - Rolls back selected environment to prior history entry
    - Updates `current.json`, keeps rollback in history trail
 
+### Reusable workflow entrypoint
+
+- `reusable-unity-webgl-release.yml` exposes this pipeline via `workflow_call` so other repositories can reuse it.
+- `unity-webgl-s3.yml` is now just a thin caller with this repo's defaults.
+
+Minimal example for another repo (after copying `reusable-unity-webgl-release.yml` and `s3-release-manager.sh` into that repo):
+
+```yaml
+name: Build and Release WebGL
+
+on:
+  push:
+    branches: [main, dev, staging]
+  workflow_dispatch:
+
+jobs:
+  webgl-release:
+    uses: ./.github/workflows/reusable-unity-webgl-release.yml
+    with:
+      unity_project_path: .
+      unity_build_name: MyGameWebGL
+      aws_region: us-east-1
+      aws_s3_bucket: your-bucket
+      aws_s3_prefix: your-game/webgl
+      aws_s3_keep_builds: "8"
+    secrets:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+```
+
 ### Suggested flow
 
 - Developers publish builds from feature branches/manual runs, then promote to `dev`
@@ -58,7 +93,7 @@ Set these repository **Variables**:
 - `AWS_S3_KEEP_BUILDS` (optional, default `10`): how many historical builds to retain
 - `AWS_ROLE_TO_ASSUME` (optional but recommended): IAM role ARN for GitHub OIDC
 - `AWS_RELEASE_ENVIRONMENTS` (optional, default `dev,staging,production`): environments to protect during prune
-- `RELEASE_COPY_TO_CHANNEL` (optional, default `false`): copy promoted build to `channels/<env>/latest/`
+- `AWS_RELEASE_COPY_TO_CHANNEL` (optional, default `false`): copy promoted build to `channels/<env>/latest/`
 
 Set either:
 
