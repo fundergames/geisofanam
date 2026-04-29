@@ -1,9 +1,12 @@
-name: Unity WebGL Build and Deploy to S3
+name: Unity WebGL Build and Release
 
 on:
   push:
     branches:
       - main
+      - dev
+      - develop
+      - staging
   workflow_dispatch:
     inputs:
       keep_builds:
@@ -14,6 +17,21 @@ on:
         description: Optional S3 key prefix override
         required: false
         type: string
+      target_environment:
+        description: Promote build to environment after publish
+        required: false
+        type: choice
+        default: none
+        options:
+          - none
+          - dev
+          - staging
+          - production
+      copy_to_channel:
+        description: Copy promoted build into channels/<env>/latest
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -53,7 +71,7 @@ jobs:
         with:
           targetPlatform: WebGL
           unityVersion: ${{ steps.unity_version.outputs.version }}
-          buildName: GeisofanamWebGL
+          buildName: ${{ vars.UNITY_WEBGL_BUILD_NAME || 'WebGLBuild' }}
 
       - name: Upload WebGL build artifact
         uses: actions/upload-artifact@v4
@@ -63,7 +81,7 @@ jobs:
           if-no-files-found: error
 
   deploy-to-s3:
-    name: Deploy to S3 and prune old builds
+    name: Publish build and optionally promote
     runs-on: ubuntu-latest
     needs: build-webgl
     if: ${{ needs.build-webgl.result == 'success' }}
@@ -75,7 +93,12 @@ jobs:
       AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
       AWS_S3_PREFIX: ${{ vars.AWS_S3_PREFIX }}
       AWS_S3_KEEP_BUILDS: ${{ vars.AWS_S3_KEEP_BUILDS || '10' }}
+      AWS_RELEASE_ENVIRONMENTS: ${{ vars.AWS_RELEASE_ENVIRONMENTS || 'dev,staging,production' }}
+      RELEASE_COPY_TO_CHANNEL: ${{ vars.AWS_RELEASE_COPY_TO_CHANNEL || 'false' }}
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Download WebGL build artifact
         uses: actions/download-artifact@v4
         with:
@@ -106,7 +129,14 @@ jobs:
           fi
           aws sts get-caller-identity >/dev/null
 
-      - name: Publish build and prune old versions
+      - name: Compute immutable build ID
+        id: build_id
+        shell: bash
+        run: |
+          BUILD_ID="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable build and prune old versions
         shell: bash
         env:
           INPUT_KEEP_BUILDS: ${{ github.event.inputs.keep_builds }}
@@ -114,64 +144,48 @@ jobs:
         run: |
           set -euo pipefail
 
-          # Use workflow inputs when provided, otherwise fall back to repo variables.
-          KEEP_BUILDS="${INPUT_KEEP_BUILDS:-$AWS_S3_KEEP_BUILDS}"
-          DEPLOY_PREFIX="${INPUT_DEPLOY_PREFIX:-$AWS_S3_PREFIX}"
-
-          if ! [[ "$KEEP_BUILDS" =~ ^[0-9]+$ ]]; then
-            echo "::error::keep_builds must be a non-negative integer."
-            exit 1
+          if [ -n "${INPUT_KEEP_BUILDS:-}" ]; then
+            export AWS_S3_KEEP_BUILDS="$INPUT_KEEP_BUILDS"
+          fi
+          if [ -n "${INPUT_DEPLOY_PREFIX:-}" ]; then
+            export DEPLOY_PREFIX_OVERRIDE="$INPUT_DEPLOY_PREFIX"
           fi
 
-          DEPLOY_PREFIX="${DEPLOY_PREFIX#/}"
-          DEPLOY_PREFIX="${DEPLOY_PREFIX%/}"
+          export BUILD_ID="${{ steps.build_id.outputs.build_id }}"
+          bash .github/scripts/s3-release-manager.sh publish
 
-          if [ -n "$DEPLOY_PREFIX" ]; then
-            ROOT_PREFIX="$DEPLOY_PREFIX/"
+      - name: Resolve promotion target
+        id: promote_target
+        shell: bash
+        env:
+          INPUT_TARGET_ENV: ${{ github.event.inputs.target_environment }}
+        run: |
+          set -euo pipefail
+
+          if [ -n "${INPUT_TARGET_ENV:-}" ] && [ "$INPUT_TARGET_ENV" != "none" ]; then
+            target="$INPUT_TARGET_ENV"
           else
-            ROOT_PREFIX=""
+            case "$GITHUB_REF" in
+              refs/heads/dev|refs/heads/develop) target="dev" ;;
+              refs/heads/staging) target="staging" ;;
+              *) target="none" ;;
+            esac
           fi
 
-          BUILD_ID="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
-          BUILD_PREFIX="${ROOT_PREFIX}builds/${BUILD_ID}"
-          LATEST_PREFIX="${ROOT_PREFIX}latest"
-          BUILDS_ROOT="${ROOT_PREFIX}builds/"
+          echo "target=$target" >> "$GITHUB_OUTPUT"
 
-          aws s3 sync build/WebGL "s3://${AWS_S3_BUCKET}/${BUILD_PREFIX}/" --delete
-          aws s3 sync build/WebGL "s3://${AWS_S3_BUCKET}/${LATEST_PREFIX}/" --delete
+      - name: Promote build to release environment
+        if: ${{ steps.promote_target.outputs.target != 'none' }}
+        shell: bash
+        env:
+          INPUT_COPY_TO_CHANNEL: ${{ github.event.inputs.copy_to_channel }}
+        run: |
+          set -euo pipefail
 
-          metadata_file="$(mktemp)"
-          printf '{\n  "buildId": "%s",\n  "commit": "%s",\n  "runUrl": "%s/%s/actions/runs/%s",\n  "publishedAt": "%s"\n}\n' \
-            "$BUILD_ID" \
-            "$GITHUB_SHA" \
-            "$GITHUB_SERVER_URL" \
-            "$GITHUB_REPOSITORY" \
-            "$GITHUB_RUN_ID" \
-            "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$metadata_file"
-          aws s3 cp "$metadata_file" "s3://${AWS_S3_BUCKET}/${BUILD_PREFIX}/build-metadata.json"
-          rm -f "$metadata_file"
-
-          mapfile -t BUILD_PREFIXES < <(
-            aws s3api list-objects-v2 \
-              --bucket "$AWS_S3_BUCKET" \
-              --prefix "$BUILDS_ROOT" \
-              --delimiter "/" \
-              --query 'CommonPrefixes[].Prefix' \
-              --output text \
-            | tr '\t' '\n' \
-            | awk 'NF' \
-            | sort
-          )
-
-          total="${#BUILD_PREFIXES[@]}"
-          if [ "$total" -gt "$KEEP_BUILDS" ]; then
-            to_delete=$((total - KEEP_BUILDS))
-            for ((i=0; i<to_delete; i++)); do
-              old_prefix="${BUILD_PREFIXES[$i]}"
-              echo "Deleting old build prefix: ${old_prefix}"
-              aws s3 rm "s3://${AWS_S3_BUCKET}/${old_prefix}" --recursive
-            done
+          if [ -n "${INPUT_COPY_TO_CHANNEL:-}" ]; then
+            export RELEASE_COPY_TO_CHANNEL="$INPUT_COPY_TO_CHANNEL"
           fi
 
-          echo "Published build: s3://${AWS_S3_BUCKET}/${BUILD_PREFIX}/"
-          echo "Latest endpoint: s3://${AWS_S3_BUCKET}/${LATEST_PREFIX}/"
+          export TARGET_ENVIRONMENT="${{ steps.promote_target.outputs.target }}"
+          export BUILD_ID="${{ steps.build_id.outputs.build_id }}"
+          bash .github/scripts/s3-release-manager.sh promote
