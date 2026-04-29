@@ -37,8 +37,17 @@ namespace Geis.InputSystem
         /// <summary>Player/LightAttack (LMB, E, gamepad RT). Poll <c>IsPressed()</c> for robust hold detection on analog triggers.</summary>
         public InputAction LightAttack => _controls != null ? _controls.Player.LightAttack : null;
 
+        /// <summary>Player/Aim (RMB, gamepad LT).</summary>
+        public InputAction AimAction => _controls != null ? _controls.Player.Aim : null;
+
         /// <summary>Player/HeavyAttack (R).</summary>
         public InputAction HeavyAttack => _controls != null ? _controls.Player.HeavyAttack : null;
+
+        /// <summary>Player/Jump (Space, gamepad South).</summary>
+        public InputAction JumpAction => _controls != null ? _controls.Player.Jump : null;
+
+        /// <summary>Player/Crouch (C / Ctrl, gamepad right stick press).</summary>
+        public InputAction CrouchAction => _controls != null ? _controls.Player.Crouch : null;
 
         public Action onAimActivated;
         public Action onAimDeactivated;

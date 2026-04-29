@@ -295,7 +295,7 @@ namespace Geis.Puzzles.Editor
 
         /// <summary>
         /// Dagger secondary: <see cref="SoulPhaseShiftable"/> + <see cref="SoulPhaseShiftPresentation"/> —
-        /// Soul Realm F tap starts timed phase-through; physical realm hold F pulls the prop solid.
+        /// hold F in either realm to transfer the prop so it stays solid only in the current realm.
         /// </summary>
         static void CreatePhaseShiftObject(GameObject root, float x, float z)
         {
@@ -319,7 +319,7 @@ namespace Geis.Puzzles.Editor
             }
 
             CreateWorldLabel(parent,
-                "PHASE SHIFT\nSoul: F tap • Physical: hold F → solidify\nMat: Geis/SoulRealm/PhaseShiftDissolve",
+                "PHASE SHIFT\nHold F to shift into current realm\nMat: Geis/SoulRealm/PhaseShiftDissolve",
                 new Vector3(0f, 3.5f, 0f), PuzzleRealmColors.BothRealms);
         }
 

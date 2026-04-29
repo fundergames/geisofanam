@@ -12,14 +12,14 @@
  */
 
 using Geis.SoulRealm;
+using System;
 using UnityEngine;
 
 namespace Geis.SoulRealm.WeaponAbilities
 {
     /// <summary>
-    /// Dagger-Flute secondary: in Soul Realm, raycast once to run timed <see cref="SoulPhaseShiftable.BeginPhaseShift"/>.
-    /// In the physical realm, hold secondary to pull the object from the ethereal presentation into a solid state
-    /// (see <see cref="SoulPhaseShiftPresentation"/> on the prop).
+    /// Dagger-Flute secondary: hold to shift the targeted <see cref="SoulPhaseShiftable"/> into the current realm.
+    /// The object stays solid in that realm and becomes ethereal in the opposite realm until shifted back.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Dagger_PhaseShift",
@@ -29,11 +29,8 @@ namespace Geis.SoulRealm.WeaponAbilities
         [SerializeField] private float maxDistance = 25f;
         [SerializeField] private LayerMask hitLayers = ~0;
 
-        [Tooltip("Seconds phased colliders stay on the phased layer. 0 or less = use Default Duration Seconds on each SoulPhaseShiftable.")]
-        [SerializeField] private float phaseDurationSeconds;
-
-        [Header("Physical realm — hold secondary to solidify")]
-        [SerializeField] private float secondsToSolidify = 1.35f;
+        [Header("Hold secondary to shift into the current realm")]
+        [SerializeField] private float secondsToShiftRealm = 1.35f;
         [SerializeField] private float pullReleaseDecaySeconds = 0.5f;
 
         public override string AbilityDisplayName => "Phase Shift";
@@ -42,43 +39,28 @@ namespace Geis.SoulRealm.WeaponAbilities
 
         public override bool AllowActivationInPhysicalRealm => true;
 
-        public override bool ShowActivationFeedback(in SoulWeaponAbilityContext context) =>
-            SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+        public override bool ShowActivationFeedback(in SoulWeaponAbilityContext context) => false;
 
         private static SoulPhaseShiftable s_pullTarget;
         private static float s_pullProgress01;
 
-        /// <summary>Clears in-progress pull when the ability map turns off or the weapon changes.</summary>
-        public static void CancelOngoingPhysicalPullIfAny()
+        /// <summary>Clears in-progress hold when the ability map turns off or the weapon changes.</summary>
+        public static void CancelOngoingShiftIfAny()
         {
             if (s_pullTarget != null)
-                s_pullTarget.ClearPhysicalPullVisual();
+                s_pullTarget.ClearShiftPullVisual();
             s_pullTarget = null;
             s_pullProgress01 = 0f;
         }
 
         public override void Activate(in SoulWeaponAbilityContext context)
         {
-            if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
-                return;
-
-            if (!TryRaycastShiftable(in context, out RaycastHit hit, out SoulPhaseShiftable shift) || shift == null)
-                return;
-
-            float duration = phaseDurationSeconds > 0f ? phaseDurationSeconds : -1f;
-            shift.BeginPhaseShift(duration);
-            PlayDefaultActivationVfxAt(context, hit.point);
+            // Secondary uses the hold tick path so it can shift objects into either realm.
         }
 
         public void TickSecondaryWhileAbilityMapEnabled(in SoulWeaponAbilityContext context, bool ability2Held)
         {
-            if (SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive)
-            {
-                CancelOngoingPhysicalPullIfAny();
-                return;
-            }
-
-            float solidify = Mathf.Max(0.05f, secondsToSolidify);
+            float solidify = Mathf.Max(0.05f, secondsToShiftRealm);
 
             if (!ability2Held)
             {
@@ -88,7 +70,7 @@ namespace Geis.SoulRealm.WeaponAbilities
 
             if (!TryRaycastShiftable(in context, out RaycastHit hit, out SoulPhaseShiftable shift) ||
                 shift == null ||
-                shift.IsPhysicalSolidified)
+                shift.IsSolidInCurrentRealm)
             {
                 DecayPullTowardsZero();
                 return;
@@ -97,18 +79,18 @@ namespace Geis.SoulRealm.WeaponAbilities
             if (s_pullTarget != shift)
             {
                 if (s_pullTarget != null)
-                    s_pullTarget.ClearPhysicalPullVisual();
+                    s_pullTarget.ClearShiftPullVisual();
                 s_pullTarget = shift;
                 s_pullProgress01 = 0f;
             }
 
             s_pullProgress01 = Mathf.Clamp01(s_pullProgress01 + Time.deltaTime / solidify);
-            s_pullTarget.SetPhysicalPullProgress01(s_pullProgress01);
+            s_pullTarget.SetShiftPullProgress01(s_pullProgress01);
 
             if (s_pullProgress01 < 1f - 1e-4f)
                 return;
 
-            s_pullTarget.CompletePhysicalSolidify();
+            s_pullTarget.ShiftSolidRealmToCurrentRealm();
             PlayDefaultActivationVfxAt(context, hit.point);
             s_pullTarget = null;
             s_pullProgress01 = 0f;
@@ -121,11 +103,11 @@ namespace Geis.SoulRealm.WeaponAbilities
 
             float rate = pullReleaseDecaySeconds > 1e-4f ? Time.deltaTime / pullReleaseDecaySeconds : 1f;
             s_pullProgress01 = Mathf.MoveTowards(s_pullProgress01, 0f, rate);
-            s_pullTarget.SetPhysicalPullProgress01(s_pullProgress01);
+            s_pullTarget.SetShiftPullProgress01(s_pullProgress01);
             if (s_pullProgress01 > 1e-4f)
                 return;
 
-            s_pullTarget.ClearPhysicalPullVisual();
+            s_pullTarget.ClearShiftPullVisual();
             s_pullTarget = null;
             s_pullProgress01 = 0f;
         }
@@ -134,14 +116,34 @@ namespace Geis.SoulRealm.WeaponAbilities
             out SoulPhaseShiftable shift)
         {
             Ray ray = BuildCenterScreenRay(in context);
-            if (!Physics.Raycast(ray, out hit, maxDistance, hitLayers, QueryTriggerInteraction.Collide))
+            RaycastHit[] hits = Physics.RaycastAll(ray, maxDistance, hitLayers, QueryTriggerInteraction.Collide);
+            if (hits == null || hits.Length == 0)
             {
+                hit = default;
                 shift = null;
                 return false;
             }
 
-            shift = hit.collider.GetComponentInParent<SoulPhaseShiftable>();
-            return shift != null;
+            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+
+            for (var i = 0; i < hits.Length; i++)
+            {
+                RaycastHit h = hits[i];
+                if (h.collider == null)
+                    continue;
+
+                SoulPhaseShiftable candidate = h.collider.GetComponentInParent<SoulPhaseShiftable>();
+                if (candidate == null)
+                    continue;
+
+                hit = h;
+                shift = candidate;
+                return true;
+            }
+
+            hit = default;
+            shift = null;
+            return false;
         }
 
         private static Ray BuildCenterScreenRay(in SoulWeaponAbilityContext context)

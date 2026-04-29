@@ -97,6 +97,10 @@ namespace Geis.SoulRealm
 
         private void OnJump()
         {
+            if (GeisInteractInput.IsMovementFrozenForInteraction)
+                return;
+            if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.AllowGhostMovement)
+                return;
             if (GroundedCheck())
                 _jumpQueued = true;
         }

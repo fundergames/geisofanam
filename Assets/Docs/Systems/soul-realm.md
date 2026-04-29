@@ -13,7 +13,7 @@ Soul realm mode (ghost vs. frozen body), world freeze hooks, weapon-bound supern
 
 - **Singleton**: `Instance`; raises static `SoulRealmStateChanged` when entering/exiting (puzzles, ability controller, presentation subscribe).
 - **State**: `IsSoulRealmActive`, `SoulRealmBlend` (0/1), exit hold progress APIs (`SoulRealmExitHoldProgress01`, `IsSoulRealmExitHoldInProgress`, etc.).
-- **Movement**: `AllowGhostMovement` — during enter grace, ghost can move; after grace, holding **SoulRealm** input blocks ghost movement (exit path). Body locomotion suppressed via `ShouldSuppressBodyLocomotion` while active.
+- **Movement**: `AllowGhostMovement` — during enter grace, ghost can move; after grace, holding **SoulRealm** input blocks ghost movement (exit path). Body locomotion suppressed via `ShouldSuppressBodyLocomotion` while active. Runtime ability flows may temporarily push an external ghost-movement freeze (for example, object blink manipulation).
 - **Camera return target**: On entry, capture the camera controller's current follow target and use that same transform for exit-hold interpolation and final restore. Do not reconstruct the return pivot from a separate look-at lookup, or the camera can fall back to the body root/feet on exit.
 - **Abilities / VFX origin**: `GetAbilityContextTransforms(out ownerTransform, out originWorld)` — in soul realm uses **ghost** root and chest-height style origin; otherwise body locomotion and look-at. **Weapon ability activation** should use this when the manager exists.
 - **Freeze registry**: `SoulRealmFreezeTarget` list for selective world freeze (implementation detail in manager code).
@@ -46,6 +46,18 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 - **Polling**: Uses `WasPressedThisFrame` on actions; **also** treats gamepad **North** as ability 1 and **Right shoulder** as ability 2; keyboard **Q** / **F** as alternates when actions did not fire.
 - **`TryActivateAbility`**: Resolves current `GeisWeaponDefinition` from `GeisWeaponSwitcher`; reads `PrimarySoulAbility` / `SecondarySoulAbility`; checks `AllowActivationInSoulRealm` / `AllowActivationInPhysicalRealm` vs current realm; builds `SoulWeaponAbilityContext` with `GetAbilityContextTransforms` from manager when present, else `abilityOrigin`; forward from `GeisCameraController.GetCameraForwardZeroedYNormalised()` when available.
 - **Feedback**: `SoulRealmAbilityFeedback` auto-added if missing; shows blocked reasons (no weapon, no abilities, wrong realm, etc.).
+
+### `SoulBlinkManipulationController`
+
+- **Freeze contract**: Beginning Object Blink manipulation must freeze the ghost motor as well as interaction locomotion, so the soul body stays locked in place until the player cancels or snaps the object.
+- **Movement contract**: Manipulated objects keep an independent world pose; they should not be reparented to the ghost or forced to a camera-forward hold point each frame.
+- **Default controls**: `Move` slides the object in the camera plane, keyboard `UpArrow` / `DownArrow` or gamepad `D-pad Up` / `D-pad Down` move it vertically, and holding `Aim` (gamepad left trigger) turns `Move` into rotation input for spin/tilt alignment.
+
+### `SoulPhaseShiftable`
+
+- **Realm ownership**: A phase-shiftable object is solid in one realm at a time (`Physical` or `Soul`) and ethereal in the other. Realm switches should immediately refresh collision/presentation so the object becomes passable when the player is in the non-owned realm while remaining visible and targetable.
+- **Secondary ability flow**: Dagger secondary is a hold action in either realm. Holding `Ability2` / `F` on a `SoulPhaseShiftable` pulls it into the player's current realm; on completion it stays solid in that realm until shifted back from the opposite realm.
+- **Presentation**: `SoulPhaseShiftPresentation` should preview the pull while held, then show a solid look only when the object is owned by the active realm; the opposite realm should return to the dissolve/ethereal look after the transfer. Ethereal collision should be implemented via trigger colliders rather than moving the prop onto a layer that ability raycasts cannot hit.
 
 ### `GeisWeaponDefinition` (soul slice)
 
@@ -83,6 +95,8 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 - Ability activation must enforce both asset realm flags (`AllowActivationInSoulRealm` / `AllowActivationInPhysicalRealm`) and current realm state.
 - Ability origins should come from `SoulRealmManager.GetAbilityContextTransforms` when available; fallback-only origins should be treated as compatibility paths.
 - Systems that must not run during soul realm physical lock must gate interactions through `SoulRealmInteractable.BlockPhysicalInteractions`.
+- Object Blink manipulation must preserve an independently controlled object pose; do not couple the held object's transform directly to the player/ghost transform while aligning to a socket.
+- Phase-shiftable objects must store which realm owns their solidity and recompute collision/presentation from that state whenever soul realm toggles.
 
 ## Guidelines
 
@@ -94,6 +108,8 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Changelog
 
+- **2026-04-29**: Dagger phase shift now transfers a target object into the player's current realm via hold input in either realm; shifted props remain solid only in their owned realm and can be moved back and forth by repeating the hold from the other realm.
+- **2026-04-28**: Object Blink socket manipulation now freezes the ghost motor and uses direct translation/rotation controls (`Move`, vertical via keyboard arrows or gamepad d-pad, `Aim`/left-trigger modifier) so blink targets no longer feel parented to the player while aligning with a socket.
 - **2026-04-27**: Spectral weapon attachment now mirrors the body rig's attachment transform onto the spectral clone before falling back to left/right hand lookup, fixing soul-realm parenting on models that do not share the same prop-bone binder setup.
 - **2026-04-27**: Soul-realm exit now reuses the camera's captured pre-entry follow target for hold lerp and final restore, fixing occasional feet-level camera framing after returning to the body.
 - **2026-04-02**: Spectral locomotion uses ghost grounded (not body’s frozen Jump/Fall state) for air vs ground animator blend; ghost syncs vertical velocity on entry; grounded refreshed after teleport to body.

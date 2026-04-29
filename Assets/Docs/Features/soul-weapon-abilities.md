@@ -20,7 +20,7 @@
 - **Soul Marking**: Add `SoulMarkTarget` (or `ISoulMarkable`) to props/enemies; raycast uses camera center.
 - **Path Reveal**: Add `SoulPathRevealElement` to hidden hints; optional `revealEntireScene` on the Path Reveal asset.
 - **Lyre**: Land hits with Emberblade to fill resonance; Wave Release needs enemies in the forward sphere cast.
-- **Dagger**: Add `SoulBlinkable` (two pose transforms) and `SoulPhaseShiftable` (colliders + optional ghost visual); configure **phased layer** in Project Settings collision matrix.
+- **Dagger**: Add `SoulBlinkable` (two pose transforms) and `SoulPhaseShiftable` (colliders + optional ghost visual). During Object Blink manipulation the soul body should stay frozen while `Move` repositions the target, keyboard `UpArrow` / `DownArrow` or gamepad `D-pad Up` / `D-pad Down` move it vertically, and holding `Aim` / gamepad left trigger turns `Move` into rotation input for socket alignment. Phase Shift now uses hold input in either realm to transfer a target object so it stays solid only in the player's current realm and ethereal in the opposite realm until shifted back; ethereal props stay targetable and non-blocking by switching their colliders to triggers.
 
 ## Status
 

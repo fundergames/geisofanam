@@ -3148,11 +3148,11 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a1b1c1d1e1f11111a1b1c1d1e1f1111b, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.SoulRealm.WeaponAbilities.SoulPhaseShiftable
-  phasedColliders: []
+  phasedColliders:
+  - {fileID: 1926338566}
   ghostVisualRoot: {fileID: 1926338561}
-  phasedLayer: 2
   ghostScale: 0.85
-  defaultDurationSeconds: 6
+  initialSolidRealm: 0
   presentation: {fileID: 1926338564}
 --- !u!114 &1926338564
 MonoBehaviour:
@@ -3173,7 +3173,7 @@ MonoBehaviour:
   physicalDissolveMin: 0.2
   physicalDissolveMax: 0.6
   physicalEtherealAlpha: 0.415
-  animateDissolveUvWander: 0
+  animateDissolveUvWander: 1
   uvWanderAmplitude: 0.42
   uvWanderFrequency: 0.38
   dissolveOffestZWanderScale: 0.55

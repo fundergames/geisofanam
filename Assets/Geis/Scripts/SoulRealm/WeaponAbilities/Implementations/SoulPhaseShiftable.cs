@@ -11,105 +11,124 @@
  * It may not be redistributed, sublicensed, or sold in any form.
  */
 
-using System.Collections;
 using UnityEngine;
 
 namespace Geis.SoulRealm.WeaponAbilities
 {
     /// <summary>
-    /// Dagger-Flute: temporarily moves colliders to a "phased" layer and scales a ghost visual.
-    /// Configure project layers so phased objects ignore blocking geometry.
+    /// Dagger-Flute: object is solid only in its assigned realm and ethereal in the other.
+    /// Ethereal props stay visible and raycastable, but their colliders become triggers so the player can walk through them.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SoulPhaseShiftable : MonoBehaviour
     {
+        public enum SolidRealmMode
+        {
+            Physical = 0,
+            Soul = 1,
+        }
+
         [SerializeField] private Collider[] phasedColliders;
         [SerializeField] private GameObject ghostVisualRoot;
-        [SerializeField] private int phasedLayer = 2;
         [SerializeField] private float ghostScale = 0.85f;
 
-        [Tooltip("How long phase shift lasts when BeginPhaseShift is called with duration 0 or less (e.g. dagger ability Phase Duration = 0).")]
-        [SerializeField] private float defaultDurationSeconds = 6f;
+        [Tooltip("Which realm this object starts solid in.")]
+        [SerializeField] private SolidRealmMode initialSolidRealm = SolidRealmMode.Physical;
 
         [Tooltip("Drives realm dissolve pulse + physical semi-transparency; add on the same object or leave empty.")]
         [SerializeField] private SoulPhaseShiftPresentation presentation;
 
-        private int[] _originalLayers;
-        private Coroutine _routine;
+        private bool[] _originalIsTrigger;
         private bool _phaseActive;
+        private SolidRealmMode _solidRealm;
 
-        /// <summary>True after the player finishes a physical-realm hold pull (see dagger Phase Shift).</summary>
-        public bool IsPhysicalSolidified { get; private set; }
+        public SolidRealmMode SolidRealm => _solidRealm;
+
+        public bool IsSolidInCurrentRealm
+        {
+            get
+            {
+                bool soulActive = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+                return soulActive ? _solidRealm == SolidRealmMode.Soul : _solidRealm == SolidRealmMode.Physical;
+            }
+        }
 
         private void Awake()
         {
             if (presentation == null)
                 presentation = GetComponent<SoulPhaseShiftPresentation>();
 
+            // Older scene/test data may point ghostVisualRoot back at this same object.
+            // Never toggle the owner GameObject itself for ethereal state or the prop disappears entirely.
+            if (ghostVisualRoot == gameObject)
+                ghostVisualRoot = null;
+
             if (phasedColliders == null || phasedColliders.Length == 0)
                 phasedColliders = GetComponentsInChildren<Collider>();
-            _originalLayers = new int[phasedColliders.Length];
+            _originalIsTrigger = new bool[phasedColliders.Length];
+            _solidRealm = initialSolidRealm;
         }
 
-        /// <summary>Begin phase shift for <paramref name="duration"/> seconds. Use 0 or less to use <see cref="defaultDurationSeconds"/>.</summary>
-        public void BeginPhaseShift(float duration = -1f)
+        private void OnEnable()
         {
-            if (duration <= 0f)
-                duration = Mathf.Max(0.05f, defaultDurationSeconds);
-
-            if (_routine != null)
-                StopCoroutine(_routine);
-            _routine = StartCoroutine(PhaseRoutine(duration));
+            SoulRealmManager.SoulRealmStateChanged += OnSoulRealmStateChanged;
+            RefreshForCurrentRealm();
         }
 
-        /// <summary>Visual-only progress for hold-to-solidify in the physical realm (0–1).</summary>
-        public void SetPhysicalPullProgress01(float progress)
+        private void OnDisable()
+        {
+            SoulRealmManager.SoulRealmStateChanged -= OnSoulRealmStateChanged;
+            if (_phaseActive)
+                ApplyPhased(false);
+        }
+
+        private void OnSoulRealmStateChanged()
+        {
+            RefreshForCurrentRealm();
+        }
+
+        public void SetShiftPullProgress01(float progress)
         {
             presentation?.SetPullProgress01(progress);
         }
 
-        /// <summary>Clears pull preview when the player releases F early or cancels.</summary>
-        public void ClearPhysicalPullVisual()
+        public void ClearShiftPullVisual()
         {
             presentation?.SetPullProgress01(0f);
+            RefreshForCurrentRealm();
         }
 
-        /// <summary>Locks full opaque presentation after a completed physical pull.</summary>
-        public void CompletePhysicalSolidify()
+        public void ShiftSolidRealmToCurrentRealm()
         {
-            IsPhysicalSolidified = true;
-            presentation?.SetSolidified(true);
+            bool soulActive = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
+            _solidRealm = soulActive ? SolidRealmMode.Soul : SolidRealmMode.Physical;
+            RefreshForCurrentRealm();
         }
 
-        /// <summary>Return to ethereal pulse + (optional) semi-transparent physical look — for level reset / puzzles.</summary>
-        public void ResetPhysicalSoulPresentation()
+        public void ResetToInitialSolidRealm()
         {
-            IsPhysicalSolidified = false;
-            presentation?.ResetToEthereal();
-        }
-
-        private IEnumerator PhaseRoutine(float duration)
-        {
-            ApplyPhased(true);
-            yield return new WaitForSeconds(duration);
-            ApplyPhased(false);
-            _routine = null;
+            _solidRealm = initialSolidRealm;
+            RefreshForCurrentRealm();
         }
 
         private void ApplyPhased(bool phased)
         {
-            if (phasedColliders == null) return;
+            if (phasedColliders == null)
+                return;
 
             if (phased)
             {
-                _phaseActive = true;
-                for (var i = 0; i < phasedColliders.Length; i++)
+                if (!_phaseActive)
                 {
-                    var c = phasedColliders[i];
-                    if (c == null) continue;
-                    if (_originalLayers != null && i < _originalLayers.Length)
-                        _originalLayers[i] = c.gameObject.layer;
-                    c.gameObject.layer = phasedLayer;
+                    _phaseActive = true;
+                    for (var i = 0; i < phasedColliders.Length; i++)
+                    {
+                        var c = phasedColliders[i];
+                        if (c == null) continue;
+                        if (_originalIsTrigger != null && i < _originalIsTrigger.Length)
+                            _originalIsTrigger[i] = c.isTrigger;
+                        c.isTrigger = true;
+                    }
                 }
             }
             else if (_phaseActive)
@@ -119,8 +138,8 @@ namespace Geis.SoulRealm.WeaponAbilities
                 {
                     var c = phasedColliders[i];
                     if (c == null) continue;
-                    if (_originalLayers != null && i < _originalLayers.Length)
-                        c.gameObject.layer = _originalLayers[i];
+                    if (_originalIsTrigger != null && i < _originalIsTrigger.Length)
+                        c.isTrigger = _originalIsTrigger[i];
                 }
             }
 
@@ -132,16 +151,11 @@ namespace Geis.SoulRealm.WeaponAbilities
             }
         }
 
-        private void OnDisable()
+        private void RefreshForCurrentRealm()
         {
-            if (_routine != null)
-            {
-                StopCoroutine(_routine);
-                _routine = null;
-            }
-
-            if (_phaseActive)
-                ApplyPhased(false);
+            ApplyPhased(!IsSolidInCurrentRealm);
+            if (presentation != null)
+                presentation.SetSolidified(IsSolidInCurrentRealm);
         }
     }
 }

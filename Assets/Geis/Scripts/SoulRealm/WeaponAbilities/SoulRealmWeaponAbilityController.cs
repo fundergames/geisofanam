@@ -96,7 +96,7 @@ namespace Geis.SoulRealm.WeaponAbilities
 
             bool mapReady = _abilityMap != null && _abilityMap.enabled;
             if (!mapReady || !TryBuildAbilityContext(out SoulWeaponAbilityContext holdCtx))
-                DaggerPhaseShiftSoulWeaponAbility.CancelOngoingPhysicalPullIfAny();
+                DaggerPhaseShiftSoulWeaponAbility.CancelOngoingShiftIfAny();
             else
             {
                 GeisWeaponDefinition holdDef =
@@ -105,7 +105,7 @@ namespace Geis.SoulRealm.WeaponAbilities
                 if (secondary is ISoulWeaponSecondaryHoldTick holdTick)
                     holdTick.TickSecondaryWhileAbilityMapEnabled(in holdCtx, IsAbility2Pressed());
                 else
-                    DaggerPhaseShiftSoulWeaponAbility.CancelOngoingPhysicalPullIfAny();
+                    DaggerPhaseShiftSoulWeaponAbility.CancelOngoingShiftIfAny();
             }
 
             PollAbilityButtons(out bool a1, out bool a2);

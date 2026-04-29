@@ -11,18 +11,19 @@
  * It may not be redistributed, sublicensed, or sold in any form.
  */
 
-using System;
+using Geis.InputSystem;
 using Geis.InteractInput;
 using Geis.Locomotion;
 using Geis.SoulRealm;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace Geis.SoulRealm.WeaponAbilities
 {
     /// <summary>
     /// Object Blink (Dagger Q): after ray-grabbing a <see cref="SoulBlinkable"/>, the ghost stands still
-    /// (interaction movement freeze) while the object follows the camera look; when it enters the socket
-    /// radius it snaps. Press Q again to cancel and return the object to pose A.
+    /// while the object is moved directly with input until it enters the socket radius and snaps.
+    /// Press Q again to cancel and return the object to pose A.
     /// Add this on the same hierarchy as <see cref="SoulRealmWeaponAbilityController"/> (e.g. ghost root);
     /// if missing, <see cref="DaggerObjectBlinkSoulWeaponAbility"/> adds it at runtime on the ability owner.
     /// </summary>
@@ -30,20 +31,24 @@ namespace Geis.SoulRealm.WeaponAbilities
     public sealed class SoulBlinkManipulationController : MonoBehaviour
     {
         [SerializeField] private GeisCameraController cameraController;
+        [SerializeField] private GeisInputReader inputReader;
 
-        [Header("Float")]
-        [Tooltip("Distance along the view ray when nothing is hit (m).")]
-        [SerializeField] private float floatDistance = 2.5f;
+        [Header("Translation")]
+        [Tooltip("Move speed in the camera's horizontal plane while manipulating.")]
+        [SerializeField] private float planarMoveSpeed = 3.5f;
 
-        [Tooltip("Max raycast to place the object on surfaces (m).")]
-        [SerializeField] private float maxRaycastDistance = 12f;
+        [Tooltip("Vertical move speed while Up/Down arrow or gamepad D-pad up/down is held.")]
+        [SerializeField] private float verticalMoveSpeed = 2.5f;
 
-        [SerializeField] private float surfaceOffset = 0.05f;
+        [Tooltip("Optional leash from the frozen soul body. Set to 0 to disable.")]
+        [SerializeField] private float maxManipulationDistance;
 
-        [SerializeField] private LayerMask placementRaycastMask = ~0;
+        [Header("Rotation")]
+        [Tooltip("Hold Aim / left trigger and move left/right to spin the object around world up.")]
+        [SerializeField] private float yawRotationSpeed = 180f;
 
-        [Tooltip("Match camera yaw so the cube stays upright.")]
-        [SerializeField] private bool alignYawToCamera = true;
+        [Tooltip("Hold Aim / left trigger and move forward/back to tilt the object around the camera right axis.")]
+        [SerializeField] private float tiltRotationSpeed = 140f;
 
         [Header("VFX")]
         [Tooltip("One-shot burst when you grab (screen-center hit).")]
@@ -66,7 +71,10 @@ namespace Geis.SoulRealm.WeaponAbilities
         private Rigidbody _targetRb;
         private bool _rbWasKinematic;
         private bool _freezePushed;
+        private bool _ghostFreezePushed;
         private GameObject _carryVfxInstance;
+        private Vector3 _manipulatedPosition;
+        private Quaternion _manipulatedRotation;
 
         public bool IsManipulating => _target != null;
 
@@ -74,6 +82,8 @@ namespace Geis.SoulRealm.WeaponAbilities
         {
             if (cameraController == null)
                 cameraController = FindFirstObjectByType<GeisCameraController>();
+            if (inputReader == null)
+                inputReader = GetComponentInParent<GeisInputReader>() ?? FindFirstObjectByType<GeisInputReader>();
         }
 
         private void OnEnable()
@@ -102,12 +112,8 @@ namespace Geis.SoulRealm.WeaponAbilities
             if (cam == null)
                 return;
 
-            Vector3 pos = ComputeFloatPosition(cam);
-            Quaternion rot = alignYawToCamera
-                ? Quaternion.Euler(0f, cam.transform.eulerAngles.y, 0f)
-                : Quaternion.identity;
-
-            _target.transform.SetPositionAndRotation(pos, rot);
+            UpdateManipulationPose(cam, Time.deltaTime);
+            _target.transform.SetPositionAndRotation(_manipulatedPosition, _manipulatedRotation);
 
             SoulBlinkSocket socket = _target.SocketB;
             if (socket != null && socket.IsWithinSnapRange(_target.transform.position))
@@ -117,28 +123,79 @@ namespace Geis.SoulRealm.WeaponAbilities
             }
         }
 
-        private Vector3 ComputeFloatPosition(Camera cam)
+        private void UpdateManipulationPose(Camera cam, float deltaTime)
         {
-            Vector3 rayOrigin = cam.transform.position;
-            Vector3 rayDir = cam.transform.forward;
-            Vector3 fallback = rayOrigin + rayDir * floatDistance;
+            if (deltaTime <= 0f)
+                return;
 
-            RaycastHit[] hits = Physics.RaycastAll(rayOrigin, rayDir, maxRaycastDistance, placementRaycastMask,
-                QueryTriggerInteraction.Ignore);
-            if (hits == null || hits.Length == 0)
-                return fallback;
+            Vector2 moveInput = inputReader != null ? inputReader._moveComposite : Vector2.zero;
+            bool rotationMode = inputReader != null
+                && inputReader.AimAction != null
+                && inputReader.AimAction.IsPressed();
 
-            Array.Sort(hits, (a, b) => a.distance.CompareTo(b.distance));
+            Vector3 cameraForward = Vector3.ProjectOnPlane(cam.transform.forward, Vector3.up);
+            if (cameraForward.sqrMagnitude < 0.0001f)
+                cameraForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
+            if (cameraForward.sqrMagnitude < 0.0001f)
+                cameraForward = Vector3.forward;
+            cameraForward.Normalize();
 
-            foreach (RaycastHit hit in hits)
+            Vector3 cameraRight = Vector3.Cross(Vector3.up, cameraForward).normalized;
+
+            if (rotationMode)
             {
-                if (hit.collider != null && _target != null &&
-                    hit.collider.GetComponentInParent<SoulBlinkable>() == _target)
-                    continue;
-                return hit.point + hit.normal * surfaceOffset;
+                float yawDelta = moveInput.x * yawRotationSpeed * deltaTime;
+                float tiltDelta = -moveInput.y * tiltRotationSpeed * deltaTime;
+                if (Mathf.Abs(yawDelta) > 0.001f)
+                    _manipulatedRotation = Quaternion.AngleAxis(yawDelta, Vector3.up) * _manipulatedRotation;
+                if (Mathf.Abs(tiltDelta) > 0.001f)
+                    _manipulatedRotation = Quaternion.AngleAxis(tiltDelta, cameraRight) * _manipulatedRotation;
+            }
+            else
+            {
+                Vector3 planarDelta = (cameraRight * moveInput.x + cameraForward * moveInput.y)
+                    * (planarMoveSpeed * deltaTime);
+                _manipulatedPosition += planarDelta;
             }
 
-            return fallback;
+            float verticalInput = GetVerticalInput();
+            if (Mathf.Abs(verticalInput) > 0.001f)
+                _manipulatedPosition += Vector3.up * (verticalInput * verticalMoveSpeed * deltaTime);
+
+            if (maxManipulationDistance > 0f)
+            {
+                Vector3 offset = _manipulatedPosition - transform.position;
+                float maxDistanceSq = maxManipulationDistance * maxManipulationDistance;
+                if (offset.sqrMagnitude > maxDistanceSq)
+                    _manipulatedPosition = transform.position + offset.normalized * maxManipulationDistance;
+            }
+        }
+
+        private static float GetVerticalInput()
+        {
+            float vertical = 0f;
+
+            Keyboard kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (kb.upArrowKey.isPressed)
+                    vertical += 1f;
+                if (kb.downArrowKey.isPressed)
+                    vertical -= 1f;
+            }
+
+            Gamepad gp = Gamepad.current;
+            if (gp == null && Gamepad.all.Count > 0)
+                gp = Gamepad.all[0];
+            if (gp != null)
+            {
+                if (gp.dpad.up.isPressed)
+                    vertical += 1f;
+                if (gp.dpad.down.isPressed)
+                    vertical -= 1f;
+            }
+
+            return Mathf.Clamp(vertical, -1f, 1f);
         }
 
         /// <summary>
@@ -169,6 +226,15 @@ namespace Geis.SoulRealm.WeaponAbilities
 
             GeisInteractInput.PushInteractionMovementFreeze();
             _freezePushed = true;
+
+            if (SoulRealmManager.Instance != null)
+            {
+                SoulRealmManager.Instance.PushExternalGhostMovementFreeze();
+                _ghostFreezePushed = true;
+            }
+
+            _manipulatedPosition = blink.transform.position;
+            _manipulatedRotation = blink.transform.rotation;
 
             Camera cam = cameraController != null ? cameraController.MainCamera : Camera.main;
             Vector3 fwd = cam != null ? cam.transform.forward : Vector3.forward;
@@ -234,6 +300,12 @@ namespace Geis.SoulRealm.WeaponAbilities
             {
                 GeisInteractInput.PopInteractionMovementFreeze();
                 _freezePushed = false;
+            }
+
+            if (_ghostFreezePushed && SoulRealmManager.Instance != null)
+            {
+                SoulRealmManager.Instance.PopExternalGhostMovementFreeze();
+                _ghostFreezePushed = false;
             }
 
             _target = null;

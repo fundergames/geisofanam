@@ -78,6 +78,8 @@ namespace Geis.SoulRealm.WeaponAbilities
             _solidified = solid;
             if (solid)
                 _pullProgress01 = 1f;
+            else
+                _pullProgress01 = 0f;
         }
 
         /// <summary>0 = full ethereal pulse, 1 = fully solidified look (before <see cref="SetSolidified"/> locks it).</summary>
