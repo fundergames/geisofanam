@@ -264,10 +264,6 @@ namespace RogueDeal.HexLevels.Editor
                 EditorGUILayout.LabelField($"Coast Mappings: {tool.mappingsAsset.coastMappings.Count}", EditorStyles.miniLabel);
                 EditorGUILayout.EndHorizontal();
                 
-                if (GUILayout.Button("Open Connection Mapper", EditorStyles.miniButton))
-                {
-                    ConnectionPatternMapper.ShowWindow();
-                }
             }
             else
             {
