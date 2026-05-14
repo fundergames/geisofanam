@@ -17,7 +17,7 @@ using UnityEngine.Timeline;
 
 namespace RogueDeal.Combat
 {
-    [CreateAssetMenu(fileName = "NewCombatSequence", menuName = "RogueDeal/Combat/Combat Sequence")]
+    [CreateAssetMenu(fileName = "NewCombatSequence", menuName = "Funder Games/Geis/Rogue Deal/Combat/Combat Sequence")]
     public class CombatSequenceAsset : ScriptableObject
     {
         public string sequenceName;

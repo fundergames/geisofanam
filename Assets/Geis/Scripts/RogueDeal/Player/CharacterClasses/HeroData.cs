@@ -17,7 +17,7 @@ using RogueDeal.Combat;
 
 namespace RogueDeal.Player
 {
-    [CreateAssetMenu(fileName = "Hero Data", menuName = "RogueDeal/Character/Hero Data")]
+    [CreateAssetMenu(fileName = "Hero Data", menuName = "Funder Games/Geis/Rogue Deal/Character/Hero Data")]
     public class HeroData : ScriptableObject
     {
         [SerializeField] private string playerName;

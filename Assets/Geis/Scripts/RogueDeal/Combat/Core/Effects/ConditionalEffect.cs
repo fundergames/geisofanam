@@ -19,7 +19,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// <summary>
     /// Effect that applies different effects based on a condition.
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_Conditional_", menuName = "RogueDeal/Combat/Effects/Conditional Effect")]
+    [CreateAssetMenu(fileName = "Effect_Conditional_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Conditional Effect")]
     public class ConditionalEffect : BaseEffect
     {
         [Header("Condition")]

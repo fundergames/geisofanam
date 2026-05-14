@@ -22,7 +22,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// Targeting strategy for real-time combat.
     /// Migrated from RealTimeTargeting class.
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_RealTime", menuName = "RogueDeal/Combat/Targeting/Real-Time Targeting")]
+    [CreateAssetMenu(fileName = "Targeting_RealTime", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Real-Time Targeting")]
     public class RealTimeTargetingStrategy : TargetingStrategy
     {
         [Header("Targeting Settings")]

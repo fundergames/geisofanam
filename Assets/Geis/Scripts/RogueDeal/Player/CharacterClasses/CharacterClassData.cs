@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Player
 {
-    [CreateAssetMenu(fileName = "New Character Class", menuName = "RogueDeal/Character/Character Class")]
+    [CreateAssetMenu(fileName = "New Character Class", menuName = "Funder Games/Geis/Rogue Deal/Character/Character Class")]
     public class CharacterClassData : ScriptableObject
     {
         [SerializeField] private string classDisplayName;

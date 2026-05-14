@@ -12,8 +12,6 @@ This folder stores historical planning/migration/reference markdown that is kept
 - `FUNDER_CORE_REORGANIZATION.md`
 - `MENU_STRUCTURE_REFERENCE.md`
 - `PACKAGE_MIGRATION_CHECKLIST.md`
-- `HEXAGON_LEVEL_EDITOR_PLAN.md`
-- `HEXAGON_LEVEL_EDITOR_QUESTIONS.md`
 
 ## Usage policy
 

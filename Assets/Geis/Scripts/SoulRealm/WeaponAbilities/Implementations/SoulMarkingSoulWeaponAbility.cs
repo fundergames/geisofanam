@@ -22,7 +22,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Harp_SoulMarking",
-        menuName = "Geis/Soul Realm/Harp-Bow/Soul Marking")]
+        menuName = "Funder Games/Geis/Soul Realm/Harp-Bow/Soul Marking")]
     public sealed class SoulMarkingSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [SerializeField] private float maxDistance = 40f;

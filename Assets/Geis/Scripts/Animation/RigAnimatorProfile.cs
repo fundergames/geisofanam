@@ -18,7 +18,7 @@ namespace Geis.Animation
     /// <summary>
     /// Design-time profile documenting animator contracts and optional reference controller for a rig (Synty, Polygon, etc.).
     /// </summary>
-    [CreateAssetMenu(fileName = "RigAnimatorProfile", menuName = "Geis/Animation/Rig Animator Profile")]
+    [CreateAssetMenu(fileName = "RigAnimatorProfile", menuName = "Funder Games/Geis/Animation/Rig Animator Profile")]
     public sealed class RigAnimatorProfile : ScriptableObject
     {
         [Tooltip("Required parameters and setup notes for this Animator Controller.")]

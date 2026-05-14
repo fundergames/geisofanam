@@ -76,7 +76,7 @@ namespace Geis.Combat.Editor
         [SerializeField] private float _nodePreviewHeightBias = 0.25f;
         [SerializeField] private float _nodePreviewFieldOfView = 30f;
 
-        [MenuItem("Tools/Geis/Combo Graph")]
+        [MenuItem("Funder Games/Geis/Tools/Combat/Combo Graph")]
         public static void ShowWindow()
         {
             Open(null);

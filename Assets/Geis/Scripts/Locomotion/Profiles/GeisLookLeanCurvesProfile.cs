@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "LookLeanCurvesProfile", menuName = "Geis/Locomotion/Look & Lean Curves Profile")]
+    [CreateAssetMenu(fileName = "LookLeanCurvesProfile", menuName = "Funder Games/Geis/Locomotion/Look & Lean Curves Profile")]
     public sealed class GeisLookLeanCurvesProfile : ScriptableObject
     {
         [Header("Head look")]

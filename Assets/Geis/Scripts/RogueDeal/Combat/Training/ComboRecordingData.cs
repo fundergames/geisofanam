@@ -16,7 +16,7 @@ using System.Collections.Generic;
 
 namespace RogueDeal.Combat.Training
 {
-    [CreateAssetMenu(fileName = "ComboRecording", menuName = "RogueDeal/Combat/Combo Recording")]
+    [CreateAssetMenu(fileName = "ComboRecording", menuName = "Funder Games/Geis/Rogue Deal/Combat/Combo Recording")]
     public class ComboRecordingData : ScriptableObject
     {
         public string recordingName;

@@ -19,7 +19,7 @@ namespace RogueDeal.Combat
     /// <summary>
     /// Maps action names or indices to CombatActions for real-time combat.
     /// </summary>
-    [CreateAssetMenu(fileName = "AbilityLookup", menuName = "RogueDeal/Combat/Ability Lookup")]
+    [CreateAssetMenu(fileName = "AbilityLookup", menuName = "Funder Games/Geis/Rogue Deal/Combat/Ability Lookup")]
     public class AbilityLookup : ScriptableObject
     {
         [Header("Actions")]

@@ -18,7 +18,7 @@ namespace RogueDeal.Combat.Core.Data
     /// <summary>
     /// Combat profile for a character. Defines engagement distance, combat range, and line of sight requirements.
     /// </summary>
-    [CreateAssetMenu(fileName = "CombatProfile_", menuName = "RogueDeal/Combat/Combat Profiles/Combat Profile")]
+    [CreateAssetMenu(fileName = "CombatProfile_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Combat Profiles/Combat Profile")]
     public class CombatProfile : ScriptableObject
     {
         [Header("Basic Info")]

@@ -23,7 +23,7 @@ using UnityEngine;
 
 namespace RogueDeal
 {
-    [CreateAssetMenu(fileName = "GameDatabase", menuName = "Funder Games/Rogue Deal/Game Database")]
+    [CreateAssetMenu(fileName = "GameDatabase", menuName = "Funder Games/Geis/Rogue Deal/Game Database")]
     public class GameDatabase : ScriptableObject
     {
         [Header("Classes")]

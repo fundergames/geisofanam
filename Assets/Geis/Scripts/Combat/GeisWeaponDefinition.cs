@@ -32,7 +32,7 @@ namespace Geis.Combat
     /// Unified weapon data: prefab, combo animations, and damage config.
     /// Assign per slot on GeisWeaponSwitcher (replaces separate Weapon/ComboData arrays on other components).
     /// </summary>
-    [CreateAssetMenu(fileName = "Weapon_", menuName = "Geis/Combat/Weapon Definition")]
+    [CreateAssetMenu(fileName = "Weapon_", menuName = "Funder Games/Geis/Combat/Weapon Definition")]
     public class GeisWeaponDefinition : ScriptableObject
     {
         [Header("Visual")]

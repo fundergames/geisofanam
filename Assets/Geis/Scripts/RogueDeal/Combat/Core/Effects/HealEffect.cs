@@ -20,7 +20,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// <summary>
     /// Effect that heals the target. Supports stat scaling.
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_Heal_", menuName = "RogueDeal/Combat/Effects/Heal Effect")]
+    [CreateAssetMenu(fileName = "Effect_Heal_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Heal Effect")]
     public class HealEffect : BaseEffect
     {
         [Header("Heal Settings")]

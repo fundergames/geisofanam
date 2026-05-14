@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "AirMovementProfile", menuName = "Geis/Locomotion/Air Movement Profile")]
+    [CreateAssetMenu(fileName = "AirMovementProfile", menuName = "Funder Games/Geis/Locomotion/Air Movement Profile")]
     public sealed class GeisAirMovementProfile : ScriptableObject
     {
         public float jumpForce = GeisLocomotionTuningDefaults.JumpForce;

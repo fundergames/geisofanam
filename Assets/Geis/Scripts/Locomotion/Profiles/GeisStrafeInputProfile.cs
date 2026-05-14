@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "StrafeInputProfile", menuName = "Geis/Locomotion/Strafe & Input Profile")]
+    [CreateAssetMenu(fileName = "StrafeInputProfile", menuName = "Funder Games/Geis/Locomotion/Strafe & Input Profile")]
     public sealed class GeisStrafeInputProfile : ScriptableObject
     {
         [Tooltip("Threshold for movement button hold vs tap vs held.")]

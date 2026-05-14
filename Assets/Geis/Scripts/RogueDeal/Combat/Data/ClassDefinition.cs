@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace RogueDeal.Combat
 {
-    [CreateAssetMenu(fileName = "Class_", menuName = "Funder Games/Rogue Deal/Combat/Class Definition")]
+    [CreateAssetMenu(fileName = "Class_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Class Definition")]
     public class ClassDefinition : ScriptableObject
     {
         [Header("Basic Info")]

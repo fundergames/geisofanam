@@ -22,7 +22,7 @@ namespace Funder.GameFlow.Editor
     {
         private FGAppConfig _config;
 
-        [MenuItem("Funder Games/Core/Game Flow/Flow Tester", priority = 100)]
+        [MenuItem("Funder Games/Core/Tools/Game Flow", priority = 100)]
         public static void ShowWindow()
         {
             var window = GetWindow<GameFlowTester>("Flow Tester");
@@ -204,8 +204,7 @@ namespace Funder.GameFlow.Editor
                 EditorUtility.DisplayDialog(
                     "Scene Not Found",
                     $"Scene not found:\n{scenePath}\n\n" +
-                    "Create scenes first:\n" +
-                    "Tools → Funder/Core → Game Flow → Create All Scenes",
+                    "Create scenes first from the Funder Games/Core flow menu.",
                     "OK");
                 return;
             }

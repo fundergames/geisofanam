@@ -20,7 +20,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// <summary>
     /// Effect that deals damage. Supports stat scaling and weapon multipliers.
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_Damage_", menuName = "RogueDeal/Combat/Effects/Damage Effect")]
+    [CreateAssetMenu(fileName = "Effect_Damage_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Damage Effect")]
     public class DamageEffect : BaseEffect
     {
         [Header("Damage Settings")]

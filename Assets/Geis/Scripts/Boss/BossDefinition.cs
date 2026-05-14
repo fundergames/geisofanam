@@ -20,7 +20,7 @@ namespace RogueDeal.Boss
     /// Data asset defining a boss encounter: stats, phase thresholds, attack parameters, and soul anchor config.
     /// Assign to a BossController to drive the Soul Warden (or any future boss) encounter.
     /// </summary>
-    [CreateAssetMenu(fileName = "Boss_", menuName = "Funder Games/Rogue Deal/Boss/Boss Definition")]
+    [CreateAssetMenu(fileName = "Boss_", menuName = "Funder Games/Geis/Rogue Deal/Boss/Boss Definition")]
     public class BossDefinition : ScriptableObject
     {
         [Header("Identity")]

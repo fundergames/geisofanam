@@ -21,7 +21,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// <summary>
     /// Targets the nearest enemy within attack range
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_NearestEnemy", menuName = "RogueDeal/Combat/Targeting/Nearest Enemy")]
+    [CreateAssetMenu(fileName = "Targeting_NearestEnemy", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Nearest Enemy")]
     public class NearestEnemyTargetingStrategy : TargetingStrategy
     {
         [Header("Targeting Settings")]

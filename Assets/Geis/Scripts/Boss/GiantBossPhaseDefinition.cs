@@ -21,7 +21,7 @@ namespace RogueDeal.Boss
     /// </summary>
     [CreateAssetMenu(
         fileName = "GiantBossPhase_",
-        menuName = "Funder Games/Rogue Deal/Boss/Giant Boss Phase")]
+        menuName = "Funder Games/Geis/Rogue Deal/Boss/Giant Boss Phase")]
     public class GiantBossPhaseDefinition : ScriptableObject
     {
         [Header("Phase transition")]

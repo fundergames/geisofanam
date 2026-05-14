@@ -20,7 +20,7 @@ namespace RogueDeal.Combat.Core.Data
     /// Weapon configuration. Defines base damage and damage type multipliers.
     /// Example: Fire Sword = Physical 1.0x, Fire 1.2x
     /// </summary>
-    [CreateAssetMenu(fileName = "Weapon_", menuName = "RogueDeal/Combat/Weapons/Weapon")]
+    [CreateAssetMenu(fileName = "Weapon_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Weapons/Weapon")]
     public class Weapon : ScriptableObject
     {
         [Header("Basic Info")]

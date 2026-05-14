@@ -24,7 +24,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Dagger_ObjectBlink",
-        menuName = "Geis/Soul Realm/Dagger-Flute/Object Blink")]
+        menuName = "Funder Games/Geis/Soul Realm/Dagger-Flute/Object Blink")]
     public sealed class DaggerObjectBlinkSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [SerializeField] private float maxDistance = 25f;

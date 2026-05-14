@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "AttackDodgeLocomotionProfile", menuName = "Geis/Locomotion/Attack & Dodge Locomotion Profile")]
+    [CreateAssetMenu(fileName = "AttackDodgeLocomotionProfile", menuName = "Funder Games/Geis/Locomotion/Attack & Dodge Locomotion Profile")]
     public sealed class GeisAttackDodgeLocomotionProfile : ScriptableObject
     {
         [Header("Root motion")]

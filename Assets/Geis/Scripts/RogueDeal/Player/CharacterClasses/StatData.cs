@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Player
 {
-    [CreateAssetMenu(menuName = "RogueDeal/Character/Stat Data", fileName = "StatData")]
+    [CreateAssetMenu(menuName = "Funder Games/Geis/Rogue Deal/Character/Stat Data", fileName = "StatData")]
     public class StatData : ScriptableObject
     {
         [SerializeField] private Sprite icon;

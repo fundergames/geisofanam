@@ -23,7 +23,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// In video poker mode: auto-targets enemy position
     /// In free-flow mode: waits for player mouse click
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_GroundAOE", menuName = "RogueDeal/Combat/Targeting/Ground Targeted AOE")]
+    [CreateAssetMenu(fileName = "Targeting_GroundAOE", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Ground Targeted AOE")]
     public class GroundTargetedAOE : TargetingStrategy
     {
         [Header("Targeting Settings")]

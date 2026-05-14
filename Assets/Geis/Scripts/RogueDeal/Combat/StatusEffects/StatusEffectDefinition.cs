@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Combat.StatusEffects
 {
-    [CreateAssetMenu(fileName = "StatusEffect_", menuName = "Funder Games/Rogue Deal/Combat/Status Effect Definition")]
+    [CreateAssetMenu(fileName = "StatusEffect_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Status Effect Definition")]
     public class StatusEffectDefinition : ScriptableObject
     {
         [Header("Basic Info")]

@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace Geis.Enemies
 {
-    [CreateAssetMenu(fileName = "Targeting_EnemyCurrentTarget", menuName = "Geis/Enemies/Current Enemy Targeting")]
+    [CreateAssetMenu(fileName = "Targeting_EnemyCurrentTarget", menuName = "Funder Games/Geis/Enemies/Current Enemy Targeting")]
     public class EnemyCurrentTargetingStrategy : TargetingStrategy
     {
         [Header("Fallback Range")]

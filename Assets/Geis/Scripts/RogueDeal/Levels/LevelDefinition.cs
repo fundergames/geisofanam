@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace RogueDeal.Levels
 {
-    [CreateAssetMenu(fileName = "Level_", menuName = "Funder Games/Rogue Deal/Levels/Level Definition")]
+    [CreateAssetMenu(fileName = "Level_", menuName = "Funder Games/Geis/Rogue Deal/Levels/Level Definition")]
     public class LevelDefinition : ScriptableObject
     {
         [Header("Level Identity")]

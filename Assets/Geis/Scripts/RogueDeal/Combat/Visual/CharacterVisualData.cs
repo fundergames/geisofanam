@@ -22,7 +22,7 @@ namespace RogueDeal.Combat.Visual
     /// Defines the visual appearance of a character, including body parts and default equipment.
     /// This ScriptableObject allows you to create different character configurations.
     /// </summary>
-    [CreateAssetMenu(fileName = "CharacterVisual_", menuName = "Funder Games/Rogue Deal/Character/Visual Data")]
+    [CreateAssetMenu(fileName = "CharacterVisual_", menuName = "Funder Games/Geis/Rogue Deal/Character/Visual Data")]
     public class CharacterVisualData : ScriptableObject
     {
         [Header("Character Info")]

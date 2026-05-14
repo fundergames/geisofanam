@@ -20,7 +20,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Debug_",
-        menuName = "Geis/Soul Realm/Debug Soul Weapon Ability (Log)")]
+        menuName = "Funder Games/Geis/Soul Realm/Debug Soul Weapon Ability (Log)")]
     public sealed class DebugLogSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [SerializeField] private string abilityLabel = "Ability";

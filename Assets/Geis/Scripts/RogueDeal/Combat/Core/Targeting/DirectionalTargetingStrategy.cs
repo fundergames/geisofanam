@@ -22,7 +22,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// Directional targeting - attacks in the direction the character is facing.
     /// No target selection needed - uses weapon colliders for hit detection.
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_Directional", menuName = "RogueDeal/Combat/Targeting/Directional")]
+    [CreateAssetMenu(fileName = "Targeting_Directional", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Directional")]
     public class DirectionalTargetingStrategy : TargetingStrategy
     {
         public override TargetResult ResolveTargets(CombatEntityData attacker)

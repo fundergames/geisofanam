@@ -24,7 +24,7 @@ namespace RogueDeal.Boss
     /// </summary>
     [CreateAssetMenu(
         fileName = "BossPart_",
-        menuName  = "Funder Games/Rogue Deal/Boss/Boss Part Definition")]
+        menuName  = "Funder Games/Geis/Rogue Deal/Boss/Boss Part Definition")]
     public class BossPartDefinition : ScriptableObject
     {
         [Header("Identity")]

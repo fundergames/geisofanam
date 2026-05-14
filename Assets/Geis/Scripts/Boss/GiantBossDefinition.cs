@@ -30,7 +30,7 @@ namespace RogueDeal.Boss
     /// </summary>
     [CreateAssetMenu(
         fileName = "GiantBoss_",
-        menuName  = "Funder Games/Rogue Deal/Boss/Giant Boss Definition")]
+        menuName  = "Funder Games/Geis/Rogue Deal/Boss/Giant Boss Definition")]
     public class GiantBossDefinition : ScriptableObject
     {
         // ── Identity ───────────────────────────────────────────────────────────────
