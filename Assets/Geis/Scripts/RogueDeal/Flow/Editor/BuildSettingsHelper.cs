@@ -24,7 +24,7 @@ namespace Funder.GameFlow.Editor
 {
     public class BuildSettingsHelper : EditorWindow
     {
-        [MenuItem("Funder Games/Core/Tools/Build Settings Helper")]
+        [MenuItem("Funder Games/Core/Tools/Build Settings")]
         public static void ShowWindow()
         {
             GetWindow<BuildSettingsHelper>("Build Settings Helper");

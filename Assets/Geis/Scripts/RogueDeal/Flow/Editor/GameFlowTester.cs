@@ -22,7 +22,7 @@ namespace Funder.GameFlow.Editor
     {
         private FGAppConfig _config;
 
-        [MenuItem("Funder Games/Core/Tools/Game Flow Tester", priority = 100)]
+        [MenuItem("Funder Games/Core/Tools/Game Flow", priority = 100)]
         public static void ShowWindow()
         {
             var window = GetWindow<GameFlowTester>("Flow Tester");
