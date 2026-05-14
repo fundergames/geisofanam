@@ -65,10 +65,6 @@ See `PuzzleRealmMode.cs` — values above; used for accessibility and fade direc
 
 - Prefer `PuzzleElementBase` realm fields over ad-hoc `IsSoulRealmActive` checks in every trigger unless the puzzle is explicitly an exception.
 
-## Related documentation
-
-- `Assets/Documentation/HEXAGON_LEVEL_EDITOR_*.md` where relevant.
-
 ## Changelog
 
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.

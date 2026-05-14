@@ -26,8 +26,7 @@ Single source of truth per weapon—no duplicate arrays.
 1. **Create GeisWeaponDefinition** per weapon: Right‑click → Create → Geis > Combat > Weapon Definition.
    - Assign: weaponPrefab, comboData (GeisComboData), weaponStats (Weapon SO), combatAction (CombatAction).
 2. **GeisWeaponSwitcher**: Enable `Use Unified Weapons`, assign `Unified Slots` with your GeisWeaponDefinition assets.
-3. **Add bridge**: Select player → `Tools > Geis > Add Combat Bridge to Selected Player`.
-4. **Create UI** (if needed): `Tools > Combat > Create Combat UI Prefabs`.
+3. **Bridge/UI integration**: add and configure combat bridge/UI components manually in the player and UI prefabs.
 
 ### Legacy mode
 

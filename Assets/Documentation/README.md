@@ -26,7 +26,6 @@ For day-to-day feature work, start with `Assets/Docs/START_HERE.md` and only loa
 - **QUICK_START_GUIDE.md** - Quick start guide
 - **QUICK_USAGE_EXAMPLES.md** - Quick usage examples
 - **STEP_BY_STEP_SETUP.md** - Step-by-step setup guide
-- **AUTO_SETUP_INSTRUCTIONS.md** - Auto-setup instructions
 - **IMPLEMENTATION_SUMMARY.md** - Implementation summary
 
 ### Misc operational

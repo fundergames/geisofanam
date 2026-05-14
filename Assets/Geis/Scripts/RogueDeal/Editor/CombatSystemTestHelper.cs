@@ -178,7 +178,7 @@ namespace RogueDeal.Combat.Editor
             return profile;
         }
         
-        [MenuItem("Funder Games/Core/Testing/Combat System/Open Test Window")]
+        [MenuItem("Funder Games/Core/Tools/Combat System Test Window")]
         public static void ShowWindow()
         {
             GetWindow<CombatSystemTestHelper>("Combat System Tests");

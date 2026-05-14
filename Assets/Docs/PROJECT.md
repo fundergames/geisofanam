@@ -10,7 +10,7 @@
 
 - **Engine**: Unity 6 (URP)
 - **Core framework**: [Funder Core](https://github.com/fundergames/funder-core) (Package Manager)
-- **Game systems**: RogueDeal (hex levels, quests, NPCs, card combat, modular character system)
+- **Game systems**: RogueDeal (quests, NPCs, card combat, modular character system)
 - **Rendering**: Universal Render Pipeline (URP)
 
 ## Project Pillars
