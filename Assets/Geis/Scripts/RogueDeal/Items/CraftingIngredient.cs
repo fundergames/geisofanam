@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Items
 {
-    [CreateAssetMenu(fileName = "Ingredient_", menuName = "Funder Games/Rogue Deal/Items/Crafting Ingredient")]
+    [CreateAssetMenu(fileName = "Ingredient_", menuName = "Funder Games/Geis/Rogue Deal/Items/Crafting Ingredient")]
     public class CraftingIngredient : BaseItem
     {
         [Header("Crafting Properties")]

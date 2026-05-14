@@ -23,7 +23,7 @@ namespace RogueDeal.HexLevels.Editor
         private float groupSpacing = 10f;
         private float rotationSpacing = 3f;
         
-        [MenuItem("Tools/Hex Levels/Visualize Road Prototypes (All Rotations)")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Visualize Road Prototypes (All Rotations)")]
         public static void ShowWindow()
         {
             GetWindow<RoadPrototypeVisualizer>("Road Prototype Visualizer");

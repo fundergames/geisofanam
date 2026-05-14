@@ -28,7 +28,7 @@ namespace RogueDeal.HexLevels.Verification
         public string prefabPath = "Prefabs/Hexes/Roads";
         
 #if UNITY_EDITOR
-        [MenuItem("Hex Tools/Debug/Print Database Patterns")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Debug/Print Database Patterns")]
         public static void PrintDatabasePatterns()
         {
             var database = Resources.Load<RoadPatternDatabase_New>("Data/HexLevels/RoadPatternDatabaseV2");
@@ -62,7 +62,7 @@ namespace RogueDeal.HexLevels.Verification
             }
         }
         
-        [MenuItem("Hex Tools/Debug/Test Pattern Matching")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Debug/Test Pattern Matching")]
         public static void TestPatternMatching()
         {
             var database = Resources.Load<RoadPatternDatabase_New>("Data/HexLevels/RoadPatternDatabaseV2");

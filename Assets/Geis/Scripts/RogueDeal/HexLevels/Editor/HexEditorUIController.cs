@@ -21,7 +21,7 @@ namespace RogueDeal.HexLevels.Editor
 {
     public class HexEditorUIController : EditorWindow
     {
-        [MenuItem("Window/Hex Editor UI")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Hex Editor UI")]
         public static void ShowWindow()
         {
             HexEditorUIController wnd = GetWindow<HexEditorUIController>();

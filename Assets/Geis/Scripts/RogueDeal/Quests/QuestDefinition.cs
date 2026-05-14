@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace RogueDeal.Quests
 {
-    [CreateAssetMenu(fileName = "Quest_", menuName = "Funder Games/Rogue Deal/Quests/Quest Definition")]
+    [CreateAssetMenu(fileName = "Quest_", menuName = "Funder Games/Geis/Rogue Deal/Quests/Quest Definition")]
     public class QuestDefinition : ScriptableObject
     {
         [Header("Quest Identity")]

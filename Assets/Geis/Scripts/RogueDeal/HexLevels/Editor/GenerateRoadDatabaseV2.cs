@@ -20,7 +20,7 @@ namespace RogueDeal.HexLevels.Editor
     {
         private const string DATABASE_PATH = "Assets/RogueDeal/Resources/Data/HexLevels/RoadPatternDatabaseV2.asset";
         
-        [MenuItem("Tools/Hex Levels/Generate Road Pattern Database V2 (Prototype-Based)")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Generate Road Pattern Database V2 (Prototype-Based)")]
         public static void GenerateDatabase()
         {
             RoadPatternDatabase_New database = AssetDatabase.LoadAssetAtPath<RoadPatternDatabase_New>(DATABASE_PATH);

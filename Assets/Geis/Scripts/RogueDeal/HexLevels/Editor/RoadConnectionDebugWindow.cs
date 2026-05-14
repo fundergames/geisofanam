@@ -23,7 +23,7 @@ namespace RogueDeal.HexLevels
         private ConnectionPatternMappings mappings;
         private Vector2 scrollPos;
         
-        [MenuItem("Tools/Hex Levels/Road Connection Debugger")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Road Connection Debugger")]
         public static void ShowWindow()
         {
             GetWindow<RoadConnectionDebugWindow>("Road Debug");

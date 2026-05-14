@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace RogueDeal.Crafting
 {
-    [CreateAssetMenu(fileName = "Recipe_", menuName = "Funder Games/Rogue Deal/Crafting/Recipe")]
+    [CreateAssetMenu(fileName = "Recipe_", menuName = "Funder Games/Geis/Rogue Deal/Crafting/Recipe")]
     public class CraftingRecipe : ScriptableObject
     {
         [Header("Recipe Info")]

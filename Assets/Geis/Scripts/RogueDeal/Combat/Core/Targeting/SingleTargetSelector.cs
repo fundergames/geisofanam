@@ -21,7 +21,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// <summary>
     /// Targets the current enemy (for video poker mode)
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_SingleTarget", menuName = "RogueDeal/Combat/Targeting/Single Target Selector")]
+    [CreateAssetMenu(fileName = "Targeting_SingleTarget", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Single Target Selector")]
     public class SingleTargetSelector : TargetingStrategy
     {
         [Header("Targeting Settings")]

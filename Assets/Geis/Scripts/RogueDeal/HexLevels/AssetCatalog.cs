@@ -17,7 +17,7 @@ using System.Linq;
 
 namespace RogueDeal.HexLevels
 {
-    [CreateAssetMenu(fileName = "AssetCatalog", menuName = "Hex Editor/Asset Catalog")]
+    [CreateAssetMenu(fileName = "AssetCatalog", menuName = "Funder Games/Geis/Rogue Deal/Hex Levels/Authoring/Asset Catalog")]
     public class AssetCatalog : ScriptableObject
     {
         [System.Serializable]

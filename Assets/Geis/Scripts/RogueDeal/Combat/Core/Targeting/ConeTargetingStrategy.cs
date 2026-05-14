@@ -21,7 +21,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// <summary>
     /// Targets the nearest enemy within a cone of view and attack range
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_Cone", menuName = "RogueDeal/Combat/Targeting/Cone Targeting")]
+    [CreateAssetMenu(fileName = "Targeting_Cone", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Cone Targeting")]
     public class ConeTargetingStrategy : TargetingStrategy
     {
         [Header("Targeting Settings")]

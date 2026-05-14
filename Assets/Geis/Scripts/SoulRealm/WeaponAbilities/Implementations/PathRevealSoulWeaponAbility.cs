@@ -21,7 +21,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Harp_PathReveal",
-        menuName = "Geis/Soul Realm/Harp-Bow/Path Reveal")]
+        menuName = "Funder Games/Geis/Soul Realm/Harp-Bow/Path Reveal")]
     public sealed class PathRevealSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [SerializeField] private float pulseRadius = 18f;

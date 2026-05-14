@@ -31,7 +31,7 @@ namespace RogueDeal.Editor
         private int baseXPReward = 50;
         private LevelDefinition prerequisiteLevel;
 
-        [MenuItem("Funder Games/Level Editor")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Levels/Level Editor")]
         public static void ShowWindow()
         {
             GetWindow<LevelDataEditor>("Level Creator");

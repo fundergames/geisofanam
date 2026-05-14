@@ -28,7 +28,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Lyre_WaveRelease",
-        menuName = "Geis/Soul Realm/Lyre Sword/Wave Release")]
+        menuName = "Funder Games/Geis/Soul Realm/Lyre Sword/Wave Release")]
     public sealed class LyreWaveReleaseSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [Header("Pulse shape")]

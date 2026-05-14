@@ -44,7 +44,7 @@ namespace Geis.EditorTools
         private const int ForwardRollDirection = 4;
         private const string ForwardRollGeneratedClipPath = "Assets/Geis/Animations/Dodge/Dodge_Forward_Roll_Generated.anim";
 
-        [MenuItem("Geis/Animator/Setup Dodge Rolls (AC_Polygon_Masculine_Geis)")]
+        [MenuItem("Funder Games/Geis/Animator/Setup Dodge Rolls (AC_Polygon_Masculine_Geis)")]
         public static void SetupDodgeOnGeisAnimator()
         {
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
@@ -148,7 +148,7 @@ namespace Geis.EditorTools
         /// state into the animator, triggered when DodgeDirection == 4. Unity blocks <c>Animator.speed = -1</c> at
         /// runtime unless the recorder is enabled, so we pre-bake the reversed clip and just Play() it forward.
         /// </summary>
-        [MenuItem("Geis/Animator/Setup Forward Roll (Reverse-baked Dodge_Back)")]
+        [MenuItem("Funder Games/Geis/Animator/Setup Forward Roll (Reverse-baked Dodge_Back)")]
         public static void SetupForwardRoll()
         {
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);

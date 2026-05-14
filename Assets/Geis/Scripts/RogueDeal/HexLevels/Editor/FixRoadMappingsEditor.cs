@@ -21,14 +21,14 @@ namespace RogueDeal.HexLevels.Editor
     {
         private ConnectionPatternMappings mappingsAsset;
 
-        [MenuItem("Tools/Hex Levels/Fix Road Mappings")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Fix Road Mappings")]
         static void ShowWindow()
         {
             var window = GetWindow<FixRoadMappingsEditor>("Fix Road Mappings");
             window.Show();
         }
 
-        [MenuItem("Tools/Hex Levels/Reload Mappings Asset")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Reload Mappings Asset")]
         static void ReloadMappingsAsset()
         {
             AssetDatabase.Refresh();

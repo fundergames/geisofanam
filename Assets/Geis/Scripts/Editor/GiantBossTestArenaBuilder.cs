@@ -32,7 +32,7 @@ namespace Geis.Editor
         private const string ScenePath = "Assets/Geis/Scenes/GiantBossTestArena.unity";
         private const string DataFolder = "Assets/Geis/Data/BossTest";
 
-        [MenuItem("Geis/Boss/Build Giant Boss Test Arena Scene")]
+        [MenuItem("Funder Games/Geis/Boss/Build Giant Boss Test Arena Scene")]
         public static void BuildScene()
         {
             if (!EditorUtility.DisplayDialog(

@@ -64,7 +64,7 @@ namespace Geis.Enemies.Editor
         private EnemyBrain _selectedBrain;
         private Vector2 _scroll;
 
-        [MenuItem("Geis/Enemies/AI State Visualizer")]
+        [MenuItem("Funder Games/Geis/Enemies/AI State Visualizer")]
         public static void ShowWindow()
         {
             var window = GetWindow<EnemyAiStateWindow>("Enemy AI State");

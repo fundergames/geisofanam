@@ -25,7 +25,7 @@ namespace Geis.SoulRealm.Editor
     {
         const string PrefabPath = "Assets/Geis/Resources/VFX/SoulRealmExitHoldParticles.prefab";
 
-        [MenuItem("Geis/VFX/Create Soul Realm Exit Hold Particle Prefab", false, 10)]
+        [MenuItem("Funder Games/Geis/VFX/Create Soul Realm Exit Hold Particle Prefab", false, 10)]
         public static void CreatePrefabFromMenu()
         {
             CreatePrefabInternal();

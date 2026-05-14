@@ -22,7 +22,7 @@ namespace Geis.Combat.Music
     /// Per-weapon instrument configuration. Pentatonic clips (D4, F4, G4, A4, C5) from
     /// Musical_Instruments_And_Notes. Optional harmony and percussion instruments for layered combos.
     /// </summary>
-    [CreateAssetMenu(fileName = "WeaponInstrumentConfig_", menuName = "Geis/Combat/Music/Weapon Instrument Config")]
+    [CreateAssetMenu(fileName = "WeaponInstrumentConfig_", menuName = "Funder Games/Geis/Combat/Music/Weapon Instrument Config")]
     public class WeaponInstrumentConfig : ScriptableObject
     {
         [Tooltip("Instrument folder name under Musical_Instruments_And_Notes/Wave/44_1kHz-16bit/")]

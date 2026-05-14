@@ -28,7 +28,7 @@ namespace RogueDeal.HexLevels
         public string description;
     }
     
-    [CreateAssetMenu(fileName = "RoadPatternDatabase", menuName = "Hex Levels/Road Pattern Database v2")]
+    [CreateAssetMenu(fileName = "RoadPatternDatabase", menuName = "Funder Games/Geis/Rogue Deal/Hex Levels/Road Pattern Database v2")]
     public class RoadPatternDatabase_New : ScriptableObject
     {
         [Header("Prefab Prototypes (Base Patterns)")]

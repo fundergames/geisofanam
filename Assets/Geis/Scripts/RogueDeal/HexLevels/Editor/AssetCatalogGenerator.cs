@@ -19,7 +19,7 @@ namespace RogueDeal.HexLevels.Editor
 {
     public static class AssetCatalogGenerator
     {
-        [MenuItem("Tools/Hex Editor/Generate Asset Catalog")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Authoring/Generate Asset Catalog")]
         public static void GenerateAssetCatalog()
         {
             string catalogPath = "Assets/RogueDeal/Resources/Data/HexLevels";
@@ -69,7 +69,7 @@ namespace RogueDeal.HexLevels.Editor
             Selection.activeObject = AssetDatabase.LoadAssetAtPath<AssetCatalog>(assetPath);
         }
         
-        [MenuItem("Tools/Hex Editor/Refresh Asset Catalog")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Authoring/Refresh Asset Catalog")]
         public static void RefreshAssetCatalog()
         {
             string catalogPath = "Assets/RogueDeal/Resources/Data/HexLevels/AssetCatalog.asset";
@@ -101,7 +101,7 @@ namespace RogueDeal.HexLevels.Editor
             );
         }
         
-        [MenuItem("Tools/Hex Editor/Open Asset Catalog")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Authoring/Open Asset Catalog")]
         public static void OpenAssetCatalog()
         {
             string catalogPath = "Assets/RogueDeal/Resources/Data/HexLevels/AssetCatalog.asset";

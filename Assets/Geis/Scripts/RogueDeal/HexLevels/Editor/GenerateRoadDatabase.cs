@@ -18,7 +18,7 @@ namespace RogueDeal.HexLevels.Editor
 {
     public class GenerateRoadDatabase : EditorWindow
     {
-        [MenuItem("Tools/Hex Levels/Generate Road Pattern Database")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Generate Road Pattern Database")]
         static void Generate()
         {
             string path = "Assets/RogueDeal/Resources/Data/HexLevels/RoadPatternDatabase.asset";

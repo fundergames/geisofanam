@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace RogueDeal.Enemies
 {
-    [CreateAssetMenu(fileName = "Enemy_", menuName = "Funder Games/Rogue Deal/Enemies/Enemy Definition")]
+    [CreateAssetMenu(fileName = "Enemy_", menuName = "Funder Games/Geis/Rogue Deal/Enemies/Enemy Definition")]
     public class EnemyDefinition : ScriptableObject
     {
         [Header("Basic Info")]

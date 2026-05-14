@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace RogueDeal.Levels
 {
-    [CreateAssetMenu(fileName = "World_", menuName = "Funder Games/Rogue Deal/Levels/World Definition")]
+    [CreateAssetMenu(fileName = "World_", menuName = "Funder Games/Geis/Rogue Deal/Levels/World Definition")]
     public class WorldDefinition : ScriptableObject
     {
         [Header("World Info")]

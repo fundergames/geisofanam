@@ -20,7 +20,7 @@ namespace Geis.Puzzles.Editor
 {
     /// <summary>
     /// Editor tool that builds self-contained example groups in the open scene.
-    /// Use <c>Tools → Puzzles → Examples → …</c> to add one type (including Phase Shift Object), or <c>Create All Examples</c> for the full grid.
+    /// Use <c>Funder Games → Geis → Puzzles → Examples → …</c> to add one type (including Phase Shift Object), or <c>Create All Examples</c> for the full grid.
     /// Singles are parented under <c>PuzzleExamples</c> (created if missing) and placed on the next free grid slot.
     /// </summary>
     public static class PuzzleExampleBuilder
@@ -28,7 +28,7 @@ namespace Geis.Puzzles.Editor
         private const float ColSpacing = 14f;
         private const float RowSpacing = 16f;
 
-        private const string ExamplesMenu = "Tools/Puzzles/Examples/";
+        private const string ExamplesMenu = "Funder Games/Geis/Puzzles/Examples/";
 
         private const string PhaseShiftDissolveMaterialPath =
             "Assets/Geis/Materials/GeisPhaseShiftDissolve_Default.mat";

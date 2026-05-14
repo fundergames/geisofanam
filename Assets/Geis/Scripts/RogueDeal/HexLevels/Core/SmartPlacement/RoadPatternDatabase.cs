@@ -16,7 +16,7 @@ using System.Collections.Generic;
 
 namespace RogueDeal.HexLevels
 {
-    [CreateAssetMenu(fileName = "RoadPatternDatabase", menuName = "Hex Levels/Road Pattern Database")]
+    [CreateAssetMenu(fileName = "RoadPatternDatabase", menuName = "Funder Games/Geis/Rogue Deal/Hex Levels/Road Pattern Database")]
     public class RoadPatternDatabase : ScriptableObject
     {
         [System.Serializable]

@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "LocomotionSpeedProfile", menuName = "Geis/Locomotion/Locomotion Speed Profile")]
+    [CreateAssetMenu(fileName = "LocomotionSpeedProfile", menuName = "Funder Games/Geis/Locomotion/Locomotion Speed Profile")]
     public sealed class GeisLocomotionSpeedProfile : ScriptableObject
     {
         [Tooltip("Whether the character always strafes relative to the camera when moving.")]

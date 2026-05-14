@@ -21,7 +21,7 @@ namespace Geis.Combat
     /// <summary>
     /// Maps weapon slots to combo data. One GeisComboData per weapon.
     /// </summary>
-    [CreateAssetMenu(fileName = "WeaponComboData_", menuName = "Geis/Combat/Weapon Combo Data")]
+    [CreateAssetMenu(fileName = "WeaponComboData_", menuName = "Funder Games/Geis/Combat/Weapon Combo Data")]
     public class GeisWeaponComboData : ScriptableObject
     {
         [Tooltip("Combo data per weapon: [0]=Unarmed, [1]=Knife, [2]=Sword, [3]=Bow")]

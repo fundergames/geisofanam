@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Combat
 {
-    [CreateAssetMenu(fileName = "NewAbility", menuName = "RogueDeal/Combat/Ability")]
+    [CreateAssetMenu(fileName = "NewAbility", menuName = "Funder Games/Geis/Rogue Deal/Combat/Ability")]
     public class AbilityData : ScriptableObject
     {
         [Header("Basic Info")]

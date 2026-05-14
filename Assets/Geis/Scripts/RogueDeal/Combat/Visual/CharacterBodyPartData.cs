@@ -35,7 +35,7 @@ namespace RogueDeal.Combat.Visual
     /// Defines a body part that can be attached to a character.
     /// Body parts are typically SkinnedMeshRenderer components that share the same skeleton.
     /// </summary>
-    [CreateAssetMenu(fileName = "BodyPart_", menuName = "Funder Games/Rogue Deal/Character/Body Part")]
+    [CreateAssetMenu(fileName = "BodyPart_", menuName = "Funder Games/Geis/Rogue Deal/Character/Body Part")]
     public class CharacterBodyPartData : ScriptableObject
     {
         [Header("Body Part Info")]

@@ -23,7 +23,7 @@ namespace RogueDeal.HexLevels.Editor
         private Vector2 scrollPos;
         private float spacing = 3f;
         
-        [MenuItem("Tools/Hex Levels/Road Prefab Visualizer")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Road Prefab Visualizer")]
         static void ShowWindow()
         {
             var window = GetWindow<RoadPrefabVisualizer>("Road Variants");

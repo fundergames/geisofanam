@@ -24,7 +24,7 @@ namespace RogueDeal.HexLevels.Editor
     /// </summary>
     public class RunRoadMapper : EditorWindow
     {
-        [MenuItem("Funder Games/Hex Levels/Run Road Mapper Now")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Run Road Mapper Now")]
         public static void RunNow()
         {
             RoadConnectionMapper.ApplyRoadMappings();

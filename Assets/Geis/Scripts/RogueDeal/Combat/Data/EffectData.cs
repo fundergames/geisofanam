@@ -16,7 +16,7 @@ using RogueDeal.Player;
 
 namespace RogueDeal.Combat
 {
-    [CreateAssetMenu(fileName = "NewEffect", menuName = "RogueDeal/Combat/Effect")]
+    [CreateAssetMenu(fileName = "NewEffect", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effect")]
     public class EffectData : ScriptableObject
     {
         [Header("Effect Settings")]

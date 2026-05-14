@@ -16,7 +16,7 @@ using UnityEngine;
 
 namespace RogueDeal.Items
 {
-    [CreateAssetMenu(fileName = "Consumable_", menuName = "Funder Games/Rogue Deal/Items/Consumable")]
+    [CreateAssetMenu(fileName = "Consumable_", menuName = "Funder Games/Geis/Rogue Deal/Items/Consumable")]
     public class ConsumableItem : BaseItem
     {
         [Header("Consumable Properties")]

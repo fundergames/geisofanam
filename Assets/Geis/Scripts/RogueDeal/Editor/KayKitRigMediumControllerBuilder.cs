@@ -27,7 +27,7 @@ namespace RogueDeal.Editor
         private const string RIG_MEDIUM_BASE = "Assets/KayKit/Characters/Animations/Animations/Rig_Medium";
         private const string OUTPUT_PATH = "Assets/RogueDeal/Combat/Animations/KayKit_RigMedium_Controller.controller";
 
-        [MenuItem("Tools/Combat Setup/Build KayKit RigMedium Controller")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Setup/Build KayKit RigMedium Controller")]
         public static void BuildController()
         {
             AnimationClip idle = LoadClip($"{RIG_MEDIUM_BASE}/General/Idle_A.anim");
@@ -254,7 +254,7 @@ namespace RogueDeal.Editor
             Debug.Log($"[KayKitRigMediumControllerBuilder] Created controller at {OUTPUT_PATH}");
         }
 
-        [MenuItem("Tools/Combat Setup/Apply KayKit RigMedium Controller to TestPlayer1")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Setup/Apply KayKit RigMedium Controller to TestPlayer1")]
         public static void ApplyToTestPlayer1()
         {
             var controller = AssetDatabase.LoadAssetAtPath<AnimatorController>(OUTPUT_PATH);
@@ -302,7 +302,7 @@ namespace RogueDeal.Editor
             }
         }
 
-        [MenuItem("Tools/Combat Setup/Update AnimatorData Assets to KayKit RigMedium")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Setup/Update AnimatorData Assets to KayKit RigMedium")]
         public static void UpdateAnimatorDataAssets()
         {
             var controller = AssetDatabase.LoadAssetAtPath<RuntimeAnimatorController>(OUTPUT_PATH);

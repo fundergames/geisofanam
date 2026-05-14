@@ -19,7 +19,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// <summary>
     /// Effect that applies a status effect (burn, poison, regen, etc.) with duration.
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_Status_", menuName = "RogueDeal/Combat/Effects/Status Effect")]
+    [CreateAssetMenu(fileName = "Effect_Status_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Status Effect")]
     public class StatusEffect : BaseEffect
     {
         [Header("Status Effect Settings")]

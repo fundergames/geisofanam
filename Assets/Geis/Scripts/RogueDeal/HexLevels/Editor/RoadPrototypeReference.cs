@@ -21,7 +21,7 @@ namespace RogueDeal.HexLevels.Editor
     {
         private Vector2 scrollPos;
         
-        [MenuItem("Tools/Hex Levels/Road Prototype Reference")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Road Prototype Reference")]
         public static void ShowWindow()
         {
             GetWindow<RoadPrototypeReference>("Road Prototype Reference");

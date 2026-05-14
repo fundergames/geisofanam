@@ -35,7 +35,7 @@ namespace RogueDeal.Editor
         private Vector2 scrollPosition;
         private bool showAdvanced = false;
         
-        [MenuItem("Funder Games/Rogue Deal/Character Visual Setup Wizard")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Character Visual Setup Wizard")]
         public static void ShowWindow()
         {
             GetWindow<CharacterVisualSetupWizard>("Character Visual Setup");

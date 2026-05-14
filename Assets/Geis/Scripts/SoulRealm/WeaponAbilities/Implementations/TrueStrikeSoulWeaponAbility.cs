@@ -21,7 +21,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Sword_TrueStrike",
-        menuName = "Geis/Soul Realm/Emberblade/True Strike")]
+        menuName = "Funder Games/Geis/Soul Realm/Emberblade/True Strike")]
     public sealed class TrueStrikeSoulWeaponAbility : SoulWeaponAbilityAsset
     {
         [SerializeField] private float strikeDistance = 10f;

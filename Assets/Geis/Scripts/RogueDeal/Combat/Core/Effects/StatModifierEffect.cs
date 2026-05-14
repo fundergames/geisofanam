@@ -20,7 +20,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// <summary>
     /// Effect that modifies a stat. Can be instant or over time (status effect).
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_StatModifier_", menuName = "RogueDeal/Combat/Effects/Stat Modifier Effect")]
+    [CreateAssetMenu(fileName = "Effect_StatModifier_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Stat Modifier Effect")]
     public class StatModifierEffect : BaseEffect
     {
         [Header("Stat Modification")]

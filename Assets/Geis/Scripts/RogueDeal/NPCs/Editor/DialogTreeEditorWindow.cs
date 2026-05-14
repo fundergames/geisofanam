@@ -48,7 +48,7 @@ namespace RogueDeal.NPCs.Editor
         private GUIStyle _headerStyle;
         private GUIStyle _choiceButtonStyle;
         
-        [MenuItem("Tools/Rogue Deal/Dialog Tree Editor")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Dialog Tree Editor")]
         public static void ShowWindow()
         {
             var window = GetWindow<DialogTreeEditorWindow>("Dialog Tree Editor");

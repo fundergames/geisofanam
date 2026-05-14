@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "GroundingProfile", menuName = "Geis/Locomotion/Grounding Profile")]
+    [CreateAssetMenu(fileName = "GroundingProfile", menuName = "Funder Games/Geis/Locomotion/Grounding Profile")]
     public sealed class GeisGroundingProfile : ScriptableObject
     {
         [Tooltip("Layers used for ground checks, incline rays, and ceiling checks.")]

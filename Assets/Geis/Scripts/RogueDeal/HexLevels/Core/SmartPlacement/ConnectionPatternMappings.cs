@@ -20,7 +20,7 @@ namespace RogueDeal.HexLevels
     /// ScriptableObject to store connection pattern mappings for roads, rivers, and coast tiles.
     /// This allows mappings to persist and be shared across projects.
     /// </summary>
-    [CreateAssetMenu(fileName = "ConnectionPatternMappings", menuName = "Hex Levels/Connection Pattern Mappings", order = 1)]
+    [CreateAssetMenu(fileName = "ConnectionPatternMappings", menuName = "Funder Games/Geis/Rogue Deal/Hex Levels/Connection Pattern Mappings", order = 1)]
     public class ConnectionPatternMappings : ScriptableObject
     {
         [System.Serializable]

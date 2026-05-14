@@ -21,7 +21,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// <summary>
     /// Targets multiple enemies (for AOE/multi-hit abilities)
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_MultiTarget", menuName = "RogueDeal/Combat/Targeting/Multi Target Selector")]
+    [CreateAssetMenu(fileName = "Targeting_MultiTarget", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Multi Target Selector")]
     public class MultiTargetSelector : TargetingStrategy
     {
         [Header("Targeting Settings")]

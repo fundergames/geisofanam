@@ -28,7 +28,7 @@ namespace RogueDeal.Combat.Editor
     {
         private const string PrefabPath = "Assets/Geis/Combat/Prefabs";
 
-        [MenuItem("Tools/Combat/Create Combat UI Prefabs")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Create Combat UI Prefabs")]
         public static void CreateAllPrefabs()
         {
             EnsureDirectoryExists(PrefabPath);
@@ -42,7 +42,7 @@ namespace RogueDeal.Combat.Editor
             Debug.Log("[CombatUIPrefabBuilder] Created health bar, damage popup, and damage number prefabs.");
         }
 
-        [MenuItem("Tools/Combat/Create Enemy Health Bar Prefab")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Create Enemy Health Bar Prefab")]
         public static void CreateEnemyHealthBarPrefab()
         {
             EnsureDirectoryExists(PrefabPath);
@@ -110,7 +110,7 @@ namespace RogueDeal.Combat.Editor
             Object.DestroyImmediate(root);
         }
 
-        [MenuItem("Tools/Combat/Create Damage Popup Prefab")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Create Damage Popup Prefab")]
         public static void CreateDamagePopupPrefab()
         {
             EnsureDirectoryExists(PrefabPath);
@@ -162,7 +162,7 @@ namespace RogueDeal.Combat.Editor
             Object.DestroyImmediate(root);
         }
 
-        [MenuItem("Tools/Combat/Create Damage Number Prefab")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Combat/Create Damage Number Prefab")]
         public static void CreateDamageNumberPrefab()
         {
             EnsureDirectoryExists(PrefabPath);

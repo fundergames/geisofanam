@@ -22,7 +22,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// Click-to-select targeting with lock-on. Player clicks to select/deselect targets.
     /// Lock-on persists until target dies, goes out of range, or player clicks elsewhere.
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_ClickToSelect", menuName = "RogueDeal/Combat/Targeting/Click To Select")]
+    [CreateAssetMenu(fileName = "Targeting_ClickToSelect", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Click To Select")]
     public class ClickToSelectTargetingStrategy : TargetingStrategy
     {
         [Header("Targeting Settings")]

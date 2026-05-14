@@ -23,7 +23,7 @@ namespace RogueDeal.HexLevels.Editor
     /// </summary>
     public static class HexPrefabSizeMeasurer
     {
-        [MenuItem("Funder Games/Hex Levels/Measure Hex Prefab Size")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Measure Hex Prefab Size")]
         public static void MeasureHexPrefabSize()
         {
             // Try to find a hex grass prefab
@@ -150,7 +150,7 @@ namespace RogueDeal.HexLevels.Editor
             }
         }
 
-        [MenuItem("Funder Games/Hex Levels/Measure Selected Prefab")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Measure Selected Prefab")]
         public static void MeasureSelectedPrefab()
         {
             GameObject selected = Selection.activeGameObject;
@@ -204,7 +204,7 @@ namespace RogueDeal.HexLevels.Editor
             EditorUtility.DisplayDialog("Object Size Measurement", report, "OK");
         }
 
-        [MenuItem("Funder Games/Hex Levels/Calibrate Hex Size from Two Adjacent Tiles")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Calibrate Hex Size from Two Adjacent Tiles")]
         public static void CalibrateFromAdjacentTiles()
         {
             HexGrid hexGrid = Object.FindFirstObjectByType<HexGrid>();
@@ -411,7 +411,7 @@ namespace RogueDeal.HexLevels.Editor
             }
         }
 
-        [MenuItem("Funder Games/Hex Levels/Calibrate Hex Size from Selected Hex Tile")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Calibrate Hex Size from Selected Hex Tile")]
         public static void CalibrateFromSelectedTile()
         {
             // Find HexGrid in scene

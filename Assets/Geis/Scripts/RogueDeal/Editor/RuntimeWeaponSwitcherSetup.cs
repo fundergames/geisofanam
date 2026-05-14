@@ -36,7 +36,7 @@ namespace RogueDeal.Editor
             ("Assets/KayKit/Characters/KayKit - Adventurers (for Unity)/Prefabs/Accessories/wand.prefab", "Wand"),
         };
 
-        [MenuItem("Funder Games/Rogue Deal/Setup Runtime Weapon Switcher on Player Prefab")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Setup Runtime Weapon Switcher on Player Prefab")]
         public static void SetupOnPlayerPrefab()
         {
             var prefabPath = "Assets/RogueDeal/Combat/Prefabs/Player.prefab";
@@ -62,7 +62,7 @@ namespace RogueDeal.Editor
             Debug.Log("[RuntimeWeaponSwitcherSetup] ✅ Player prefab updated. Keys 1-5: Sword, Dagger, Axe, Crossbow, Wand.");
         }
 
-        [MenuItem("Funder Games/Rogue Deal/Setup Runtime Weapon Switcher on Selected Object")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Setup Runtime Weapon Switcher on Selected Object")]
         public static void SetupOnSelectedObject()
         {
             var go = Selection.activeGameObject;

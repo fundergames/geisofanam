@@ -24,7 +24,7 @@ namespace RogueDeal.NPCs.Editor
         private Vector3 _spawnPosition = Vector3.zero;
         private float _colliderRadius = 2.5f;
 
-        [MenuItem("Tools/Rogue Deal/NPC Setup Wizard")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/NPC Setup Wizard")]
         public static void ShowWindow()
         {
             var window = GetWindow<NPCSetupWizard>("NPC Setup Wizard");

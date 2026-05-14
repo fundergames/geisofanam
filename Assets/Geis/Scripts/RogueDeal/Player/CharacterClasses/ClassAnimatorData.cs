@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace RogueDeal.Player
 {
-    [CreateAssetMenu(fileName = "AnimatorData", menuName = "RogueDeal/Character/Animator Data")]
+    [CreateAssetMenu(fileName = "AnimatorData", menuName = "Funder Games/Geis/Rogue Deal/Character/Animator Data")]
     public class ClassAnimatorData : ScriptableObject
     {
         public RuntimeAnimatorController battleAnimator;

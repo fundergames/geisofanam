@@ -23,7 +23,7 @@ namespace RogueDeal.Editor
 {
     public class GameDataCreator : EditorWindow
     {
-        [MenuItem("Funder Games/Rogue Deal/Create Example Data")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Create Example Data")]
         public static void ShowWindow()
         {
             GetWindow<GameDataCreator>("Game Data Creator");

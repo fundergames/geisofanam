@@ -17,7 +17,7 @@ using UnityEngine;
 
 namespace RogueDeal.Items
 {
-    [CreateAssetMenu(fileName = "Equipment_", menuName = "Funder Games/Rogue Deal/Items/Equipment")]
+    [CreateAssetMenu(fileName = "Equipment_", menuName = "Funder Games/Geis/Rogue Deal/Items/Equipment")]
     public class EquipmentItem : BaseItem
     {
         [Header("Equipment Properties")]

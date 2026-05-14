@@ -18,7 +18,7 @@ using RogueDeal.Quests;
 
 namespace RogueDeal.NPCs
 {
-    [CreateAssetMenu(fileName = "Dialog_", menuName = "Funder Games/Rogue Deal/NPCs/Dialog Tree")]
+    [CreateAssetMenu(fileName = "Dialog_", menuName = "Funder Games/Geis/Rogue Deal/NPCs/Dialog Tree")]
     public class DialogTree : ScriptableObject
     {
         [Header("Dialog Info")]

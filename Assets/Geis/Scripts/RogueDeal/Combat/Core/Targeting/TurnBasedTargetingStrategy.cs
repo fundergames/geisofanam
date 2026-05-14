@@ -23,7 +23,7 @@ namespace RogueDeal.Combat.Core.Targeting
     /// Migrated from TurnBasedTargeting class.
     /// Supports pre-selected targets (from UI selection).
     /// </summary>
-    [CreateAssetMenu(fileName = "Targeting_TurnBased", menuName = "RogueDeal/Combat/Targeting/Turn-Based Targeting")]
+    [CreateAssetMenu(fileName = "Targeting_TurnBased", menuName = "Funder Games/Geis/Rogue Deal/Combat/Targeting/Turn-Based Targeting")]
     public class TurnBasedTargetingStrategy : TargetingStrategy
     {
         [Header("Targeting Settings")]

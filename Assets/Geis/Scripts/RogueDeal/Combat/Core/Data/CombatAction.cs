@@ -39,7 +39,7 @@ namespace RogueDeal.Combat.Core.Data
     /// - Cooldowns and charges
     /// - Combos, projectiles, persistent AOE
     /// </summary>
-    [CreateAssetMenu(fileName = "Action_", menuName = "RogueDeal/Combat/Actions/Combat Action")]
+    [CreateAssetMenu(fileName = "Action_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Actions/Combat Action")]
     public class CombatAction : ScriptableObject
     {
         [Header("Basic Info")]

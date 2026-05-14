@@ -15,7 +15,7 @@ using UnityEngine;
 
 namespace Geis.Locomotion
 {
-    [CreateAssetMenu(fileName = "PlayerCapsuleProfile", menuName = "Geis/Locomotion/Player Capsule Profile")]
+    [CreateAssetMenu(fileName = "PlayerCapsuleProfile", menuName = "Funder Games/Geis/Locomotion/Player Capsule Profile")]
     public sealed class GeisPlayerCapsuleProfile : ScriptableObject
     {
         public float standingHeight = GeisLocomotionTuningDefaults.CapsuleStandingHeight;

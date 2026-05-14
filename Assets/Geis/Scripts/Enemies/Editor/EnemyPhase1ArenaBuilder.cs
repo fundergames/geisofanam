@@ -42,7 +42,7 @@ namespace Geis.Enemies.Editor
         private const string ScenePath = "Assets/Geis/Scenes/EnemyAITestArena.unity";
         private const string PlayerPrefabPath = "Assets/Geis/Combat/Prefabs/Player.prefab";
 
-        [MenuItem("Geis/Enemies/Build Phase 1 Enemy Arena")]
+        [MenuItem("Funder Games/Geis/Enemies/Build Phase 1 Enemy Arena")]
         public static void BuildPhase1EnemyArena()
         {
             if (!Application.isBatchMode && !EditorUtility.DisplayDialog(

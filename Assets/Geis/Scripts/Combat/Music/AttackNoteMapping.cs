@@ -21,7 +21,7 @@ namespace Geis.Combat.Music
     /// <summary>
     /// Maps attack types to note config (velocity multiplier, duration). Optional override for tuning.
     /// </summary>
-    [CreateAssetMenu(fileName = "AttackNoteMapping_", menuName = "Geis/Combat/Music/Attack Note Mapping")]
+    [CreateAssetMenu(fileName = "AttackNoteMapping_", menuName = "Funder Games/Geis/Combat/Music/Attack Note Mapping")]
     public class AttackNoteMapping : ScriptableObject
     {
         [Header("Light Attack")]

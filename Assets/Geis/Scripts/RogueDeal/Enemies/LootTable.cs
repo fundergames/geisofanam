@@ -19,7 +19,7 @@ using UnityEngine;
 
 namespace RogueDeal.Enemies
 {
-    [CreateAssetMenu(fileName = "LootTable_", menuName = "Funder Games/Rogue Deal/Enemies/Loot Table")]
+    [CreateAssetMenu(fileName = "LootTable_", menuName = "Funder Games/Geis/Rogue Deal/Enemies/Loot Table")]
     public class LootTable : ScriptableObject
     {
         [Header("Drop Settings")]

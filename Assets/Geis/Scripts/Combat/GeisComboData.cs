@@ -79,7 +79,7 @@ public class GeisComboStateTiming
     /// Data-driven combo definition per weapon. Transition table + clip assignments.
     /// Add new branches by adding transitions and clips; no animator changes.
     /// </summary>
-    [CreateAssetMenu(fileName = "ComboData_", menuName = "Geis/Combat/Combo Data")]
+    [CreateAssetMenu(fileName = "ComboData_", menuName = "Funder Games/Geis/Combat/Combo Data")]
     public class GeisComboData : ScriptableObject
     {
         [Header("Transition Table")]

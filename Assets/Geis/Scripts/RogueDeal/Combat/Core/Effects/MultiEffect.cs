@@ -20,7 +20,7 @@ namespace RogueDeal.Combat.Core.Effects
     /// Effect that applies multiple effects simultaneously.
     /// Useful for complex attacks (e.g., Fire Sword = Physical Damage + Fire Damage + Burn Status)
     /// </summary>
-    [CreateAssetMenu(fileName = "Effect_Multi_", menuName = "RogueDeal/Combat/Effects/Multi Effect")]
+    [CreateAssetMenu(fileName = "Effect_Multi_", menuName = "Funder Games/Geis/Rogue Deal/Combat/Effects/Multi Effect")]
     public class MultiEffect : BaseEffect
     {
         [Header("Effects")]

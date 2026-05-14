@@ -23,7 +23,7 @@ namespace Geis.SoulRealm.WeaponAbilities
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Dagger_PhaseShift",
-        menuName = "Geis/Soul Realm/Dagger-Flute/Phase Shift Object")]
+        menuName = "Funder Games/Geis/Soul Realm/Dagger-Flute/Phase Shift Object")]
     public sealed class DaggerPhaseShiftSoulWeaponAbility : SoulWeaponAbilityAsset, ISoulWeaponSecondaryHoldTick
     {
         [SerializeField] private float maxDistance = 25f;

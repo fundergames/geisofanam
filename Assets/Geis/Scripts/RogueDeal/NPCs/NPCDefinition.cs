@@ -17,7 +17,7 @@ using RogueDeal.Quests;
 
 namespace RogueDeal.NPCs
 {
-    [CreateAssetMenu(fileName = "NPC_", menuName = "Funder Games/Rogue Deal/NPCs/NPC Definition")]
+    [CreateAssetMenu(fileName = "NPC_", menuName = "Funder Games/Geis/Rogue Deal/NPCs/NPC Definition")]
     public class NPCDefinition : ScriptableObject
     {
         [Header("Basic Info")]

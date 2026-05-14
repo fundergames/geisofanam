@@ -41,7 +41,7 @@ namespace RogueDeal.HexLevels.Editor
         private ConnectionPatternMappings _mappingsAsset;
         private const string DEFAULT_MAPPINGS_PATH = "Assets/RogueDeal/Resources/Data/HexLevels/ConnectionPatternMappings.asset";
 
-        [MenuItem("Funder Games/Hex Levels/Connection Pattern Mapper")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Connection Pattern Mapper")]
         public static void ShowWindow()
         {
             ConnectionPatternMapper window = GetWindow<ConnectionPatternMapper>("Connection Mapper");

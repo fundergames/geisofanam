@@ -188,7 +188,7 @@ namespace RogueDeal.HexLevels.Editor
         /// <summary>
         /// Apply the generated mappings to a ConnectionPatternMappings asset.
         /// </summary>
-        [MenuItem("Funder Games/Hex Levels/Apply Road Connection Mappings")]
+        [MenuItem("Funder Games/Geis/Rogue Deal/Hex Levels/Apply Road Connection Mappings")]
         public static void ApplyRoadMappings()
         {
             const string DEFAULT_MAPPINGS_PATH = "Assets/RogueDeal/Resources/Data/HexLevels/ConnectionPatternMappings.asset";

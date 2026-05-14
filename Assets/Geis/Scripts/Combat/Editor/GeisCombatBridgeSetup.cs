@@ -22,7 +22,7 @@ namespace Geis.Combat.Editor
 {
     public static class GeisCombatBridgeSetup
     {
-        [MenuItem("Tools/Geis/Add Combat Bridge to Selected Player")]
+        [MenuItem("Funder Games/Geis/Combat/Add Combat Bridge to Selected Player")]
         public static void AddCombatBridgeToSelection()
         {
             var go = Selection.activeGameObject;

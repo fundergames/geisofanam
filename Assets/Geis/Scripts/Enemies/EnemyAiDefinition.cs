@@ -18,7 +18,7 @@ using UnityEngine;
 
 namespace Geis.Enemies
 {
-    [CreateAssetMenu(fileName = "EnemyAI_", menuName = "Geis/Enemies/Enemy AI Definition")]
+    [CreateAssetMenu(fileName = "EnemyAI_", menuName = "Funder Games/Geis/Enemies/Enemy AI Definition")]
     public class EnemyAiDefinition : ScriptableObject
     {
         [Header("Identity")]
