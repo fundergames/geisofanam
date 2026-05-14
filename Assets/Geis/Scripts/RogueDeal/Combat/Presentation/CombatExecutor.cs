@@ -15,6 +15,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Geis.Animation;
+using Geis.Enemies;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -401,6 +402,9 @@ namespace RogueDeal.Combat.Presentation
             foreach (var target in targetList)
             {
                 if (target == null) continue;
+
+                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(combatEntity, target))
+                    continue;
                 
                 var targetData = target.GetEntityData();
                 if (targetData == null || !targetData.IsAlive) continue;
@@ -472,6 +476,9 @@ namespace RogueDeal.Combat.Presentation
             foreach (var target in currentTargets)
             {
                 if (target == null) continue;
+
+                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(combatEntity, target))
+                    continue;
                 
                 var targetData = target.GetEntityData();
                 if (targetData == null || !targetData.IsAlive) continue;
@@ -640,10 +647,6 @@ namespace RogueDeal.Combat.Presentation
             entityData.OnTurnStart();
             cooldownManager.OnTurnStart();
         }
-        
-        /// <summary>
-        /// Checks animation state after triggering (for debugging)
-        /// </summary>
     }
 }
 

@@ -81,14 +81,32 @@ namespace RogueDeal.UI
         [Header("3D Player Settings")]
         [SerializeField] private Vector3 player3DPosition = new Vector3(-4, 1, 0);
         [SerializeField] private Vector3 player3DScale = new Vector3(0.8f, 1.5f, 0.8f);
+        [SerializeField] private Vector3 player3DEulerAngles = Vector3.zero;
+
+        [Header("3D Player Character")]
+        [Tooltip("Combat player prefab (e.g. Assets/Geis/Combat/Prefabs/Player.prefab). Leave empty to use the primitive cube.")]
+        [SerializeField] private GameObject playerCharacterPrefab;
+        [Tooltip("When spawning the prefab, turn off controllers, colliders, and gameplay scripts so only rendering + Animator run.")]
+        [SerializeField] private bool stripGameplayFromSpawnedPlayer = true;
 
         [Header("3D Enemy Settings")]
         [SerializeField] private Vector3 enemy1_3DPosition = new Vector3(1, 1, 0);
         [SerializeField] private Vector3 enemy1_3DScale = new Vector3(0.9f, 1.3f, 0.9f);
+        [SerializeField] private Vector3 enemy1_3DEulerAngles = Vector3.zero;
         [SerializeField] private Vector3 enemy2_3DPosition = new Vector3(3, 0.8f, -0.5f);
         [SerializeField] private Vector3 enemy2_3DScale = new Vector3(0.85f, 1.2f, 0.85f);
+        [SerializeField] private Vector3 enemy2_3DEulerAngles = Vector3.zero;
         [SerializeField] private Vector3 enemy3_3DPosition = new Vector3(5, 1.1f, 0.5f);
         [SerializeField] private Vector3 enemy3_3DScale = new Vector3(0.75f, 1.4f, 0.75f);
+        [SerializeField] private Vector3 enemy3_3DEulerAngles = Vector3.zero;
+
+        [Header("3D Enemy Characters")]
+        [Tooltip("Optional per-slot prefab. Leave empty for that slot to use a tinted cube.")]
+        [SerializeField] private GameObject enemy1CharacterPrefab;
+        [SerializeField] private GameObject enemy2CharacterPrefab;
+        [SerializeField] private GameObject enemy3CharacterPrefab;
+        [Tooltip("When spawning enemy prefabs, turn off controllers, colliders, and gameplay scripts so only rendering + Animator run.")]
+        [SerializeField] private bool stripGameplayFromSpawnedEnemies = true;
 
         [Header("3D Ground Settings")]
         [SerializeField] private Vector3 groundPosition = new Vector3(0, 0, 0);
@@ -290,33 +308,37 @@ namespace RogueDeal.UI
             ground.transform.localScale = groundScale;
             ground.GetComponent<Renderer>().material.color = groundColor;
 
-            GameObject player = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            player.name = "Player";
-            player.transform.SetParent(scene3D.transform);
-            player.transform.position = player3DPosition;
-            player.transform.localScale = player3DScale;
-            player.GetComponent<Renderer>().material.color = playerColor;
+            SpawnPlayer3D(scene3D.transform);
 
-            GameObject enemy1 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            enemy1.name = "Enemy1";
-            enemy1.transform.SetParent(scene3D.transform);
-            enemy1.transform.position = enemy1_3DPosition;
-            enemy1.transform.localScale = enemy1_3DScale;
-            enemy1.GetComponent<Renderer>().material.color = enemyColor;
+            Spawn3DCharacterOrCube(
+                scene3D.transform,
+                "Enemy1",
+                enemy1CharacterPrefab,
+                enemy1_3DPosition,
+                enemy1_3DEulerAngles,
+                enemy1_3DScale,
+                enemyColor,
+                stripGameplayFromSpawnedEnemies);
 
-            GameObject enemy2 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            enemy2.name = "Enemy2";
-            enemy2.transform.SetParent(scene3D.transform);
-            enemy2.transform.position = enemy2_3DPosition;
-            enemy2.transform.localScale = enemy2_3DScale;
-            enemy2.GetComponent<Renderer>().material.color = new Color(enemyColor.r * 0.9f, enemyColor.g * 0.8f, enemyColor.b * 0.8f);
+            Spawn3DCharacterOrCube(
+                scene3D.transform,
+                "Enemy2",
+                enemy2CharacterPrefab,
+                enemy2_3DPosition,
+                enemy2_3DEulerAngles,
+                enemy2_3DScale,
+                new Color(enemyColor.r * 0.9f, enemyColor.g * 0.8f, enemyColor.b * 0.8f, 1f),
+                stripGameplayFromSpawnedEnemies);
 
-            GameObject enemy3 = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            enemy3.name = "Enemy3";
-            enemy3.transform.SetParent(scene3D.transform);
-            enemy3.transform.position = enemy3_3DPosition;
-            enemy3.transform.localScale = enemy3_3DScale;
-            enemy3.GetComponent<Renderer>().material.color = new Color(enemyColor.r * 0.85f, enemyColor.g * 0.75f, enemyColor.b * 0.75f);
+            Spawn3DCharacterOrCube(
+                scene3D.transform,
+                "Enemy3",
+                enemy3CharacterPrefab,
+                enemy3_3DPosition,
+                enemy3_3DEulerAngles,
+                enemy3_3DScale,
+                new Color(enemyColor.r * 0.85f, enemyColor.g * 0.75f, enemyColor.b * 0.75f, 1f),
+                stripGameplayFromSpawnedEnemies);
 
             GameObject light = new GameObject("Directional Light");
             light.transform.SetParent(scene3D.transform);
@@ -324,6 +346,129 @@ namespace RogueDeal.UI
             lightComp.type = LightType.Directional;
             lightComp.transform.rotation = Quaternion.Euler(lightRotation);
             lightComp.intensity = lightIntensity;
+        }
+
+        private void SpawnPlayer3D(Transform sceneParent)
+        {
+            Spawn3DCharacterOrCube(
+                sceneParent,
+                "Player",
+                playerCharacterPrefab,
+                player3DPosition,
+                player3DEulerAngles,
+                player3DScale,
+                playerColor,
+                stripGameplayFromSpawnedPlayer);
+        }
+
+        private static void Spawn3DCharacterOrCube(
+            Transform sceneParent,
+            string instanceName,
+            GameObject characterPrefab,
+            Vector3 localPosition,
+            Vector3 localEulerAngles,
+            Vector3 localScale,
+            Color cubeFallbackColor,
+            bool stripGameplayWhenPrefab)
+        {
+            if (characterPrefab != null)
+            {
+                GameObject instance = Object.Instantiate(characterPrefab, sceneParent);
+                instance.name = instanceName;
+                instance.transform.localPosition = localPosition;
+                instance.transform.localRotation = Quaternion.Euler(localEulerAngles);
+                instance.transform.localScale = localScale;
+
+                if (stripGameplayWhenPrefab)
+                {
+                    StripGameplayForVisualOnly(instance);
+                }
+
+                TryConfigureIdleAnimator(instance);
+                return;
+            }
+
+            GameObject cube = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            cube.name = instanceName;
+            cube.transform.SetParent(sceneParent);
+            cube.transform.localPosition = localPosition;
+            cube.transform.localRotation = Quaternion.Euler(localEulerAngles);
+            cube.transform.localScale = localScale;
+            cube.GetComponent<Renderer>().material.color = cubeFallbackColor;
+        }
+
+        private static void StripGameplayForVisualOnly(GameObject root)
+        {
+            foreach (CharacterController cc in root.GetComponentsInChildren<CharacterController>(true))
+            {
+                cc.enabled = false;
+            }
+
+            foreach (Rigidbody rb in root.GetComponentsInChildren<Rigidbody>(true))
+            {
+                if (rb != null)
+                {
+                    rb.isKinematic = true;
+                }
+            }
+
+            foreach (Collider col in root.GetComponentsInChildren<Collider>(true))
+            {
+                if (col != null)
+                {
+                    col.enabled = false;
+                }
+            }
+
+            foreach (MonoBehaviour mb in root.GetComponentsInChildren<MonoBehaviour>(true))
+            {
+                if (mb != null)
+                {
+                    mb.enabled = false;
+                }
+            }
+        }
+
+        private static void TryConfigureIdleAnimator(GameObject root)
+        {
+            foreach (Animator anim in root.GetComponentsInChildren<Animator>(true))
+            {
+                if (anim == null)
+                {
+                    continue;
+                }
+
+                anim.enabled = true;
+                anim.applyRootMotion = false;
+
+                foreach (AnimatorControllerParameter p in anim.parameters)
+                {
+                    switch (p.type)
+                    {
+                        case AnimatorControllerParameterType.Float when p.name == "Speed" || p.name == "MoveSpeed":
+                            anim.SetFloat(p.nameHash, 0f);
+                            break;
+                        case AnimatorControllerParameterType.Bool:
+                            if (p.name == "IsRunning" || p.name == "IsAttacking")
+                            {
+                                anim.SetBool(p.nameHash, false);
+                            }
+                            else if (p.name == "IsGrounded")
+                            {
+                                anim.SetBool(p.nameHash, true);
+                            }
+                            else if (p.name == "HasTarget"
+                                     || p.name == "IsStrafing"
+                                     || p.name == "IsTelegraphing"
+                                     || p.name == "IsDead")
+                            {
+                                anim.SetBool(p.nameHash, false);
+                            }
+
+                            break;
+                    }
+                }
+            }
         }
 
         private void Build2DCombatArea()

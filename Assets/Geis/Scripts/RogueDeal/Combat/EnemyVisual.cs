@@ -11,6 +11,7 @@
  * It may not be redistributed, sublicensed, or sold in any form.
  */
 
+using Geis.Enemies;
 using RogueDeal.Enemies;
 using UnityEngine;
 using UnityEngine.UI;
@@ -186,7 +187,14 @@ namespace RogueDeal.Combat
             else if (combatEntity != null)
             {
                 if (enemyNameText != null)
-                    enemyNameText.text = combatEntity.gameObject.name;
+                {
+                    var combatant = combatEntity.GetComponent<EnemyCombatant>()
+                        ?? combatEntity.GetComponentInParent<EnemyCombatant>()
+                        ?? combatEntity.GetComponentInChildren<EnemyCombatant>();
+                    enemyNameText.text = combatant != null && combatant.Definition != null
+                        ? combatant.Definition.displayName
+                        : combatEntity.gameObject.name;
+                }
             }
             else
             {
@@ -298,6 +306,14 @@ namespace RogueDeal.Combat
             });
             
             return sequence;
+        }
+
+        public void ResetPresentation()
+        {
+            Transform targetTransform = modelRoot != null ? modelRoot : transform;
+            DOTween.Kill(targetTransform);
+            targetTransform.localScale = Vector3.one;
+            gameObject.SetActive(true);
         }
         
         public void TriggerAnimation(string triggerName)

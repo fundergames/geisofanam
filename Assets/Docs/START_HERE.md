@@ -34,6 +34,7 @@ Read only:
 | Input | `Assets/Docs/Systems/input.md` | `Assets/Geis/Scripts/Input/` |
 | Locomotion & camera | `Assets/Docs/Systems/locomotion.md` | `Assets/Geis/Scripts/Locomotion/` |
 | Combat | `Assets/Docs/Systems/combat.md` | `Assets/Geis/Scripts/Combat/` |
+| Enemy AI | `Assets/Docs/Systems/enemy-ai.md` | `Assets/Geis/Scripts/Enemies/` |
 | Soul realm & abilities | `Assets/Docs/Systems/soul-realm.md` | `Assets/Geis/Scripts/SoulRealm/` |
 | Puzzles | `Assets/Docs/Systems/puzzles.md` | `Assets/Geis/Scripts/Puzzles/` |
 

@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4725f0f07e4954e45838900b16e8d70d, type: 3}
+  m_Name: Weapon_EnemyTest
+  m_EditorClassIdentifier: Geis::RogueDeal.Combat.Core.Data.Weapon
+  weaponName: Enemy Blade
+  description: Short melee weapon for the Phase 1 humanoid enemy.
+  icon: {fileID: 0}
+  weaponPrefab: {fileID: 9143918319541482826, guid: 27a007a6e783fbf4284d927ba35b29b7, type: 3}
+  slotType: 2
+  baseDamage: 2
+  maxRange: 2.2
+  damageTypeMultiplierArray:
+  - damageType: 0
+    multiplier: 1

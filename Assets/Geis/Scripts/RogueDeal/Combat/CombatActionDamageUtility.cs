@@ -12,6 +12,7 @@
  */
 
 using System.Collections.Generic;
+using Geis.Enemies;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
 using UnityEngine;
@@ -138,6 +139,9 @@ namespace RogueDeal.Combat
             {
                 CombatEntity target = targets[i];
                 if (target == null || target == sourceEntity)
+                    continue;
+
+                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(sourceEntity, target))
                     continue;
 
                 CombatEntityData targetData = target.GetEntityData();

@@ -35,6 +35,7 @@ Use this folder to keep context loading small and predictable:
 | Input | [input.md](input.md) | `Assets/Geis/Scripts/Input/` |
 | Locomotion & camera | [locomotion.md](locomotion.md) | `Assets/Geis/Scripts/Locomotion/` |
 | Combat (weapons, bridge) | [combat.md](combat.md) | `Assets/Geis/Scripts/Combat/` |
+| Enemy AI | [enemy-ai.md](enemy-ai.md) | `Assets/Geis/Scripts/Enemies/` |
 | Soul realm & weapon abilities | [soul-realm.md](soul-realm.md) | `Assets/Geis/Scripts/SoulRealm/` |
 | Puzzles | [puzzles.md](puzzles.md) | `Assets/Geis/Scripts/Puzzles/` |
 

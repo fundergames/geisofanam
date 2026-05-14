@@ -48,6 +48,11 @@ namespace RogueDeal.Combat
         [SerializeField] private float hitRadius = 2f;
         [Tooltip("Also check sphere at player position (catches enemies that moved)")]
         [SerializeField] private bool usePlayerCenterFallback = true;
+
+        [Tooltip(
+            "How OverlapSphere treats trigger volumes for combat hits. Ignore keeps large lock-on shells (GeisObjectLockOn) from extending melee reach; use Collide only if targets rely on trigger hurtboxes.")]
+        [SerializeField] private QueryTriggerInteraction combatOverlapTriggerInteraction = QueryTriggerInteraction.Ignore;
+
         [Tooltip("Log hit checks and target count (for debugging)")]
         [SerializeField] private bool debugLog = false;
 
@@ -260,12 +265,20 @@ namespace RogueDeal.Combat
 
             GetMeleeProbeOrigin(out Vector3 probeOrigin, out Vector3 planarForward);
             Vector3 forwardCenter = probeOrigin + planarForward * rangeOffset + Vector3.up * 0.5f;
-            Collider[] colliders = Physics.OverlapSphere(forwardCenter, hitRadius, targetLayers, QueryTriggerInteraction.Collide);
+            Collider[] colliders = Physics.OverlapSphere(
+                forwardCenter,
+                hitRadius,
+                targetLayers,
+                combatOverlapTriggerInteraction);
 
             if (usePlayerCenterFallback)
             {
                 Vector3 playerCenter = probeOrigin + Vector3.up * 0.5f;
-                Collider[] fallbackColliders = Physics.OverlapSphere(playerCenter, hitRadius, targetLayers, QueryTriggerInteraction.Collide);
+                Collider[] fallbackColliders = Physics.OverlapSphere(
+                    playerCenter,
+                    hitRadius,
+                    targetLayers,
+                    combatOverlapTriggerInteraction);
                 var combined = new List<Collider>(colliders);
                 foreach (var col in fallbackColliders)
                 {
@@ -340,9 +353,9 @@ namespace RogueDeal.Combat
                 }
 
                 Vector3 playerCenterDbg = transform.position + Vector3.up * 0.5f;
-                int unmaskedFwd = Physics.OverlapSphere(forwardCenter, hitRadius, ~0, QueryTriggerInteraction.Collide).Length;
+                int unmaskedFwd = Physics.OverlapSphere(forwardCenter, hitRadius, ~0, combatOverlapTriggerInteraction).Length;
                 int unmaskedFeet = usePlayerCenterFallback
-                    ? Physics.OverlapSphere(playerCenterDbg, hitRadius, ~0, QueryTriggerInteraction.Collide).Length
+                    ? Physics.OverlapSphere(playerCenterDbg, hitRadius, ~0, combatOverlapTriggerInteraction).Length
                     : 0;
 
                 var sb = new StringBuilder();

@@ -1,7 +1,7 @@
 # Combat (Geis)
 
 **Status**: current  
-**Last updated**: 2026-04-01
+**Last updated**: 2026-05-07
 
 ## Purpose
 
@@ -29,6 +29,10 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 - **Requires**: `CombatEntity`, RogueDeal `CombatExecutor`, `SimpleAttackHitDetector` on the same GameObject.
 - **Flow**: Subscribes to `GeisPlayerAnimationController.OnAttackPerformed(weaponIndex)`. Resolves `CombatAction` + `Weapon` from **`GeisWeaponSwitcher.GetWeaponDefinition`** when non-null; applies `GeisComboData.ResolveCombatAction(comboState, …)` and optional **multi-hit times** from combo data (`TryGetMultiHitTimesSeconds`). Falls back to **legacy** arrays on the bridge if no definition: `combatActionsByWeapon` / `weaponsBySlot` (same 4-slot indexing).
 - Sets `CombatEntity` entity data `equippedWeapon` for the resolved strike.
+
+### `SimpleAttackHitDetector` (player melee probes)
+
+- **Overlap queries** (`combatOverlapTriggerInteraction`, default **Ignore**) only count **solid** hurtbox colliders. Large **trigger** volumes used for `GeisObjectLockOn` / lock-on detection must **not** be included in melee reach — matching the bow pipeline’s rule of not letting lock-on shells define combat range (`GeisBowController`).
 
 ### `GeisBowController` (slot 3)
 
@@ -78,4 +82,5 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Changelog
 
+- **2026-05-07**: Documented melee `SimpleAttackHitDetector` ignoring lock-on triggers for reach; probes default to non-trigger overlaps.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.
