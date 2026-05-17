@@ -368,10 +368,15 @@ MonoBehaviour:
   _cameraTiltBounds: {x: -10, y: 45}
   _positionalCameraLag: 0.1
   _rotationalCameraLag: 0.1
-  _aimCameraDistance: 2.5
-  _aimCameraHorizontalOffset: 0.55
-  _aimCameraHeightOffset: 0.15
-  _aimTransitionSpeed: 10
+  _enableAimShoulderZoom: 1
+  _playerAnimation: {fileID: 0}
+  _aimShoulderCameraDistance: 2.35
+  _aimShoulderHorizontalOffset: 0.35
+  _aimShoulderHeightOffset: 0
+  _aimFieldOfView: 52
+  _aimZoomSmoothTime: 0.14
+  _soulRealmExitHoldReleaseSmoothTime: 0.22
+  _debugSoulRealmCameraState: 0
 --- !u!1 &1603003678228055005
 GameObject:
   m_ObjectHideFlags: 0
@@ -1152,7 +1157,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3530600683608327810}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 9.51, y: -1.18, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -1180,13 +1185,25 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 0db3c0d2093a94474bbbbfdf81281231, type: 2}
   - {fileID: 11400000, guid: 25492a6d47f3eb44e9daf3bd6577bd26, type: 2}
   manualAttachmentPoint: {fileID: 0}
+  manualLeftAttachmentPoint: {fileID: 0}
   manualAnimator: {fileID: 1805344173469404896}
-  attachmentBoneNames:
+  rightHandSocketNames:
+  - Prop_R_Socket
+  - Prop_R
+  leftHandSocketNames:
+  - Prop_L_Socket
+  - Prop_L
+  rightHandBoneNames:
   - Hand_R
   - Prop_R
   - Hand_L
   - Prop_L
-  useAnimatorRightHandFallback: 1
+  leftHandBoneNames:
+  - weapon_l
+  - hand_l
+  - Hand_L
+  - Weapon_L
+  useAnimatorHandFallback: 1
 --- !u!114 &5612539749402298952
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1219,6 +1236,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &8377337675178507505
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1239,11 +1257,21 @@ MonoBehaviour:
   bodyLookAtTransform: {fileID: 4721983645019283747}
   ghostRoot: {fileID: 0}
   ghostMotor: {fileID: 0}
-  exitHoldDuration: 2
+  exitHoldMaxDuration: 2
+  exitHoldReferenceDistance: 12
+  exitHoldMinDuration: 1
+  exitHoldUseHorizontalDistance: 1
   enterGraceSeconds: 0.35
+  enableDoubleTapInstantExit: 1
+  doubleTapMaxGapSeconds: 0.3
   visuals: {fileID: 0}
+  exitHoldVfx: {fileID: 0}
   spectralCharacterVisualRoot: {fileID: 666165706435539312}
   spectralMaterial: {fileID: 0}
+  spectralDissolveMaterialTemplate: {fileID: 0}
+  spectralDissolveEnterDuration: 0.45
+  spectralDissolveInvertForShader: 0
+  useSpectralDissolveShader: 1
 --- !u!114 &8613945141036088760
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1261,6 +1289,7 @@ MonoBehaviour:
   soulPostExposure: -0.15
   soulColorFilter: {r: 0.75, g: 0.95, b: 0.82, a: 1}
   autoEnablePostProcessingOnCameras: 1
+  entryShockwaveDuration: 0.38
 --- !u!114 &8092402105320207194
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1274,15 +1303,28 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisBowController
   _inputReader: {fileID: 2851687277793832976}
+  _cameraController: {fileID: 0}
   _playerController: {fileID: 2248863639609088951}
   _weaponSwitcher: {fileID: 1386048861169640747}
   _combatEntity: {fileID: 1210455581438556543}
+  _combatExecutor: {fileID: 0}
+  _soulMarkHoming: {fileID: 0}
   _arrowPrefab: {fileID: 5820005625324192795, guid: 3d9fd13615467a44a8aea17eadbaa691, type: 3}
   _arrowLaunchPoint: {fileID: 0}
+  _drawArrowVisual: {fileID: 0}
+  _drawArrowVisualName: ArrowVisual
   _arrowSpeed: 22
   _arrowRange: 80
+  _aimRaycastLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
   _maxChargeTime: 1.5
   _chargedSpeedMultiplier: 1.75
+  _chargedDamageMultiplier: 1.5
+  _showAimCrosshair: 1
+  _crosshairColor: {r: 1, g: 1, b: 1, a: 0.75}
+  _crosshairArmHalfLength: 10
+  _crosshairThickness: 2
 --- !u!114 &7711223344556677889
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1315,6 +1357,7 @@ MonoBehaviour:
   soulAbilityActions: {fileID: 11400000, guid: 86b6199e25822e24397b95dc2a0bbff1, type: 2}
   abilityOrigin: {fileID: 0}
   cameraController: {fileID: 9185949923837509450}
+  feedback: {fileID: 0}
 --- !u!1 &3759892831401217738
 GameObject:
   m_ObjectHideFlags: 0
@@ -1494,7 +1537,7 @@ Transform:
   m_GameObject: {fileID: 3869365333483622328}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1.0279999}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1827,6 +1870,37 @@ Transform:
   - {fileID: 7107000918909194464}
   m_Father: {fileID: 3240527332436381139}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4721983645019283746
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4721983645019283747}
+  m_Layer: 3
+  m_Name: SyntyPlayer_LookAt
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4721983645019283747
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4721983645019283746}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 666165706435539312}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4835237707196811125
 GameObject:
   m_ObjectHideFlags: 0
@@ -1871,37 +1945,6 @@ Transform:
   - {fileID: 4721983645019283747}
   m_Father: {fileID: 4359838154996232716}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &4721983645019283746
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 4721983645019283747}
-  m_Layer: 3
-  m_Name: SyntyPlayer_LookAt
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &4721983645019283747
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4721983645019283746}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 2, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 666165706435539312}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &2851687277793832976
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1919,6 +1962,7 @@ MonoBehaviour:
   _movementInputDuration: 0
   _movementInputDetected: 0
   _debugDodgeInput: 1
+  _debugInteractWest: 0
   _gamepadEastDodgeFallback: 1
 --- !u!114 &2248863639609088951
 MonoBehaviour:
@@ -1936,19 +1980,98 @@ MonoBehaviour:
   _inputReader: {fileID: 2851687277793832976}
   _animator: {fileID: 1805344173469404896}
   _controller: {fileID: 709469704089620938}
-  _speedProfile: {fileID: 11400000, guid: 95e06b2ff0a189d47b1b9fe1b0b90d83, type: 2}
-  _strafeInputProfile: {fileID: 11400000, guid: 21b51dedc6ba85d448806b8f2c0e5a3c, type: 2}
-  _capsuleProfile: {fileID: 11400000, guid: 4ab6bd85fed6c234eadfe48709db12c7, type: 2}
-  _groundingProfile: {fileID: 11400000, guid: 33538525a68bcbb4faf96ba82eb04e1b, type: 2}
-  _airMovementProfile: {fileID: 11400000, guid: 51d09a4acb225d64ba6486aaa2a60c65, type: 2}
-  _lookLeanProfile: {fileID: 11400000, guid: 99fd3a08605e9a142a12ad1f8ac211e7, type: 2}
-  _attackDodgeProfile: {fileID: 11400000, guid: 551d769f3d1650d4e8bada53fe02b68d, type: 2}
+  _alwaysStrafe: 1
+  _walkSpeed: 1.4
+  _runSpeed: 2.5
+  _sprintSpeed: 7
+  _speedChangeDamping: 10
+  _accelRate: 25
+  _decelRate: 15
+  _sprintInstantFraction: 0.85
+  _rotationSmoothing: 10
+  _maxTurnDegPerSecond: 720
+  _cameraRotationOffset: 0
+  _bowAimBodyEulerOffset: {x: 0, y: 0, z: 0}
+  _buttonHoldThreshold: 0.15
+  _shuffleDirectionX: 0
+  _shuffleDirectionZ: 0
+  _capsuleStandingHeight: 1.8
+  _capsuleStandingCentre: 0.93
+  _capsuleCrouchingHeight: 1.2
+  _capsuleCrouchingCentre: 0.6
+  _forwardStrafeMinThreshold: -55
+  _forwardStrafeMaxThreshold: 125
+  _forwardStrafe: 1
   _rearRayPos: {fileID: 119932982296280757}
   _frontRayPos: {fileID: 9000669497598635718}
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _inclineAngle: 0
+  _groundedOffset: 0.14
+  _jumpForce: 10
+  _gravityMultiplier: 2
+  _fallingDuration: 0
+  _coyoteTimeSeconds: 0.1
+  _jumpBufferSeconds: 0.15
+  _enableHeadTurn: 1
+  _headLookDelay: 0
+  _headLookX: 0
+  _headLookY: 0
+  _headLookXCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _headLookLimitDegrees: 60
+  _bowAimHeadLookMultiplier: 0.6
+  _enableBodyTurn: 1
+  _bodyLookDelay: 0
+  _bodyLookX: 0
+  _bodyLookY: 0
+  _bodyLookXCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _bowAimBodyLookMultiplier: 0.4
+  _enableLean: 1
+  _leanDelay: 0
+  _leanValue: 0
+  _leanCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _leansHeadLooksDelay: 0
+  _animationClipEnd: 0
+  _applyRootRotationDuringAttack: 0
   _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
   _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
   _weaponSwitcher: {fileID: 1386048861169640747}
   _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
+  _applyRootRotationDuringDodge: 0
+  _bowEquipLayerBlendSpeed: 8
+  _dodgeInputDeadzone: 0.05
+  _dodgeFallbackDuration: 1.2
+  _requireMovementInputForDodge: 0
+  _dodgeScriptedPlaneSpeed: 7
+  _dodgeScriptedDuration: 0.35
+  _attackMoveCancelStickThreshold: 0.5
+  _attackRecoveryExitNormalizedTime: 0.85
+  _attackExitVelocityCarry: 0.6
+  _dodgeRecoveryStartNormalizedTime: 0.65
+  _dodgeMoveCancelStickThreshold: 0.3
+  _dodgeExitVelocityCarry: 0.75
+  _inputBufferSeconds: 0.18
+  _dodgeDoubleTapWindow: 0.25
+  _dodgeDoubleTapRollEnabled: 1
+  _rollDistanceMultiplier: 1
+  _debugDodgeDoubleTap: 0
+  _lockOnIndicator: {fileID: 0}
 --- !u!114 &959186816420622490
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1962,8 +2085,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisCombatBridge
   _weaponSwitcher: {fileID: 1386048861169640747}
-  combatActionsByWeapon: []
-  weaponsBySlot: []
   _geisController: {fileID: 2248863639609088951}
   _debugLog: 0
 --- !u!114 &7671744684407968126
@@ -1998,6 +2119,7 @@ MonoBehaviour:
   dodgeTrigger: Dodge
   deathTrigger: Die
   coneAngle: 60
+  simpleMeleeBypassTagFilter: 0
 --- !u!114 &5175836374676816231
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2016,12 +2138,17 @@ MonoBehaviour:
   rangeOffset: 1
   hitRadius: 1.2
   usePlayerCenterFallback: 1
+  combatOverlapTriggerInteraction: 1
   debugLog: 0
   targetLayers:
     serializedVersion: 2
     m_Bits: 64
   validTargetTags:
   - Enemy
+  notifySwordPuzzleTriggers: 1
+  puzzleProbeLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
 --- !u!95 &1805344173469404896
 Animator:
   serializedVersion: 7
@@ -2084,6 +2211,7 @@ MonoBehaviour:
   animator: {fileID: 1805344173469404896}
   rigidBody: {fileID: 0}
   kinematicWhenFrozen: 1
+  pauseParticlesWhenFrozen: 1
 --- !u!1 &4876857608469684843
 GameObject:
   m_ObjectHideFlags: 0

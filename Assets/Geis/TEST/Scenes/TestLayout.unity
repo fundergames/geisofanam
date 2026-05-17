@@ -793,7 +793,7 @@ Transform:
   m_GameObject: {fileID: 298473604}
   serializedVersion: 2
   m_LocalRotation: {x: 0.00000010244543, y: 0.000000089406925, z: 0.7061962, w: -0.70801616}
-  m_LocalPosition: {x: 0.00000079098146, y: -0.000003916233, z: 0.00000060581294}
+  m_LocalPosition: {x: 0.00000013918529, y: -0.00000017957728, z: 0.00000025754912}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1355,7 +1355,7 @@ Transform:
   m_Children:
   - {fileID: 298473605}
   m_Father: {fileID: 5495425211611981551}
-  m_LocalEulerAnglesHint: {x: -63.34697, y: -69.47485, z: 65.0577}
+  m_LocalEulerAnglesHint: {x: -75.49311, y: -121.027466, z: 123.16753}
 --- !u!1 &548782599
 GameObject:
   m_ObjectHideFlags: 0
@@ -1788,6 +1788,55 @@ Material:
     - _SpecColor: {r: 1, g: 1, b: 1, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1
+--- !u!1 &886569156
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 886569158}
+  - component: {fileID: 886569157}
+  m_Layer: 0
+  m_Name: EnemyEncounter
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &886569157
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 886569156}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 577946893da36414fbfc0896cf144d5c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Geis::Geis.Enemies.EnemyEncounterController
+  managedEnemies:
+  - {fileID: 1399825951}
+  autoStartOnAwake: 1
+  autoLoopOnClear: 1
+  resetDelaySeconds: 2.5
+--- !u!4 &886569158
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 886569156}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &927941933
 GameObject:
   m_ObjectHideFlags: 0
@@ -2550,6 +2599,82 @@ Light:
   m_LightUnit: 1
   m_LuxAtDistance: 1
   m_EnableSpotReflector: 1
+--- !u!1001 &1399825950
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 6
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: -0.00000004371139
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 55139970961812970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4486338400610550423, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4486338400610550423, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5547404175580050970, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+      propertyPath: m_Name
+      value: P_Enemy_Phase1Humanoid
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+--- !u!114 &1399825951 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 1982361403098539541, guid: 924bdfc1ca82f954daf6fee1ad260253, type: 3}
+  m_PrefabInstance: {fileID: 1399825950}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0dbfa1b6a5f27d74aa3b0ba3f501fbe5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Geis::Geis.Enemies.EnemyCombatant
 --- !u!114 &1403077218 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1369543030097137879, guid: d9a332058fe3f4a93b8207329b1b03ba, type: 3}
@@ -3387,6 +3512,7 @@ MonoBehaviour:
   rangeOffset: 1
   hitRadius: 1.2
   usePlayerCenterFallback: 1
+  combatOverlapTriggerInteraction: 1
   debugLog: 0
   targetLayers:
     serializedVersion: 2
@@ -3430,6 +3556,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27da310dce5399745a928f36c70d6792, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.Presentation.CombatExecutor
+  defaultDamageApplyDelaySeconds: 0.18
 --- !u!114 &1976761599
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7149,7 +7276,7 @@ Transform:
   m_GameObject: {fileID: 2247419633768223799}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 112.84, y: 0, z: -3.3}
+  m_LocalPosition: {x: -18.9, y: 0, z: 8.7}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -7452,3 +7579,5 @@ SceneRoots:
   - {fileID: 505210312820733051}
   - {fileID: 5628538120289444588}
   - {fileID: 6466279470273471533}
+  - {fileID: 1399825950}
+  - {fileID: 886569158}

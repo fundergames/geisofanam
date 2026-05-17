@@ -111,18 +111,32 @@ namespace Geis.Enemies
             if (attack == null || _combatant?.Definition == null)
                 return null;
 
-            if (attack.actionSource == EnemyAttackActionSource.ExplicitCombatAction)
-                return attack.action;
-
             GeisWeaponDefinition wd = _combatant.Definition.weaponDefinition;
             GeisComboData cd = wd?.comboData;
-            if (wd == null || cd == null)
-                return attack.action;
+            if (wd != null && cd != null)
+            {
+                CombatAction fromCombo = cd.ResolveCombatAction(_weaponComboState, wd.GetCombatAction());
+                if (fromCombo != null)
+                    return fromCombo;
+            }
 
-            // Combo + weapon default only; if weapon.combatAction is null and there is no binding override
-            // for this combo state, GeisComboData returns null — use serialized attack.action so AI can still start.
-            CombatAction fromCombo = cd.ResolveCombatAction(_weaponComboState, wd.GetCombatAction());
-            return fromCombo != null ? fromCombo : attack.action;
+            return attack.action;
+        }
+
+        /// <summary>
+        /// When <see cref="GeisWeaponDefinition.comboData"/> defines multi-hit times for <see cref="_weaponComboState"/>,
+        /// those seconds-from-attack-start values drive damage (see <see cref="CombatExecutor.ExecuteActionWithScheduledEffectTimes"/>).
+        /// </summary>
+        private bool TryGetComboHitTimesFromWeapon(out float[] secondsFromAttackStart)
+        {
+            secondsFromAttackStart = null;
+            GeisComboData cd = _combatant?.Definition?.weaponDefinition?.comboData;
+            if (cd == null)
+                return false;
+
+            return cd.TryGetMultiHitTimesSeconds(_weaponComboState, out secondsFromAttackStart)
+                   && secondsFromAttackStart != null
+                   && secondsFromAttackStart.Length > 0;
         }
 
         private static string AttackCooldownKey(EnemyAttackDefinition attack, CombatAction resolved)
@@ -136,7 +150,7 @@ namespace Geis.Enemies
 
         private void AdvanceWeaponComboAfterAttack(EnemyAttackDefinition attack)
         {
-            if (attack == null || attack.actionSource != EnemyAttackActionSource.WeaponComboResolved)
+            if (attack == null || _combatant?.Definition == null)
                 return;
 
             GeisWeaponDefinition wd = _combatant.Definition.weaponDefinition;
@@ -239,7 +253,18 @@ namespace Geis.Enemies
 
             _animatorDriver?.TriggerAttack(attack.attackTriggerOverride);
 
-            bool executed = _combatExecutor != null && runtimeAction != null && _combatExecutor.ExecuteAction(runtimeAction);
+            bool executed = false;
+            bool haveComboHitSchedule = TryGetComboHitTimesFromWeapon(out float[] scheduledHits);
+            if (haveComboHitSchedule
+                && _combatExecutor != null
+                && runtimeAction != null)
+            {
+                executed = _combatExecutor.ExecuteActionWithScheduledEffectTimes(runtimeAction, scheduledHits);
+            }
+
+            if (!executed && _combatExecutor != null && runtimeAction != null)
+                executed = _combatExecutor.ExecuteAction(runtimeAction);
+
             if (!executed && _combatEntity != null && runtimeAction != null)
             {
                 float liveDistance = float.PositiveInfinity;
@@ -262,6 +287,14 @@ namespace Geis.Enemies
             }
 
             float executionTimeout = Mathf.Max(attack.executionTimeout, 0.05f);
+            if (haveComboHitSchedule && scheduledHits != null && scheduledHits.Length > 0)
+            {
+                float lastHit = 0f;
+                for (int i = 0; i < scheduledHits.Length; i++)
+                    lastHit = Mathf.Max(lastHit, scheduledHits[i]);
+                executionTimeout = Mathf.Max(executionTimeout, lastHit + 0.35f);
+            }
+
             float elapsed = 0f;
             while (_combatExecutor != null && _combatExecutor.IsExecuting && elapsed < executionTimeout)
             {

@@ -49,6 +49,10 @@ namespace RogueDeal.Combat.Presentation
         /// <summary>True while an action is being executed (movement, animation, effects).</summary>
         public bool IsExecuting => isExecuting;
 
+        [Header("Fallback strike timing")]
+        [Tooltip("When a CombatAction's Damage Apply Delay Seconds is negative (use default), wait this long after the attack trigger before applying damage and defender hit reaction, if animation events are not used.")]
+        [SerializeField] private float defaultDamageApplyDelaySeconds = 0.18f;
+
         // Movement
         private Vector3 originalPosition;
         private bool needsToMove = false;
@@ -258,9 +262,8 @@ namespace RogueDeal.Combat.Presentation
                         // Wait a frame for transition to start
                         StartCoroutine(CheckAnimationState(action));
                         
-                        // For testing: If no animation events are set up, apply effects after a short delay
-                        // This allows the animation to play while still applying effects
-                        StartCoroutine(ApplyEffectsAfterDelay(action, 0.5f)); // Apply effects after 0.5 seconds
+                        // When no animation events apply hits, damage + hit reaction share this delay (tune per CombatAction or executor default).
+                        ScheduleStrikeEffectsAfterAnimationFallback(action);
                     }
                 }
             }
@@ -273,7 +276,111 @@ namespace RogueDeal.Combat.Presentation
             
             return true;
         }
-        
+
+        /// <summary>
+        /// Like <see cref="ExecuteAction"/> but applies main or per-hit effects at absolute times (seconds from attack start)
+        /// instead of a single damage-apply delay. Used when <see cref="Geis.Combat.GeisComboData"/> defines multi-hit contact
+        /// times for enemies (same data as the player <c>SimpleAttackHitDetector</c> path).
+        /// Does not support timeline or legacy combo clip arrays; returns false so callers can fall back to <see cref="ExecuteAction"/>.
+        /// </summary>
+        public bool ExecuteActionWithScheduledEffectTimes(CombatAction action, float[] effectApplyTimesSecondsFromAttackStart)
+        {
+            if (effectApplyTimesSecondsFromAttackStart == null || effectApplyTimesSecondsFromAttackStart.Length == 0)
+            {
+                Debug.LogWarning("[CombatExecutor] ExecuteActionWithScheduledEffectTimes: times array is null or empty.");
+                return false;
+            }
+
+            if (action == null)
+            {
+                Debug.LogWarning("[CombatExecutor] ExecuteActionWithScheduledEffectTimes: action is null.");
+                return false;
+            }
+
+            if (action.effects == null || action.effects.Length == 0)
+            {
+                Debug.LogWarning($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: action '{action.actionName}' has no effects.");
+                return false;
+            }
+
+            if (action.targetingStrategy == null)
+            {
+                Debug.LogWarning($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: action '{action.actionName}' has no targeting strategy.");
+                return false;
+            }
+
+            if (action.timelineAsset != null)
+            {
+                Debug.LogWarning($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: action '{action.actionName}' uses a timeline; use ExecuteAction instead.");
+                return false;
+            }
+
+            if (action.isCombo && action.comboAnimations != null && action.comboAnimations.Length > 0 && action.comboAnimations[0] != null)
+            {
+                Debug.LogWarning($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: action '{action.actionName}' uses combo clip arrays; use ExecuteAction instead.");
+                return false;
+            }
+
+            if (isExecuting)
+            {
+                Debug.LogWarning("[CombatExecutor] Already executing an action");
+                return false;
+            }
+
+            if (!cooldownManager.IsActionAvailable(action))
+            {
+                Debug.Log($"[CombatExecutor] Action {action.actionName} is on cooldown");
+                return false;
+            }
+
+            entityData.position = transform.position;
+
+            var targetResult = action.targetingStrategy.ResolveTargets(entityData);
+            if (!targetResult.isReady || targetResult.targets == null || targetResult.targets.Count == 0)
+            {
+                Debug.Log($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: could not resolve targets for {action.actionName}.");
+                return false;
+            }
+
+            currentAction = action;
+            currentTargets = targetResult.targets;
+            currentTargetPosition = targetResult.targetPosition;
+            currentComboHit = 0;
+            isExecuting = true;
+
+            if (entityData.combatProfile != null)
+            {
+                float distanceToTarget = Vector3.Distance(transform.position, currentTargetPosition);
+                if (distanceToTarget > entityData.combatProfile.engagementDistance)
+                {
+                    needsToMove = true;
+                    originalPosition = transform.position;
+                    entityData.originPosition = originalPosition;
+                }
+            }
+
+            cooldownManager.StartCooldown(action);
+
+            bool animTriggerReady = animator != null
+                && animator.runtimeAnimatorController != null
+                && !string.IsNullOrEmpty(action.animationTrigger)
+                && AnimatorParameterGuard.HasTrigger(animator, action.animationTrigger);
+
+            if (animTriggerReady)
+            {
+                animator.SetTrigger(action.animationTrigger);
+                StartCoroutine(CheckAnimationState(action));
+            }
+            else if (!string.IsNullOrEmpty(action.animationTrigger))
+            {
+                Debug.LogWarning(
+                    $"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: animator cannot play trigger '{action.animationTrigger}'. Scheduled hits still run.");
+            }
+
+            StartCoroutine(ApplyEffectsAtScheduledSecondsFromAttackStart(action, effectApplyTimesSecondsFromAttackStart));
+            return true;
+        }
+
         /// <summary>
         /// Called when a combo hit connects (from animation event or Timeline signal)
         /// </summary>
@@ -532,7 +639,11 @@ namespace RogueDeal.Combat.Presentation
             }
             else if (target.animator != null)
             {
-                target.animator.SetTrigger(target.hitTrigger);
+                if (!AnimatorParameterGuard.TrySetTrigger(target.animator, target.hitTrigger))
+                {
+                    Debug.LogWarning(
+                        $"[CombatExecutor] Animator on '{target.animator.gameObject.name}' has no trigger '{target.hitTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(target.animator)}");
+                }
             }
             
             // Fire hit reaction event (for VFX/SFX - damage visuals come from OnDamageApplied)

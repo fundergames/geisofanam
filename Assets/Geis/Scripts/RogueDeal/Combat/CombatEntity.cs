@@ -12,6 +12,7 @@
  */
 
 using System;
+using Geis.Animation;
 using UnityEngine;
 using RogueDeal.Player;
 using RogueDeal.Combat.Core.Data;
@@ -406,7 +407,11 @@ namespace RogueDeal.Combat
             }
             else if (animator != null)
             {
-                animator.SetTrigger(hitTrigger);
+                if (!AnimatorParameterGuard.TrySetTrigger(animator, hitTrigger))
+                {
+                    Debug.LogWarning(
+                        $"[CombatEntity] Animator on '{animator.gameObject.name}' has no trigger '{hitTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(animator)}");
+                }
             }
         }
 
@@ -428,7 +433,11 @@ namespace RogueDeal.Combat
                 entityData.currentHealth = 0;
             }
             
-            animator?.SetTrigger(deathTrigger);
+            if (animator != null && !AnimatorParameterGuard.TrySetTrigger(animator, deathTrigger))
+            {
+                Debug.LogWarning(
+                    $"[CombatEntity] Animator on '{animator.gameObject.name}' has no trigger '{deathTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(animator)}");
+            }
         }
 
         public Vector3 GetHitPoint()

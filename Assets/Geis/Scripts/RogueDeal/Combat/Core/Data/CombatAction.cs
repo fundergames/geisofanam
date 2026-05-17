@@ -53,6 +53,10 @@ namespace RogueDeal.Combat.Core.Data
         public WeaponType weaponType = WeaponType.Sword;
         [Tooltip("Animation trigger name to play (for simple animations). Overrides weaponType-based trigger when set.")]
         public string animationTrigger;
+
+        [Tooltip(
+            "Seconds after the attack trigger before damage, defender hit reaction, and damage VFX run when this action has no timeline / animation events applying hits. Tune to the contact frame of the clip. Values < 0 use the executor default (see CombatExecutor). 0 = same frame after trigger (may feel early).")]
+        public float damageApplyDelaySeconds = -1f;
         
         [Tooltip("Animation clips for combo attacks (played sequentially) - deprecated, use timeline instead")]
         public AnimationClip[] comboAnimations;

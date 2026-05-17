@@ -28,6 +28,31 @@ namespace RogueDeal.Combat.Presentation
 {
     public partial class CombatExecutor
     {
+        private float ResolveStrikeDelaySeconds(CombatAction action)
+        {
+            if (action != null && action.damageApplyDelaySeconds >= 0f)
+                return Mathf.Max(0f, action.damageApplyDelaySeconds);
+            return Mathf.Max(0f, defaultDamageApplyDelaySeconds);
+        }
+
+        /// <summary>
+        /// Applies main effects after a short delay when the action uses an animator trigger but no hit animation events.
+        /// Delay is <see cref="CombatAction.damageApplyDelaySeconds"/> if non-negative, else <see cref="defaultDamageApplyDelaySeconds"/>.
+        /// </summary>
+        private void ScheduleStrikeEffectsAfterAnimationFallback(CombatAction action)
+        {
+            float delay = ResolveStrikeDelaySeconds(action);
+            if (delay <= 1e-4f)
+            {
+                ApplyEffectsToTargets(action.effects);
+                CompleteAction();
+            }
+            else
+            {
+                StartCoroutine(ApplyEffectsAfterDelay(action, delay));
+            }
+        }
+
         private void StartCombo(CombatAction action)
         {
             currentComboHit = 0;
@@ -65,7 +90,7 @@ namespace RogueDeal.Combat.Presentation
                     {
                         animator.SetTrigger(action.animationTrigger);
                         Debug.Log($"[CombatExecutor] Started combo with trigger: {action.animationTrigger}");
-                        StartCoroutine(ApplyEffectsAfterDelay(action, 0.5f));
+                        ScheduleStrikeEffectsAfterAnimationFallback(action);
                         return;
                     }
                 }
@@ -88,7 +113,7 @@ namespace RogueDeal.Combat.Presentation
                 if (!string.IsNullOrEmpty(action.animationTrigger))
                 {
                     animator.SetTrigger(action.animationTrigger);
-                    StartCoroutine(ApplyEffectsAfterDelay(action, 0.5f));
+                    ScheduleStrikeEffectsAfterAnimationFallback(action);
                 }
                 else
                 {
@@ -167,7 +192,7 @@ namespace RogueDeal.Combat.Presentation
             if (animationStarted)
             {
                 Debug.Log($"[CombatExecutor] ✓ Combo animation started: {stateName}");
-                StartCoroutine(ApplyEffectsAfterDelay(action, 0.5f));
+                ScheduleStrikeEffectsAfterAnimationFallback(action);
             }
             else
             {
@@ -183,7 +208,7 @@ namespace RogueDeal.Combat.Presentation
         }
         
         /// <summary>
-        /// Applies effects after a delay (for testing when animation events aren't set up)
+        /// Applies effects after a delay when hits are not driven by animation events or timeline signals.
         /// </summary>
         private IEnumerator ApplyEffectsAfterDelay(CombatAction action, float delay)
         {
@@ -195,6 +220,43 @@ namespace RogueDeal.Combat.Presentation
                 Debug.Log($"[CombatExecutor] Applying effects after delay (animation events not set up)");
                 ApplyEffectsToTargets(action.effects);
                 CompleteAction();
+            }
+        }
+
+        /// <summary>
+        /// Applies effects at absolute seconds from attack start (sorted). Uses per-hit effects when the array slot exists.
+        /// </summary>
+        private IEnumerator ApplyEffectsAtScheduledSecondsFromAttackStart(CombatAction action, float[] timesFromAttackStartSeconds)
+        {
+            var sorted = new List<float>(timesFromAttackStartSeconds.Length);
+            for (int i = 0; i < timesFromAttackStartSeconds.Length; i++)
+                sorted.Add(Mathf.Max(0f, timesFromAttackStartSeconds[i]));
+            sorted.Sort();
+
+            try
+            {
+                float elapsed = 0f;
+                for (int hitIndex = 0; hitIndex < sorted.Count; hitIndex++)
+                {
+                    float targetTime = sorted[hitIndex];
+                    float wait = Mathf.Max(0f, targetTime - elapsed);
+                    if (wait > 0f)
+                        yield return new WaitForSeconds(wait);
+                    elapsed = targetTime;
+
+                    if (currentAction != action || currentTargets == null)
+                        yield break;
+
+                    if (action.perHitEffects != null && hitIndex < action.perHitEffects.Length && action.perHitEffects[hitIndex] != null)
+                        ApplyEffectToTargets(action.perHitEffects[hitIndex]);
+                    else
+                        ApplyEffectsToTargets(action.effects);
+                }
+            }
+            finally
+            {
+                if (currentAction == action)
+                    CompleteAction();
             }
         }
     }

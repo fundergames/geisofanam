@@ -159,8 +159,15 @@ namespace RogueDeal.Combat
             switch (effectType)
             {
                 case EffectType.Damage:
-                    Debug.Log($"[CombatAnimationController] Playing hit reaction '{hitReactionTrigger}' on {gameObject.name}");
-                    animator.SetTrigger(hitReactionTrigger);
+                    if (AnimatorParameterGuard.TrySetTrigger(animator, hitReactionTrigger))
+                    {
+                        Debug.Log($"[CombatAnimationController] Playing hit reaction '{hitReactionTrigger}' on {gameObject.name}");
+                    }
+                    else
+                    {
+                        Debug.LogWarning(
+                            $"[CombatAnimationController] Animator on '{animator.gameObject.name}' has no trigger '{hitReactionTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(animator)}");
+                    }
                     break;
             }
         }

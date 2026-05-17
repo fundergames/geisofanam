@@ -170,14 +170,15 @@ namespace Geis.Enemies
     }
 
     /// <summary>
-    /// How <see cref="EnemyAttackDefinition"/> supplies its <see cref="CombatAction"/> at runtime.
+    /// Legacy label on attack slots. When <see cref="EnemyAiDefinition.weaponDefinition"/> has <see cref="GeisWeaponDefinition.comboData"/>,
+    /// <see cref="EnemyAttackDriver"/> resolves the action, scheduled multi-hit times, and combo advancement from that graph regardless of this value.
     /// </summary>
     public enum EnemyAttackActionSource
     {
-        [Tooltip("Use the serialized CombatAction reference directly.")]
+        [Tooltip("Use serialized CombatAction when there is no weapon combo data, or when the combo graph does not define the current combo index.")]
         ExplicitCombatAction = 0,
 
-        [Tooltip("Resolve from EnemyAiDefinition.weaponDefinition + GeisComboData using the enemy combo counter (same resolution path as GeisCombatBridge for the player).")]
+        [Tooltip("Same runtime path as Explicit when a weapon combo asset is present; kept for clarity in authored data.")]
         WeaponComboResolved = 1
     }
 
@@ -186,13 +187,13 @@ namespace Geis.Enemies
     {
         public string attackId = "light_swing";
 
-        [Tooltip("Explicit action when Action Source is Explicit. Optional when Action Source is Weapon Combo — combo bindings supply the action.")]
+        [Tooltip("Fallback CombatAction when there is no weapon combo data, or when the combo graph returns no action for the current combo index.")]
         public CombatAction action;
 
-        [Tooltip("Explicit asset vs weapon combo graph (player-style).")]
+        [Tooltip("Legacy field; combo on the weapon drives resolution and hit timing when present.")]
         public EnemyAttackActionSource actionSource = EnemyAttackActionSource.ExplicitCombatAction;
 
-        [Tooltip("Combo transition input applied after this attack finishes when Action Source is Weapon Combo (see GeisComboData transitions).")]
+        [Tooltip("Combo transition input after this attack when the weapon has GeisComboData (GeisComboData.TryGetNextState).")]
         public GeisComboInputType comboAdvanceInput = GeisComboInputType.Light;
         [Min(0f)] public float minRange = 0f;
         [Min(0.1f)] public float maxRange = 2.25f;

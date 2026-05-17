@@ -67,6 +67,10 @@ namespace Geis.Combat.Editor
         private readonly List<int> _playbackStates = new List<int>();
         private int _playbackStepIndex;
         private double _playbackStepStartedAt;
+        private int _draggingMultiHitIndex = -1;
+        private float _multiHitDragStartMouseX;
+        private float _multiHitDragStartNormalized;
+        private bool _showRawMultiHitTimes;
         private PreviewRenderUtility _nodePreviewUtility;
         private GameObject _nodePreviewInstance;
         private GameObject _nodePreviewSource;
@@ -658,7 +662,7 @@ namespace Geis.Combat.Editor
             {
                 SerializedProperty bindingProp = _stateCombatBindingsProp.GetArrayElementAtIndex(_selectedState);
                 EditorGUILayout.PropertyField(bindingProp.FindPropertyRelative("combatActionOverride"), new GUIContent("Combat Action"));
-                EditorGUILayout.PropertyField(bindingProp.FindPropertyRelative("multiHitNormalizedTimes"), true);
+                DrawMultiHitTimingAuthoring(bindingProp);
             }
 
             EditorGUILayout.Space(8f);
@@ -668,6 +672,162 @@ namespace Geis.Combat.Editor
                 $"Heavy: {CountOutgoingTransitions(_selectedState, GeisComboInputType.Heavy)}\n" +
                 "Drag from an unused L/H output port to a matching input port on another state. Right click an edge in the graph to delete it.",
                 MessageType.None);
+        }
+
+        private void DrawMultiHitTimingAuthoring(SerializedProperty bindingProp)
+        {
+            SerializedProperty timesProp = bindingProp.FindPropertyRelative("multiHitNormalizedTimes");
+            AnimationClip clip = GetClipForStateSerialized(_selectedState);
+
+            EditorGUILayout.LabelField("Hit timing (this combo step)", EditorStyles.miniBoldLabel);
+            if (clip != null)
+                EditorGUILayout.LabelField($"Clip length: {clip.length:0.###} s — normalized times become hit times in seconds at runtime.", EditorStyles.miniLabel);
+            else
+                EditorGUILayout.HelpBox("Assign a clip on this state (or fallback) to see duration. You can still author normalized hit times (0–1).", MessageType.Info);
+
+            EditorGUILayout.HelpBox(
+                "Scrub with Preview → Normalized Time (below). Click Sample Selected State first so the scrub matches this state's clip. Shift+click the bar to add a hit. Drag orange markers. Right-click a marker to remove.",
+                MessageType.None);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Add hit at current scrub"))
+            {
+                Undo.RecordObject(_comboData, "Add combo hit time");
+                AddMultiHitAtNormalized(timesProp, Mathf.Clamp01(_previewNormalizedTime));
+            }
+
+            if (GUILayout.Button("Sort", GUILayout.Width(44f)))
+            {
+                Undo.RecordObject(_comboData, "Sort combo hit times");
+                SortMultiHitTimesProperty(timesProp);
+            }
+
+            using (new EditorGUI.DisabledScope(timesProp.arraySize == 0))
+            {
+                if (GUILayout.Button("Clear", GUILayout.Width(44f)))
+                {
+                    Undo.RecordObject(_comboData, "Clear combo hit times");
+                    timesProp.arraySize = 0;
+                    _draggingMultiHitIndex = -1;
+                }
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            DrawMultiHitTimeline(timesProp, Mathf.Clamp01(_previewNormalizedTime));
+
+            EditorGUILayout.Space(2f);
+            _showRawMultiHitTimes = EditorGUILayout.Foldout(_showRawMultiHitTimes, "Raw multi-hit normalized times");
+            if (_showRawMultiHitTimes)
+                EditorGUILayout.PropertyField(timesProp, true);
+        }
+
+        private void AddMultiHitAtNormalized(SerializedProperty timesProp, float normalized)
+        {
+            normalized = Mathf.Clamp01(normalized);
+            const float epsilon = 0.01f;
+            for (int i = 0; i < timesProp.arraySize; i++)
+            {
+                if (Mathf.Abs(timesProp.GetArrayElementAtIndex(i).floatValue - normalized) < epsilon)
+                    return;
+            }
+
+            int idx = timesProp.arraySize;
+            timesProp.InsertArrayElementAtIndex(idx);
+            timesProp.GetArrayElementAtIndex(idx).floatValue = normalized;
+            SortMultiHitTimesProperty(timesProp);
+        }
+
+        private static void SortMultiHitTimesProperty(SerializedProperty timesProp)
+        {
+            if (timesProp == null || timesProp.arraySize <= 1)
+                return;
+
+            var values = new List<float>(timesProp.arraySize);
+            for (int i = 0; i < timesProp.arraySize; i++)
+                values.Add(Mathf.Clamp01(timesProp.GetArrayElementAtIndex(i).floatValue));
+            values.Sort();
+            for (int i = 0; i < values.Count; i++)
+                timesProp.GetArrayElementAtIndex(i).floatValue = values[i];
+        }
+
+        private void DrawMultiHitTimeline(SerializedProperty timesProp, float playheadNormalized)
+        {
+            const float markerWidth = 8f;
+            Rect track = GUILayoutUtility.GetRect(10f, 34f, GUILayout.ExpandWidth(true));
+            playheadNormalized = Mathf.Clamp01(playheadNormalized);
+
+            EditorGUI.DrawRect(track, new Color(0.1f, 0.1f, 0.11f, 1f));
+            EditorGUI.DrawRect(new Rect(track.x, track.yMax - 2f, track.width, 1f), new Color(0.38f, 0.38f, 0.42f, 1f));
+
+            Event evt = Event.current;
+
+            for (int i = 0; i < timesProp.arraySize; i++)
+            {
+                float t = Mathf.Clamp01(timesProp.GetArrayElementAtIndex(i).floatValue);
+                float cx = track.x + t * track.width;
+                Rect hitRect = new Rect(cx - markerWidth * 0.5f, track.y + 4f, markerWidth, track.height - 8f);
+                Color c = _draggingMultiHitIndex == i
+                    ? new Color(1f, 0.78f, 0.4f, 1f)
+                    : new Color(1f, 0.45f, 0.2f, 1f);
+                EditorGUI.DrawRect(hitRect, c);
+
+                if (evt.type == EventType.MouseDown && evt.button == 1 && hitRect.Contains(evt.mousePosition))
+                {
+                    Undo.RecordObject(_comboData, "Remove combo hit time");
+                    timesProp.DeleteArrayElementAtIndex(i);
+                    if (_draggingMultiHitIndex == i)
+                        _draggingMultiHitIndex = -1;
+                    else if (_draggingMultiHitIndex > i)
+                        _draggingMultiHitIndex--;
+                    evt.Use();
+                    GUI.changed = true;
+                    return;
+                }
+
+                if (evt.type == EventType.MouseDown && evt.button == 0 && hitRect.Contains(evt.mousePosition))
+                {
+                    _draggingMultiHitIndex = i;
+                    _multiHitDragStartMouseX = evt.mousePosition.x;
+                    _multiHitDragStartNormalized = t;
+                    evt.Use();
+                }
+            }
+
+            if (_draggingMultiHitIndex >= 0 && _draggingMultiHitIndex < timesProp.arraySize)
+            {
+                if (evt.type == EventType.MouseDrag && evt.button == 0)
+                {
+                    float deltaNorm = (evt.mousePosition.x - _multiHitDragStartMouseX) / Mathf.Max(track.width, 0.001f);
+                    float next = Mathf.Clamp01(_multiHitDragStartNormalized + deltaNorm);
+                    timesProp.GetArrayElementAtIndex(_draggingMultiHitIndex).floatValue = next;
+                    evt.Use();
+                    GUI.changed = true;
+                    Repaint();
+                }
+                else if (evt.type == EventType.MouseUp && evt.button == 0)
+                {
+                    _draggingMultiHitIndex = -1;
+                    SortMultiHitTimesProperty(timesProp);
+                    evt.Use();
+                    GUI.changed = true;
+                }
+            }
+
+            float playX = track.x + playheadNormalized * track.width;
+            EditorGUI.DrawRect(new Rect(playX - 1f, track.y + 2f, 2f, track.height - 4f), new Color(0.95f, 0.92f, 0.35f, 0.95f));
+
+            if (evt.type == EventType.MouseDown && evt.button == 0 && track.Contains(evt.mousePosition) && evt.shift)
+            {
+                float n = Mathf.Clamp01((evt.mousePosition.x - track.x) / Mathf.Max(track.width, 0.001f));
+                Undo.RecordObject(_comboData, "Add combo hit time");
+                AddMultiHitAtNormalized(timesProp, n);
+                evt.Use();
+                GUI.changed = true;
+            }
+
+            GUI.Label(new Rect(track.x + 4f, track.y + 1f, 24f, 12f), "0", EditorStyles.miniLabel);
+            GUI.Label(new Rect(track.xMax - 14f, track.y + 1f, 12f, 12f), "1", EditorStyles.miniLabel);
         }
 
         private void DrawPreviewSection()
@@ -1345,6 +1505,7 @@ namespace Geis.Combat.Editor
         {
             StopPreview(clearSampling: true);
             _comboData = comboData;
+            _draggingMultiHitIndex = -1;
             _draggingNodeState = -1;
             CancelTransitionConnection();
             if (_comboData == null)
