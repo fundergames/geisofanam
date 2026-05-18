@@ -57,6 +57,38 @@ namespace Geis.Combat
         public float[] multiHitNormalizedTimes;
     }
 
+/// <summary>Startup / active / recovery segment of a combo step (fighting-game frame data).</summary>
+public enum GeisComboAttackPhase
+{
+    Startup = 0,
+    Active = 1,
+    Recovery = 2
+}
+
+/// <summary>
+/// Per combo state attack phases for interrupt and super-armor rules.
+/// </summary>
+[System.Serializable]
+public class GeisComboStatePhase
+{
+    [Tooltip("If true, uses the normalized thresholds below instead of shared defaults on GeisComboData.")]
+    public bool overridePhaseWindows;
+
+    [Tooltip("Normalized clip time where startup ends and active frames begin.")]
+    [Range(0f, 1f)]
+    public float startupEndNormalized = 0.2f;
+
+    [Tooltip("Normalized clip time where active ends and recovery begins.")]
+    [Range(0f, 1f)]
+    public float activeEndNormalized = 0.55f;
+
+    [Tooltip("While in startup, the attacker does not flinch or cancel from incoming hits.")]
+    public bool armorDuringStartup = true;
+
+    [Tooltip("When false, dodge i-frames on the defender only avoid hits during the attacker's active phase.")]
+    public bool dodgeOnlyAvoidsDuringActive = true;
+}
+
 /// <summary>
 /// Optional per combo state timing overrides.
 /// </summary>
@@ -115,6 +147,21 @@ public class GeisComboStateTiming
         [Tooltip("Optional per-step cancel windows. Parallel to clips[]; enable Override Cancel Window on a step to customize that attack.")]
         [SerializeField]
         private GeisComboStateTiming[] stateTimings = new GeisComboStateTiming[0];
+
+        [Header("Attack phases")]
+        [Tooltip("Default startup end (normalized) when a step has no per-state phase override.")]
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float defaultStartupEndNormalized = 0.2f;
+
+        [Tooltip("Default active end (normalized) when a step has no per-state phase override.")]
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float defaultActiveEndNormalized = 0.55f;
+
+        [Tooltip("Optional per-step phase windows and armor. Parallel to clips[].")]
+        [SerializeField]
+        private GeisComboStatePhase[] statePhases = new GeisComboStatePhase[0];
 
         /// <summary>
         /// Try to find a transition from currentState with the given input. Returns true and out nextState if found.
@@ -212,6 +259,57 @@ public class GeisComboStateTiming
             if (stateTimings == null || state < 0 || state >= stateTimings.Length)
                 return null;
             return stateTimings[state];
+        }
+
+        public void GetPhaseWindows(int state, out float startupEnd, out float activeEnd)
+        {
+            startupEnd = Mathf.Clamp01(defaultStartupEndNormalized);
+            activeEnd = Mathf.Clamp01(defaultActiveEndNormalized);
+            if (activeEnd < startupEnd)
+                activeEnd = startupEnd;
+
+            GeisComboStatePhase phase = GetPhase(state);
+            if (phase != null && phase.overridePhaseWindows)
+            {
+                startupEnd = Mathf.Clamp01(phase.startupEndNormalized);
+                activeEnd = Mathf.Clamp01(phase.activeEndNormalized);
+                if (activeEnd < startupEnd)
+                    activeEnd = startupEnd;
+            }
+        }
+
+        public GeisComboAttackPhase GetAttackPhase(int state, float normalizedTime)
+        {
+            float t = Mathf.Clamp01(normalizedTime % 1f);
+            GetPhaseWindows(state, out float startupEnd, out float activeEnd);
+
+            if (t < startupEnd)
+                return GeisComboAttackPhase.Startup;
+            if (t < activeEnd)
+                return GeisComboAttackPhase.Active;
+            return GeisComboAttackPhase.Recovery;
+        }
+
+        public bool HasSuperArmorDuringStartup(int state)
+        {
+            GeisComboStatePhase phase = GetPhase(state);
+            return phase == null || phase.armorDuringStartup;
+        }
+
+        /// <summary>
+        /// When true, defender dodge only avoids this attack during the attacker's active frames.
+        /// </summary>
+        public bool DodgeOnlyAvoidsDuringActivePhase(int state)
+        {
+            GeisComboStatePhase phase = GetPhase(state);
+            return phase == null || phase.dodgeOnlyAvoidsDuringActive;
+        }
+
+        private GeisComboStatePhase GetPhase(int state)
+        {
+            if (statePhases == null || state < 0 || state >= statePhases.Length)
+                return null;
+            return statePhases[state];
         }
     }
 }

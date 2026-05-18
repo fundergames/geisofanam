@@ -2050,12 +2050,10 @@ namespace Geis.Combat.Editor
         [OnOpenAsset(1)]
         public static bool OnOpenAsset(int instanceID, int line)
         {
-            string assetPath = AssetDatabase.GetAssetPath(instanceID);
-            if (string.IsNullOrEmpty(assetPath))
-                return false;
-
-            GeisComboData comboData = AssetDatabase.LoadAssetAtPath<GeisComboData>(assetPath);
-            if (comboData == null)
+#pragma warning disable CS0618 // OnOpenAsset still provides int instanceID
+            var asset = EditorUtility.InstanceIDToObject(instanceID);
+#pragma warning restore CS0618
+            if (asset is not GeisComboData comboData)
                 return false;
 
             // Delay window creation until after Unity finishes the asset-open event; direct opens can be flaky.

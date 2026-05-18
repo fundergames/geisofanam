@@ -22,7 +22,7 @@ using UnityEngine;
 namespace Geis.Enemies
 {
     [RequireComponent(typeof(CombatExecutor))]
-    public class EnemyAttackDriver : MonoBehaviour
+    public class EnemyAttackDriver : MonoBehaviour, IAttackerPhaseProvider
     {
         public enum AttackPhase
         {
@@ -43,8 +43,41 @@ namespace Geis.Enemies
 
         /// <summary>Mirrors player combo index for <see cref="GeisComboData.ResolveCombatAction"/>.</summary>
         private int _weaponComboState;
+        private float _attackClipNormalizedTime;
+        private Animator _attackAnimator;
 
         public bool IsBusy => _activeRoutine != null;
+        public float CurrentAttackClipNormalizedTime => _attackClipNormalizedTime;
+
+        public bool TryGetCurrentAttackPhase(out GeisComboAttackPhase phase)
+        {
+            phase = GeisComboAttackPhase.Active;
+            if (CurrentPhase != AttackPhase.Execute)
+                return false;
+
+            GeisComboData comboData = _combatant?.Definition?.weaponDefinition?.comboData;
+            if (comboData == null)
+                return false;
+
+            phase = comboData.GetAttackPhase(_weaponComboState, _attackClipNormalizedTime);
+            return true;
+        }
+
+        public bool HasSuperArmorDuringCurrentStartup =>
+            CurrentPhase == AttackPhase.Execute
+            && TryGetCurrentAttackPhase(out GeisComboAttackPhase phase)
+            && phase == GeisComboAttackPhase.Startup
+            && (_combatant?.Definition?.weaponDefinition?.comboData == null
+                || _combatant.Definition.weaponDefinition.comboData.HasSuperArmorDuringStartup(_weaponComboState));
+
+        public bool DodgeOnlyAvoidsDuringActivePhase
+        {
+            get
+            {
+                GeisComboData comboData = _combatant?.Definition?.weaponDefinition?.comboData;
+                return comboData == null || comboData.DodgeOnlyAvoidsDuringActivePhase(_weaponComboState);
+            }
+        }
         public AttackPhase CurrentPhase { get; private set; }
         public EnemyAttackDefinition CurrentAttack { get; private set; }
 
@@ -55,6 +88,19 @@ namespace Geis.Enemies
             _animatorDriver = GetComponent<EnemyAnimatorDriver>() ?? GetComponentInParent<EnemyAnimatorDriver>();
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
             _combatExecutor = GetComponent<CombatExecutor>() ?? GetComponentInParent<CombatExecutor>();
+            _attackAnimator = GetComponentInChildren<Animator>();
+        }
+
+        private void UpdateAttackClipNormalizedTime()
+        {
+            if (_attackAnimator == null)
+                _attackAnimator = GetComponentInChildren<Animator>();
+            if (_attackAnimator == null)
+                return;
+
+            AnimatorStateInfo info = _attackAnimator.GetCurrentAnimatorStateInfo(0);
+            if (info.length > 0.01f)
+                _attackClipNormalizedTime = info.normalizedTime % 1f;
         }
 
         public void ResetCombatState()
@@ -298,6 +344,7 @@ namespace Geis.Enemies
             float elapsed = 0f;
             while (_combatExecutor != null && _combatExecutor.IsExecuting && elapsed < executionTimeout)
             {
+                UpdateAttackClipNormalizedTime();
                 elapsed += Time.deltaTime;
                 yield return null;
             }

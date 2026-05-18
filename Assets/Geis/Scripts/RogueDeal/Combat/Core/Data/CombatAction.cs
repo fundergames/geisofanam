@@ -14,6 +14,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Timeline;
+using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Effects;
 using RogueDeal.Combat.Core.Cooldowns;
 using RogueDeal.Combat.Core.Targeting;
@@ -68,6 +69,19 @@ namespace RogueDeal.Combat.Core.Data
         [Tooltip("Targeting strategy for this action")]
         public TargetingStrategy targetingStrategy;
         
+        [Header("Strike resolution")]
+        [Tooltip("How CombatStrikeResolver classifies this action. When Strike Kind Explicit is off, inferred from projectile/AoE flags.")]
+        public CombatStrikeKind strikeKind = CombatStrikeKind.Melee;
+
+        [Tooltip("When enabled, Strike Kind is used as authored instead of inferring from projectile/AoE.")]
+        public bool strikeKindExplicit;
+
+        [Tooltip("When true, IPhysicalWeaponHitGate on targets can block this strike (boss grounded windows, etc.).")]
+        public bool respectPhysicalWeaponGate = true;
+
+        [Tooltip("When false, dodge i-frames on the defender never avoid this strike.")]
+        public bool canBeDodged = true;
+
         [Header("Effects")]
         [Tooltip("Effects to apply when this action hits")]
         public BaseEffect[] effects;

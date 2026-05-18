@@ -32,6 +32,13 @@ namespace RogueDeal.Combat.Training
         
         [Header("Hitbox Settings")]
         [SerializeField] private float hitboxDisplayDuration = 0.5f;
+
+        [Header("Melee probe comparison")]
+        [Tooltip("When set, draws SimpleAttackHitDetector probe spheres on each connected strike for tuning vs WeaponHitbox.")]
+        [SerializeField] private SimpleAttackHitDetector meleeProbeReference;
+        [SerializeField] private bool showMeleeProbeOnHit = true;
+        [SerializeField] private Color meleeProbeColor = new Color(0.2f, 0.6f, 1f, 0.25f);
+        [SerializeField] private Color strikeMissedColor = new Color(1f, 0.85f, 0.2f, 0.35f);
         
         private List<HitboxVisualization> activeHitboxes = new List<HitboxVisualization>();
         private LineRenderer trajectoryLine;
@@ -49,12 +56,16 @@ namespace RogueDeal.Combat.Training
         {
             CombatEvents.OnAttackStarted += OnAttackStarted;
             CombatEvents.OnAttackConnected += OnAttackConnected;
+            CombatEvents.OnStrikeMissed += OnStrikeMissed;
+            if (meleeProbeReference == null)
+                meleeProbeReference = FindFirstObjectByType<SimpleAttackHitDetector>();
         }
         
         private void OnDisable()
         {
             CombatEvents.OnAttackStarted -= OnAttackStarted;
             CombatEvents.OnAttackConnected -= OnAttackConnected;
+            CombatEvents.OnStrikeMissed -= OnStrikeMissed;
         }
         
         private void Update()
@@ -79,8 +90,43 @@ namespace RogueDeal.Combat.Training
         {
             if (showHitboxes)
             {
-                CreateHitboxVisualization(data.hitPosition, 1f, hitboxDisplayDuration);
+                float size = data.strikeKind == CombatStrikeKind.Melee ? 1f : 0.75f;
+                CreateHitboxVisualization(data.hitPosition, size, hitboxDisplayDuration, hitboxColor);
             }
+
+            if (showMeleeProbeOnHit && meleeProbeReference != null && data.source != null)
+            {
+                DrawMeleeProbeSpheres(data.source.transform, meleeProbeColor, hitboxDisplayDuration);
+            }
+        }
+
+        private void OnStrikeMissed(CombatEventData data)
+        {
+            if (!showHitboxes || data.target == null)
+                return;
+
+            float size = data.strikeOutcome == CombatStrikeOutcome.Miss_Dodged ? 1.2f : 0.9f;
+            CreateHitboxVisualization(data.hitPosition, size, hitboxDisplayDuration, strikeMissedColor);
+        }
+
+        private void DrawMeleeProbeSpheres(Transform attacker, Color color, float duration)
+        {
+            if (meleeProbeReference == null || attacker == null)
+                return;
+
+            Vector3 origin = attacker.position;
+            Vector3 forward = attacker.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude > 1e-6f)
+                forward.Normalize();
+
+            const float rangeOffset = 1.5f;
+            const float hitRadius = 2f;
+            Vector3 forwardCenter = origin + forward * rangeOffset + Vector3.up * 0.5f;
+            Vector3 bodyCenter = origin + Vector3.up * 0.5f;
+
+            CreateHitboxVisualization(forwardCenter, hitRadius * 2f, duration, color);
+            CreateHitboxVisualization(bodyCenter, hitRadius * 2f, duration, color);
         }
         
         private void DrawAttackRange(Vector3 origin, float range)
@@ -122,7 +168,7 @@ namespace RogueDeal.Combat.Training
             trajectoryLine.endColor = trajectoryColor;
         }
         
-        private void CreateHitboxVisualization(Vector3 position, float size, float duration)
+        private void CreateHitboxVisualization(Vector3 position, float size, float duration, Color? colorOverride = null)
         {
             GameObject hitboxObj = GameObject.CreatePrimitive(PrimitiveType.Sphere);
             hitboxObj.transform.position = position;
@@ -130,7 +176,7 @@ namespace RogueDeal.Combat.Training
             
             Renderer renderer = hitboxObj.GetComponent<Renderer>();
             Material mat = new Material(Shader.Find("Universal Render Pipeline/Lit"));
-            mat.color = hitboxColor;
+            mat.color = colorOverride ?? hitboxColor;
             renderer.material = mat;
             
             Collider collider = hitboxObj.GetComponent<Collider>();
@@ -143,7 +189,8 @@ namespace RogueDeal.Combat.Training
             {
                 gameObject = hitboxObj,
                 creationTime = Time.time,
-                duration = duration
+                duration = duration,
+                baseColor = mat.color
             };
             
             activeHitboxes.Add(viz);
@@ -166,7 +213,7 @@ namespace RogueDeal.Combat.Training
                     Renderer renderer = viz.gameObject.GetComponent<Renderer>();
                     if (renderer != null)
                     {
-                        Color color = hitboxColor;
+                        Color color = viz.baseColor;
                         color.a *= alpha;
                         renderer.material.color = color;
                     }
@@ -199,6 +246,7 @@ namespace RogueDeal.Combat.Training
             public GameObject gameObject;
             public float creationTime;
             public float duration;
+            public Color baseColor;
         }
     }
 }

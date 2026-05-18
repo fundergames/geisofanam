@@ -13,7 +13,10 @@
 
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.RenderGraphModule;
+using UnityEngine.Rendering.RenderGraphModule.Util;
 using UnityEngine.Rendering.Universal;
+using static UnityEngine.Rendering.RenderGraphModule.Util.RenderGraphUtils;
 
 namespace Geis.Rendering
 {
@@ -46,28 +49,31 @@ namespace Geis.Rendering
 
         private sealed class SoulRealmScreenPass : ScriptableRenderPass
         {
+            private static readonly ProfilingSampler ProfilingSampler = new("GeisSoulRealmScreen");
             private Material _material;
 
             public void Setup(Material mat, RenderPassEvent evt)
             {
                 _material = mat;
                 renderPassEvent = evt;
+                profilingSampler = ProfilingSampler;
             }
 
-            public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
+            public override void RecordRenderGraph(RenderGraph renderGraph, ContextContainer frameData)
             {
                 if (_material == null)
                     return;
 
-                var cmd = CommandBufferPool.Get();
-                using (new ProfilingScope(cmd, new ProfilingSampler("GeisSoulRealmScreen")))
-                {
-                    var handle = renderingData.cameraData.renderer.cameraColorTargetHandle;
-                    Blitter.BlitCameraTexture(cmd, handle, handle, _material, 0);
-                }
+                var resourcesData = frameData.Get<UniversalResourceData>();
+                if (!resourcesData.activeColorTexture.IsValid())
+                    return;
 
-                context.ExecuteCommandBuffer(cmd);
-                CommandBufferPool.Release(cmd);
+                var blitParameters = new BlitMaterialParameters(
+                    TextureHandle.nullHandle,
+                    resourcesData.activeColorTexture,
+                    _material,
+                    0);
+                renderGraph.AddBlitPass(blitParameters, passName: "GeisSoulRealmScreen");
             }
         }
     }

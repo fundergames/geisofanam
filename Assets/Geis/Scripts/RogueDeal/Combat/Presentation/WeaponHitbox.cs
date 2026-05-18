@@ -405,84 +405,25 @@ namespace RogueDeal.Combat.Presentation
                 Debug.LogError("[WeaponHitbox] Cannot apply effects - CombatExecutor is null!");
                 return;
             }
-            
-            var attackerData = combatExecutor.GetEntityData();
-            if (attackerData == null)
-            {
-                Debug.LogError("[WeaponHitbox] Cannot apply effects - attacker data is null!");
-                return;
-            }
-            
-            var targetData = target.GetEntityData();
-            if (targetData == null)
-            {
-                Debug.LogError("[WeaponHitbox] Cannot apply effects - target data is null!");
-                return;
-            }
-            
-            if (!targetData.IsAlive)
-            {
-                Debug.Log($"[WeaponHitbox] Target {target.gameObject.name} is already dead, skipping damage");
-                return;
-            }
 
-            var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
-            if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
-            {
-                CombatEntity attackerEntity = combatExecutor.GetComponent<CombatEntity>();
-                CombatEvents.TriggerDamageApplied(new CombatEventData
-                {
-                    source = attackerEntity,
-                    target = target,
-                    damageAmount = 0f,
-                    wasCritical = false,
-                    wasImmune = true,
-                    hitPosition = target.GetHitPoint()
-                });
+            CombatEntity attackerEntity = combatExecutor.GetComponent<CombatEntity>();
+            if (attackerEntity == null || action?.effects == null || action.effects.Length == 0)
                 return;
-            }
-            
-            var weapon = attackerData.equippedWeapon;
-            float hpBefore = targetData.currentHealth;
-            bool wasCritical = false;
-            
-            // Calculate and apply all effects
-            foreach (var effect in action.effects)
+
+            float maxRange = GetMaxRange(combatExecutor.GetEntityData());
+            float damageDealt = CombatStrikeResolver.TryApplyEffectsToTarget(
+                CombatStrikeResolver.ResolveStrikeKind(action, CombatStrikeKind.Melee),
+                attackerEntity,
+                target,
+                action.effects,
+                action,
+                maxRange,
+                1f,
+                combatExecutor.TriggerHitReaction);
+
+            if (damageDealt > 0f)
             {
-                if (effect == null) continue;
-                
-                var calculated = effect.Calculate(attackerData, targetData, weapon);
-                
-                // Track if any effect was a critical hit
-                if (calculated.wasCritical)
-                {
-                    wasCritical = true;
-                }
-                
-                effect.Apply(targetData, calculated);
-            }
-            
-            float hpAfter = targetData.currentHealth;
-            float damageDealt = hpBefore - hpAfter;
-            
-            if (damageDealt > 0)
-            {
-                Debug.Log($"[WeaponHitbox] Applied {damageDealt:F1} damage to {target.gameObject.name} (HP: {hpBefore:F1} → {hpAfter:F1})");
-                
-                // Fire damage event (drives damage numbers, health bars, visual feedback)
-                CombatEntity attackerEntity = combatExecutor.GetComponent<CombatEntity>();
-                CombatEvents.TriggerDamageApplied(new CombatEventData
-                {
-                    source = attackerEntity,
-                    target = target,
-                    damageAmount = damageDealt,
-                    wasCritical = wasCritical,
-                    wasImmune = false,
-                    hitPosition = target.GetHitPoint()
-                });
-                
-                // Trigger hit reaction: animation + damage popup
-                combatExecutor.TriggerHitReaction(target, damageDealt, wasCritical);
+                Debug.Log($"[WeaponHitbox] Applied {damageDealt:F1} damage to {target.gameObject.name}");
             }
         }
     }

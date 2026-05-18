@@ -12,7 +12,6 @@
  */
 
 using System.Collections.Generic;
-using Geis.Enemies;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Core.Effects;
 using UnityEngine;
@@ -114,7 +113,8 @@ namespace RogueDeal.Combat
             if (action == null || action.effects == null || action.effects.Length == 0)
                 return false;
 
-            return ApplyEffectsToTargets(sourceEntity, action.effects, targets);
+            CombatStrikeKind kind = CombatStrikeResolver.ResolveStrikeKind(action, CombatStrikeKind.Melee);
+            return ApplyEffectsToTargets(sourceEntity, action.effects, targets, kind, action);
         }
 
         /// <summary>
@@ -123,17 +123,22 @@ namespace RogueDeal.Combat
         public static bool ApplyEffectsToTargets(
             CombatEntity sourceEntity,
             BaseEffect[] effects,
-            IReadOnlyList<CombatEntity> targets)
+            IReadOnlyList<CombatEntity> targets,
+            CombatStrikeKind strikeKind = CombatStrikeKind.Melee,
+            CombatAction action = null)
         {
             if (sourceEntity == null || effects == null || effects.Length == 0 || targets == null || targets.Count == 0)
                 return false;
 
-            CombatEntityData sourceData = sourceEntity.GetEntityData();
-            if (sourceData == null)
+            if (sourceEntity.GetEntityData() == null)
                 return false;
 
+            CombatStrikeKind kind = action != null
+                ? CombatStrikeResolver.ResolveStrikeKind(action, strikeKind)
+                : strikeKind;
+
+            float maxRange = CombatStrikeResolver.GetMaxMeleeRange(sourceEntity.GetEntityData());
             bool dealtAnyDamage = false;
-            Weapon sourceWeapon = sourceData.equippedWeapon;
 
             for (int i = 0; i < targets.Count; i++)
             {
@@ -141,70 +146,16 @@ namespace RogueDeal.Combat
                 if (target == null || target == sourceEntity)
                     continue;
 
-                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(sourceEntity, target))
-                    continue;
+                float damage = CombatStrikeResolver.TryApplyEffectsToTarget(
+                    kind,
+                    sourceEntity,
+                    target,
+                    effects,
+                    action,
+                    kind == CombatStrikeKind.Melee ? maxRange : -1f);
 
-                CombatEntityData targetData = target.GetEntityData();
-                if (targetData == null || !targetData.IsAlive)
-                    continue;
-
-                IPhysicalWeaponHitGate physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
-                if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
-                {
-                    CombatEvents.TriggerDamageApplied(new CombatEventData
-                    {
-                        source = sourceEntity,
-                        target = target,
-                        damageAmount = 0f,
-                        wasCritical = false,
-                        wasImmune = true,
-                        hitPosition = target.GetHitPoint()
-                    });
-                    continue;
-                }
-
-                float hpBefore = targetData.currentHealth;
-                bool wasCritical = false;
-
-                for (int e = 0; e < effects.Length; e++)
-                {
-                    BaseEffect effect = effects[e];
-                    if (effect == null)
-                        continue;
-
-                    CalculatedEffect calculated = effect.Calculate(sourceData, targetData, sourceWeapon);
-                    if (calculated.wasCritical)
-                        wasCritical = true;
-
-                    effect.Apply(targetData, calculated);
-                }
-
-                float damageDealt = hpBefore - targetData.currentHealth;
-                if (damageDealt <= 0f)
-                    continue;
-
-                dealtAnyDamage = true;
-                Vector3 hitPosition = target.GetHitPoint();
-
-                CombatEvents.TriggerDamageApplied(new CombatEventData
-                {
-                    source = sourceEntity,
-                    target = target,
-                    damageAmount = damageDealt,
-                    wasCritical = wasCritical,
-                    wasImmune = false,
-                    hitPosition = hitPosition
-                });
-
-                CombatEvents.TriggerHitReactionStarted(new CombatEventData
-                {
-                    source = sourceEntity,
-                    target = target,
-                    damageAmount = damageDealt,
-                    wasCritical = wasCritical,
-                    hitPosition = hitPosition,
-                    effect = null
-                });
+                if (damage > 0f)
+                    dealtAnyDamage = true;
             }
 
             return dealtAnyDamage;

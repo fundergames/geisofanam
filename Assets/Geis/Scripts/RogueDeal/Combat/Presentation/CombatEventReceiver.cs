@@ -35,9 +35,22 @@ namespace RogueDeal.Combat.Presentation
                 combatExecutor = GetComponentInParent<CombatExecutor>();
             }
             
-            weaponHitbox = GetComponentInChildren<WeaponHitbox>();
+            RefreshWeaponHitboxReference();
             vfxController = GetComponent<CombatVFXController>();
             sfxController = GetComponent<CombatSFXController>();
+        }
+
+        /// <summary>
+        /// Points animation hitbox events at the weapon instance currently equipped (see <see cref="Geis.Combat.GeisCombatBridge"/>).
+        /// </summary>
+        public void SetActiveWeaponHitbox(WeaponHitbox hitbox)
+        {
+            weaponHitbox = hitbox != null ? hitbox : GetComponentInChildren<WeaponHitbox>();
+        }
+
+        private void RefreshWeaponHitboxReference()
+        {
+            weaponHitbox = GetComponentInChildren<WeaponHitbox>();
         }
         
         /// <summary>

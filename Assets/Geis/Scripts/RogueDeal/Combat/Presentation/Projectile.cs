@@ -291,61 +291,21 @@ namespace RogueDeal.Combat.Presentation
                             return;
                         }
 
-                        var physicalGate = targetEntity.GetComponentInParent<IPhysicalWeaponHitGate>();
-                        if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
-                        {
+                        float damageDealt = CombatStrikeResolver.TryApplyEffectsToTarget(
+                            CombatStrikeKind.Projectile,
+                            _sourceEntity,
+                            targetEntity,
+                            effects,
+                            action: null,
+                            maxRange: -1f,
+                            damageMultiplier: _damageMultiplier);
+
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                            DebugHitLog($"Blocked by IPhysicalWeaponHitGate ({physicalGate.GetType().Name})", targetEntity);
-#endif
-                            CombatEvents.TriggerDamageApplied(new CombatEventData
-                            {
-                                source = _sourceEntity,
-                                target = targetEntity,
-                                damageAmount = 0f,
-                                wasCritical = false,
-                                wasImmune = true,
-                                hitPosition = targetEntity.GetHitPoint()
-                            });
-                        }
-                        else
-                        {
-                        float hpBefore = targetData.currentHealth;
-                        bool wasCritical = false;
-                        foreach (var effect in effects)
-                        {
-                            if (effect == null) continue;
-
-                            var calculated = effect.Calculate(attackerData, targetData, attackerData.equippedWeapon);
-                            if (calculated != null && calculated.effectType == EffectType.Damage && _damageMultiplier != 1f)
-                                calculated.damageAmount *= _damageMultiplier;
-                            if (calculated.wasCritical)
-                                wasCritical = true;
-                            effect.Apply(targetData, calculated);
-                        }
-
-                        float damageDealt = hpBefore - targetData.currentHealth;
                         if (damageDealt > 0f)
-                        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                            DebugHitLog($"Dealt damage={damageDealt:F2} (crit={wasCritical})", targetEntity);
-#endif
-                            CombatEvents.TriggerDamageApplied(new CombatEventData
-                            {
-                                source = _sourceEntity,
-                                target = targetEntity,
-                                damageAmount = damageDealt,
-                                wasCritical = wasCritical,
-                                wasImmune = false,
-                                hitPosition = targetEntity.GetHitPoint()
-                            });
-                        }
+                            DebugHitLog($"Dealt damage={damageDealt:F2}", targetEntity);
                         else
-                        {
-#if UNITY_EDITOR || DEVELOPMENT_BUILD
-                            DebugHitLog("No damage dealt (effects resulted in 0)", targetEntity);
+                            DebugHitLog("No damage dealt (miss, immune, or zero effect)", targetEntity);
 #endif
-                        }
-                        }
                     }
                 }
             }

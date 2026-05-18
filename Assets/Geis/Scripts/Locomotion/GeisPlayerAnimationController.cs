@@ -410,6 +410,10 @@ namespace Geis.Locomotion
         [Tooltip("Normalized time on the dodge clip after which recovery cancels are allowed.")]
         [SerializeField]
         private float _dodgeRecoveryStartNormalizedTime = 0.65f;
+        [Tooltip("Normalized time on the dodge leaf clip while the player has dodge i-frames (CombatStrikeResolver).")]
+        [Range(0f, 1f)]
+        [SerializeField]
+        private float _dodgeInvulnerabilityEndNormalizedTime = 0.38f;
         [Tooltip("Min stick magnitude (0-1) to move-cancel a dodge during its recovery window.")]
         [SerializeField]
         private float _dodgeMoveCancelStickThreshold = 0.3f;
@@ -700,15 +704,62 @@ namespace Geis.Locomotion
 
         #region Start
 
+#if UNITY_EDITOR
         private void OnValidate()
         {
-            if (!Application.isPlaying)
-                EnsurePersistentLockOnIndicator();
+            if (Application.isPlaying)
+                return;
+
+            UnityEditor.EditorApplication.delayCall -= EnsurePersistentLockOnIndicatorEditor;
+            UnityEditor.EditorApplication.delayCall += EnsurePersistentLockOnIndicatorEditor;
         }
 
+        private void EnsurePersistentLockOnIndicatorEditor()
+        {
+            if (this == null)
+                return;
+
+            EnsurePersistentLockOnIndicator();
+        }
+#endif
+
         /// <inheritdoc cref="Start" />
+        private PlayerDefensiveCombatState _defensiveCombatState;
+
+        private void EnsureDefensiveCombatState()
+        {
+            if (_defensiveCombatState == null)
+                _defensiveCombatState = GetComponent<PlayerDefensiveCombatState>();
+            if (_defensiveCombatState == null)
+                _defensiveCombatState = gameObject.AddComponent<PlayerDefensiveCombatState>();
+        }
+
+        private void UpdateDodgeInvulnerabilityFromAnimator()
+        {
+            EnsureDefensiveCombatState();
+            if (_defensiveCombatState == null || _animator == null)
+                return;
+
+            bool invuln = false;
+            if (_currentState == AnimationState.Dodge)
+            {
+                AnimatorStateInfo info = _animator.GetCurrentAnimatorStateInfo(0);
+                if (_dodgeAnimatorEnteredLeaf
+                    && IsDodgeLeafShortNameHash(info.shortNameHash)
+                    && !_animator.IsInTransition(0)
+                    && info.length > 0.01f)
+                {
+                    float t = info.normalizedTime % 1f;
+                    invuln = t < _dodgeInvulnerabilityEndNormalizedTime;
+                }
+            }
+
+            _defensiveCombatState.SetDodgeInvulnerable(invuln);
+        }
+
         private void Start()
         {
+            EnsureDefensiveCombatState();
             EnsurePersistentLockOnIndicator();
 
             _targetLockOnPos = EnsureWorldSpaceLockOnAnchor();
@@ -1541,6 +1592,8 @@ namespace Geis.Locomotion
                 }
             }
 
+            UpdateDodgeInvulnerabilityFromAnimator();
+
             if (_dodgeStateTimeout <= 0f)
             {
                 SeedPlanarVelocityFromStick(_dodgeExitVelocityCarry);
@@ -1555,6 +1608,8 @@ namespace Geis.Locomotion
         private void ExitDodgeState()
         {
             _dodgeIsReverseRoll = false;
+            if (_defensiveCombatState != null)
+                _defensiveCombatState.SetDodgeInvulnerable(false);
         }
 
         private void EnterAttackState()
@@ -1640,7 +1695,19 @@ namespace Geis.Locomotion
                             int weaponIdx = GetWeaponIndexForMusic();
                             CombatMusicController.Instance?.OnAttackPerformed(input, _currentComboState, weaponIdx);
                             OnAttackPerformed?.Invoke(weaponIdx);
+                            return;
                         }
+                    }
+
+                    Vector2 moveComposite = _inputReader != null
+                        ? GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(_inputReader._moveComposite)
+                        : Vector2.zero;
+                    float moveCancelThreshold = _attackMoveCancelStickThreshold;
+                    if (moveComposite.sqrMagnitude >= moveCancelThreshold * moveCancelThreshold)
+                    {
+                        SeedPlanarVelocityFromStick(_attackExitVelocityCarry);
+                        SwitchState(AnimationState.Locomotion);
+                        return;
                     }
                 }
 
@@ -2649,6 +2716,14 @@ namespace Geis.Locomotion
             cameraTilt = Mathf.Clamp(cameraTilt, -0.1f, 1.0f);
             _headLookY = cameraTilt;
             _bodyLookY = cameraTilt;
+
+            if (IsBowEquipped && (_isAiming || _isBowDrawing) && !IsBowMovementForcedWalk)
+            {
+                _headLookX *= _bowAimHeadLookMultiplier;
+                _headLookY *= _bowAimHeadLookMultiplier;
+                _bodyLookX *= _bowAimBodyLookMultiplier;
+                _bodyLookY *= _bowAimBodyLookMultiplier;
+            }
 
             if (IsBowMovementForcedWalk)
             {

@@ -172,9 +172,6 @@ namespace Geis.SoulRealm.WeaponAbilities
                             continue;
                         if (((1 << hits[i].gameObject.layer) & enemyLayers.value) == 0)
                             continue;
-                        var gate = ce.GetComponentInParent<IPhysicalWeaponHitGate>();
-                        if (gate != null && !gate.AllowsPhysicalWeaponHits())
-                            continue;
                         targets.Add(ce);
                     }
 

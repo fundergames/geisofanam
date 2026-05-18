@@ -19,6 +19,7 @@ using UnityEngine;
 using UnityEngine.Serialization;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
+using RogueDeal.Combat.Presentation;
 using Geis.SoulRealm;
 
 namespace Geis.Combat
@@ -308,6 +309,9 @@ namespace Geis.Combat
                 _currentWeaponInstance.transform.localPosition = Vector3.zero;
                 _currentWeaponInstance.transform.localRotation = Quaternion.identity;
                 _currentWeaponInstance.transform.localScale = Vector3.one;
+
+                if (def != null && !def.IsBowWeapon)
+                    EnsureMeleeWeaponHitbox(_currentWeaponInstance);
             }
 
             _currentWeaponIndex = slotIndex;
@@ -318,6 +322,27 @@ namespace Geis.Combat
             mgr?.SyncSpectralAnimatorControllerFromBody();
             if (mgr != null)
                 ApplyEquippedWeaponIndexToAnimator(mgr.SpectralAnimator, slotIndex);
+        }
+
+        private static void EnsureMeleeWeaponHitbox(GameObject weaponInstance)
+        {
+            if (weaponInstance == null || weaponInstance.GetComponentInChildren<WeaponHitbox>(true) != null)
+                return;
+
+            Transform blade = weaponInstance.transform;
+            var hitboxGo = new GameObject("WeaponHitbox");
+            hitboxGo.transform.SetParent(blade, false);
+            hitboxGo.transform.localPosition = new Vector3(0f, 0f, 0.45f);
+
+            var capsule = hitboxGo.AddComponent<CapsuleCollider>();
+            capsule.isTrigger = true;
+            capsule.radius = 0.12f;
+            capsule.height = 0.9f;
+            capsule.direction = 2;
+
+            var hitbox = hitboxGo.AddComponent<WeaponHitbox>();
+            hitbox.targetLayers = ~0;
+            hitbox.validTargetTags = new[] { "Enemy" };
         }
 
         private static void ApplyEquippedWeaponIndexToAnimator(Animator anim, int slotIndex)

@@ -31,6 +31,8 @@ namespace RogueDeal.Combat
         /// </summary>
         public bool skipEntityDamageInterceptors;
         public Vector3 hitPosition;
+        public CombatStrikeKind strikeKind;
+        public CombatStrikeOutcome strikeOutcome;
     }
 
     public static class CombatEvents
@@ -41,6 +43,7 @@ namespace RogueDeal.Combat
         public static event Action<CombatEventData> OnDamageApplied;
         public static event Action<CombatEventData> OnHitReactionStarted;
         public static event Action<CombatEventData> OnAttackCompleted;
+        public static event Action<CombatEventData> OnStrikeMissed;
         
         public static void TriggerAttackStarted(CombatEventData data)
         {
@@ -72,6 +75,11 @@ namespace RogueDeal.Combat
             OnAttackCompleted?.Invoke(data);
         }
 
+        public static void TriggerStrikeMissed(CombatEventData data)
+        {
+            OnStrikeMissed?.Invoke(data);
+        }
+
         public static void ClearAllEvents()
         {
             OnAttackStarted = null;
@@ -80,6 +88,7 @@ namespace RogueDeal.Combat
             OnDamageApplied = null;
             OnHitReactionStarted = null;
             OnAttackCompleted = null;
+            OnStrikeMissed = null;
         }
     }
 }

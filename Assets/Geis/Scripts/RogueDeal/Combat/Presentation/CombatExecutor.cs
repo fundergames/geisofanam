@@ -15,7 +15,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Geis.Animation;
-using Geis.Enemies;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.Timeline;
@@ -489,88 +488,52 @@ namespace RogueDeal.Combat.Presentation
             ApplyEffectsToTargetList(effects, currentTargets);
         }
 
-        private void NotifyPhysicalWeaponImmuneHit(CombatEntity target)
-        {
-            CombatEvents.TriggerDamageApplied(new CombatEventData
-            {
-                source = combatEntity,
-                target = target,
-                damageAmount = 0f,
-                wasCritical = false,
-                wasImmune = true,
-                hitPosition = target.GetHitPoint()
-            });
-        }
-
         private void ApplyEffectsToTargetList(BaseEffect[] effects, List<CombatEntity> targetList)
         {
             if (effects == null || targetList == null) return;
-            
+
+            CombatStrikeKind kind = currentAction != null
+                ? CombatStrikeResolver.ResolveStrikeKind(currentAction, CombatStrikeKind.Melee)
+                : CombatStrikeKind.Melee;
+            float maxRange = CombatStrikeResolver.GetMaxMeleeRange(entityData);
+
             foreach (var target in targetList)
             {
                 if (target == null) continue;
 
-                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(combatEntity, target))
-                    continue;
-                
-                var targetData = target.GetEntityData();
-                if (targetData == null || !targetData.IsAlive) continue;
+                float damageDealt = CombatStrikeResolver.TryApplyEffectsToTarget(
+                    kind,
+                    combatEntity,
+                    target,
+                    effects,
+                    currentAction,
+                    kind == CombatStrikeKind.Melee ? maxRange : -1f,
+                    1f,
+                    TriggerHitReaction);
 
-                var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
-                if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
+                if (damageDealt > 0f)
                 {
-                    NotifyPhysicalWeaponImmuneHit(target);
-                    continue;
-                }
-                
-                float hpBefore = targetData.currentHealth;
-                bool wasCritical = false;
-                float totalDamage = 0f;
-                
-                // Calculate and apply all effects
-                foreach (var effect in effects)
-                {
-                    if (effect == null) continue;
-                    
-                    var calculated = effect.Calculate(entityData, targetData, entityData.equippedWeapon);
-                    
-                    // Track if any effect was a critical hit
-                    if (calculated.wasCritical)
-                    {
-                        wasCritical = true;
-                    }
-                    
-                    // Track total damage from this effect
-                    if (calculated.damageAmount > 0)
-                    {
-                        totalDamage += calculated.damageAmount;
-                    }
-                    
-                    effect.Apply(targetData, calculated);
-                }
-                
-                float hpAfter = targetData.currentHealth;
-                float damageDealt = hpBefore - hpAfter;
-                
-                if (damageDealt > 0)
-                {
-                    Debug.Log($"[CombatExecutor] Applied effects to {target.gameObject.name}. Damage: {damageDealt:F1}, HP: {hpBefore:F1} → {hpAfter:F1}");
-                    
-                    // Fire damage event (drives damage numbers, health bars, visual feedback)
-                    CombatEvents.TriggerDamageApplied(new CombatEventData
-                    {
-                        source = combatEntity,
-                        target = target,
-                        damageAmount = damageDealt,
-                        wasCritical = wasCritical,
-                        wasImmune = false,
-                        hitPosition = target.GetHitPoint()
-                    });
-                    
-                    // Trigger hit reaction: animation + damage popup
-                    TriggerHitReaction(target, damageDealt, wasCritical);
+                    Debug.Log($"[CombatExecutor] Applied effects to {target.gameObject.name}. Damage: {damageDealt:F1}");
                 }
             }
+        }
+
+        /// <summary>
+        /// Re-resolves targets from the current action's strategy at strike time (position, LOS, range).
+        /// </summary>
+        private bool TryRefreshTargetsAtStrikeTime()
+        {
+            if (currentAction == null || currentAction.targetingStrategy == null || entityData == null)
+                return currentTargets != null && currentTargets.Count > 0;
+
+            entityData.position = transform.position;
+            var result = currentAction.targetingStrategy.ResolveTargets(entityData);
+            if (!result.isReady || result.targets == null || result.targets.Count == 0)
+                return false;
+
+            currentTargets = result.targets;
+            currentTargetPosition = result.targetPosition;
+            return true;
         }
 
         /// <summary>
@@ -579,48 +542,8 @@ namespace RogueDeal.Combat.Presentation
         private void ApplyEffectToTargets(BaseEffect effect)
         {
             if (effect == null || currentTargets == null) return;
-            
-            foreach (var target in currentTargets)
-            {
-                if (target == null) continue;
 
-                if (!EnemyMeleeFacingGate.AllowsHitAtStrikeTime(combatEntity, target))
-                    continue;
-                
-                var targetData = target.GetEntityData();
-                if (targetData == null || !targetData.IsAlive) continue;
-
-                var physicalGate = target.GetComponentInParent<IPhysicalWeaponHitGate>();
-                if (physicalGate != null && !physicalGate.AllowsPhysicalWeaponHits())
-                {
-                    NotifyPhysicalWeaponImmuneHit(target);
-                    continue;
-                }
-                
-                float hpBefore = targetData.currentHealth;
-                var calculated = effect.Calculate(entityData, targetData, entityData.equippedWeapon);
-                effect.Apply(targetData, calculated);
-                
-                float hpAfter = targetData.currentHealth;
-                float damageDealt = hpBefore - hpAfter;
-                
-                if (damageDealt > 0)
-                {
-                    // Fire damage event (drives damage numbers, health bars, visual feedback)
-                    CombatEvents.TriggerDamageApplied(new CombatEventData
-                    {
-                        source = combatEntity,
-                        target = target,
-                        damageAmount = damageDealt,
-                        wasCritical = calculated.wasCritical,
-                        wasImmune = false,
-                        hitPosition = target.GetHitPoint()
-                    });
-                    
-                    // Trigger hit reaction: animation + damage popup
-                    TriggerHitReaction(target, damageDealt, calculated.wasCritical);
-                }
-            }
+            ApplyEffectsToTargetList(new[] { effect }, currentTargets);
         }
         
         /// <summary>

@@ -244,8 +244,11 @@ namespace RogueDeal.Combat.Presentation
                         yield return new WaitForSeconds(wait);
                     elapsed = targetTime;
 
-                    if (currentAction != action || currentTargets == null)
+                    if (currentAction != action)
                         yield break;
+
+                    if (!TryRefreshTargetsAtStrikeTime())
+                        continue;
 
                     if (action.perHitEffects != null && hitIndex < action.perHitEffects.Length && action.perHitEffects[hitIndex] != null)
                         ApplyEffectToTargets(action.perHitEffects[hitIndex]);

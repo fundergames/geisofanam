@@ -115,9 +115,7 @@ namespace Geis.SoulRealm
         {
             foreach (var mb in root.GetComponentsInChildren<MonoBehaviour>(true))
             {
-                if (mb == null)
-                    continue;
-                if (mb is Animator || mb is SoulSpectralAnimatorDriver)
+                if (mb == null || mb is SoulSpectralAnimatorDriver)
                     continue;
                 Object.Destroy(mb);
             }
