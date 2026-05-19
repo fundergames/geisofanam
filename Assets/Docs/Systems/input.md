@@ -1,7 +1,7 @@
 # Input
 
 **Status**: current  
-**Last updated**: 2026-04-01
+**Last updated**: 2026-05-19
 
 ## Purpose
 
@@ -15,7 +15,11 @@ Centralize player input: gameplay actions, weapon abilities, and interact prompt
 - **Look**: Consumers that need correct **every-frame** gamepad look should read `LookInput` (`_controls.Player.Look.ReadValue<Vector2>()`), not only `OnLook`’s `_mouseDelta`, so steady right-stick values are not dropped.
 - **Soul realm toggle**: Exposes `SoulRealm` action reference and `SoulRealmWasPressedThisFrame()` for enter detection (callbacks on `OnSoulRealm` are empty; detection is via `WasPressedThisFrame`).
 - **Sprint**: **Keyboard Shift** = hold sprint (`onSprintActivated` / `onSprintDeactivated` on edge). **Gamepad L3** (left stick press) **toggles** jog vs sprint; `IsSprintHeldOrToggled` reflects Shift **or** that toggle. **Lock-on** clears both sprint modes and syncs sprint output.
-- **Heavy attack**: `onHeavyAttackStarted` on `started`, `onHeavyAttackReleased` on `canceled`, `onHeavyAttackPerformed` on `performed` (bow charge uses started/canceled).
+- **Light attack**: LMB / E / gamepad **RB** (`rightShoulder`).
+- **Heavy attack**: R / gamepad **RT** (`rightTrigger`); `onHeavyAttackStarted` / `onHeavyAttackReleased` / `onHeavyAttackPerformed`. Bow draw/release polls **HeavyAttack** (see [combat.md](combat.md)).
+- **Aim**: RMB / gamepad **LT**; `IsAimHeld` for modifier checks. Bow aim zoom uses aim while bow equipped.
+- **Soul realm enter**: Tab / gamepad **LB** (`leftShoulder`), via `SoulRealmWasPressedThisFrame()` — suppressed while **LT** is held so **LT+LB** can route to ability 1 without entering soul realm.
+- **Light attack + LT**: Gamepad **RB** while **LT** held does not fire `onLightAttackPerformed` (reserved for **LT+RB** = ability 2).
 - **Dodge**: `OnDodge` accepts `started` or `performed` and dedupes with `TryInvokeDodgeOnce` (same frame). Optional **fallback**: if raw `Gamepad.buttonEast` pressed but `Player/Dodge` did not fire this frame, still invokes dodge once (guards broken binding cache).
 - **Walk toggle**: `OnToggleWalk` is wired but described as no bindings (walk toggle disabled until bindings exist).
 
@@ -28,6 +32,8 @@ Centralize player input: gameplay actions, weapon abilities, and interact prompt
 ### Soul ability map (`SoulRealmWeapon` on `GeisControls`)
 
 - The **`SoulRealmWeapon`** action map lives in **`GeisControls.inputactions`** (same asset as the Player map). `SoulRealmWeaponAbilityController` assigns that asset and enables only the `SoulRealmWeapon` map in parallel; it **Instantiates** a copy at runtime so map state is not shared (see [soul-realm.md](soul-realm.md)).
+- **Keyboard**: Q = ability 1, F = ability 2 (bound on the map).
+- **Gamepad**: **LT held + LB** = ability 1, **LT held + RB** = ability 2 (polled in `SoulRealmWeaponAbilityController`, not separate `.inputactions` bindings).
 
 ## Scope
 
@@ -70,4 +76,5 @@ Centralize player input: gameplay actions, weapon abilities, and interact prompt
 
 ## Changelog
 
+- **2026-05-19**: Gamepad combat remap — RB light, RT heavy, LT+LB / LT+RB abilities; bow draw on RT (HeavyAttack); soul-realm enter suppressed while LT held.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.

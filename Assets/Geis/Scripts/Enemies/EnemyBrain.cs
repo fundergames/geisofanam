@@ -195,13 +195,12 @@ namespace Geis.Enemies
             if (data.target != _combatEntity || data.wasImmune || data.damageAmount <= 0f || _combatant.IsDefeated)
                 return;
 
-            if (_attackDriver != null && _attackDriver.HasSuperArmorDuringCurrentStartup)
-                return;
-
             _staggerRemaining = _combatant.Definition.reactions.staggerDurationOnHit;
-            _attackDriver?.CancelActiveAttack();
             _motor?.StopMovement();
-            _animatorDriver?.TriggerHitReaction();
+
+            // Directional hit reacts use TakeDamage + HitDirection via ICombatHitReactionPresenter (CombatEvents).
+            if (_combatEntity.GetComponent<ICombatHitReactionPresenter>() == null)
+                _animatorDriver?.TriggerHitReaction();
         }
 
         private void UpdateAnimator(bool hasTarget, bool isStrafing)

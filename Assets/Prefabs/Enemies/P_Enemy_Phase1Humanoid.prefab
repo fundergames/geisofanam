@@ -2353,6 +2353,7 @@ GameObject:
   - component: {fileID: 4867421876907635140}
   - component: {fileID: 1982361403098539541}
   - component: {fileID: 8301951288453417530}
+  - component: {fileID: 7822750630765570911}
   m_Layer: 6
   m_Name: P_Enemy_Phase1Humanoid
   m_TagString: Enemy
@@ -2500,6 +2501,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27da310dce5399745a928f36c70d6792, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Geis::RogueDeal.Combat.Presentation.CombatExecutor
+  defaultDamageApplyDelaySeconds: 0.18
 --- !u!114 &9001394977025495389
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2576,7 +2578,7 @@ MonoBehaviour:
   polygonIsStoppedParameter: IsStopped
   enemyStateParameter: 
   attackTrigger: Attack
-  hitTrigger: Hit
+  hitTrigger: TakeDamage
   equippedWeaponIndexParameter: EquippedWeaponIndex
   comboStateBlendParameter: ComboStateBlend
   comboStateIntParameter: ComboState
@@ -2696,6 +2698,28 @@ MonoBehaviour:
   - Hand_L
   - Weapon_L
   useHumanoidHandFallback: 1
+--- !u!114 &7822750630765570911
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5547404175580050970}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b576b623c234ec44f9d5410ced844d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Geis::Geis.Locomotion.GeisDirectionalHitReaction
+  reactionSet: {fileID: 11400000, guid: 74324061d8a9b2844b2ffd6dcef1fc6b, type: 2}
+  animator: {fileID: 7208678240669906767}
+  combatEntity: {fileID: 2366104452130660349}
+  hitDirectionIntParameter: HitDirection
+  hitTrigger: TakeDamage
+  crossFadeToState: 0
+  crossFadeDuration: 0.08
+  useDirectionalTriggers: 0
+  debugLog: 0
+  hitReactionLayerName: HitReaction
 --- !u!1 &5591535430148050861
 GameObject:
   m_ObjectHideFlags: 0

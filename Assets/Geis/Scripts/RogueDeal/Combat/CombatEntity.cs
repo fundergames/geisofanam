@@ -82,6 +82,9 @@ namespace RogueDeal.Combat
                 InitializeStats();
                 SyncStatsFromEntityData();
             }
+
+            if (GetComponent<CombatAttackInterruptController>() == null)
+                gameObject.AddComponent<CombatAttackInterruptController>();
         }
         
         private void Update()
@@ -365,10 +368,13 @@ namespace RogueDeal.Combat
         {
             // Use entityData for alive check (primary source of truth)
             bool isAlive = entityData != null ? entityData.IsAlive : (_stats != null && _stats.IsAlive);
-            if (data.target == this && isAlive)
-            {
-                PlayHitReaction(data.effect != null ? data.effect.effectType : EffectType.Damage);
-            }
+            if (data.target != this || !isAlive)
+                return;
+
+            if (GetComponent<ICombatHitReactionPresenter>() != null)
+                return;
+
+            PlayHitReaction(data.effect != null ? data.effect.effectType : EffectType.Damage, data.hitDirection);
         }
 
         private void PlayAttackAnimation(AbilityData ability)
@@ -394,7 +400,7 @@ namespace RogueDeal.Combat
             }
         }
 
-        private void PlayHitReaction(EffectType effectType)
+        private void PlayHitReaction(EffectType effectType, CombatHitDirection hitDirection = CombatHitDirection.Front)
         {
             if (animationController == null)
             {
@@ -403,10 +409,13 @@ namespace RogueDeal.Combat
             
             if (animationController != null)
             {
-                animationController.PlayHitReaction(effectType);
+                animationController.PlayHitReaction(effectType, hitDirection);
             }
             else if (animator != null)
             {
+                if (AnimatorParameterGuard.HasParameterOfType(animator, "HitDirection", AnimatorControllerParameterType.Int))
+                    animator.SetInteger("HitDirection", CombatHitDirectionUtility.ToAnimatorInt(hitDirection));
+
                 if (!AnimatorParameterGuard.TrySetTrigger(animator, hitTrigger))
                 {
                     Debug.LogWarning(

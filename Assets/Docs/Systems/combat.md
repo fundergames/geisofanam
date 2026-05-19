@@ -28,21 +28,29 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 - **Requires**: `CombatEntity`, RogueDeal `CombatExecutor`, `SimpleAttackHitDetector` on the same GameObject.
 - **Flow**: Subscribes to `GeisPlayerAnimationController.OnAttackPerformed(weaponIndex)`. Resolves `CombatAction` + `Weapon` from **`GeisWeaponSwitcher.GetWeaponDefinition`** when non-null; applies `GeisComboData.ResolveCombatAction(comboState, …)` and optional **multi-hit times** from combo data (`TryGetMultiHitTimesSeconds`). Falls back to **legacy** arrays on the bridge if no definition: `combatActionsByWeapon` / `weaponsBySlot` (same 4-slot indexing).
+- **Hit path selection**: Uses `WeaponHitbox` only when the equipped weapon has a hitbox **and** the current combo state defines `multiHitNormalizedTimes`. Otherwise falls through to `SimpleAttackHitDetector` (most light attacks).
 - Sets `CombatEntity` entity data `equippedWeapon` for the resolved strike.
 
 ### `SimpleAttackHitDetector` (player melee probes)
 
 - **Overlap queries** (`combatOverlapTriggerInteraction`, default **Ignore**) only count **solid** hurtbox colliders. Large **trigger** volumes used for `GeisObjectLockOn` / lock-on detection must **not** be included in melee reach — matching the bow pipeline’s rule of not letting lock-on shells define combat range (`GeisBowController`).
 
+### `WeaponHitbox` (equipped melee weapons)
+
+- Collider-hit melee validates target tags against the touched collider, its resolved `CombatEntity`, and the collider root so child hurtboxes still count when only the enemy root carries the `Enemy` tag.
+- If an authored action leaves `effects` empty and only uses `perHitEffects`, the hitbox path applies the current combo hit effect when available instead of dropping the strike.
+
 ### `GeisBowController` (slot 3)
 
-- Bow-specific: aim (LT), charge/release on heavy attack pipeline, arrow spawn, camera aim ray (uses `GeisCameraController`), `Projectile` on arrow prefab. **Aim ray** uses configurable layers; **ignores trigger colliders** by policy so lock-on volumes do not shorten aim.
+- Bow-specific: aim (LT), draw/release on **RT** (`Player/HeavyAttack`), arrow spawn, camera aim ray (uses `GeisCameraController`), `Projectile` on arrow prefab. **Aim ray** uses configurable layers; **ignores trigger colliders** by policy so lock-on volumes do not shorten aim.
 - Optional `SoulMarkHomingTracker` for soul-mark homing behavior in soul realm.
 - Emits `onChargeStarted`, `onArrowFired(chargeRatio)` for animation/UI hooks.
 
 ### Cross-cutting
 
 - **Physical interactions in soul realm**: `SoulRealmInteractable.BlockPhysicalInteractions` is true while soul realm is active — weapon **switching** respects this; other systems (puzzles, use) may check the same flag.
+- **Enemy strike targeting**: Enemy AI chooses only player-like `CombatEntity` targets (`Player` tag / `PlayerVisual`) and passes that explicit target into `CombatExecutor` so generic targeting assets do not retarget onto nearby enemies at execute time.
+- **Directional hit reactions**: `CombatHitDirection` on `CombatEventData` (strike origin). `GeisDirectionalHitReaction` on player and enemies (`ICombatHitReactionPresenter`); `CombatEvents.TriggerHitReactionStarted` calls `PresentHitReaction`. Synty F/B/L/R = recoil direction ([locomotion.md](locomotion.md)). Menu: **Geis → Combat → Setup Directional Hit Reactions On Selected Enemy** / **Add Directional Hit Reactions To Phase1 Enemy Prefab**. `EnemyBrain` skips legacy `Hit` trigger when a presenter is present.
 
 ## Scope
 
@@ -82,5 +90,10 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Changelog
 
+- **2026-05-19**: `CombatAttackInterruptController` on `CombatEntity` cancels attacks when damaged and blocks outbound hits until the swing ends; respects combo startup super armor (`GeisComboData`). Player implements `IAttackerPhaseProvider`.
+- **2026-05-19**: Gamepad bow draw/release on RT (`HeavyAttack`); aim remains LT.
+- **2026-05-18**: `GeisCombatBridge` falls back to `SimpleAttackHitDetector` when a weapon hitbox exists but the combo step has no authored hit timings; enemy runtime setup tags roots `Enemy` for melee filters.
+- **2026-05-18**: Enemy attacks now lock to the chosen player target instead of re-resolving onto nearby enemies; documented player-only enemy perception rules.
+- **2026-05-18**: Documented `WeaponHitbox` tag resolution against owning combat roots and per-hit effect fallback for authored combo actions.
 - **2026-05-07**: Documented melee `SimpleAttackHitDetector` ignoring lock-on triggers for reach; probes default to non-trigger overlaps.
 - **2026-04-01**: Filled behavior & contracts from code; Rules left for manual additions.

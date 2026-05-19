@@ -83,6 +83,12 @@ namespace RogueDeal.Combat
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
         }
 
+        /// <summary>Invalidates any in-flight hit-check coroutines from a prior swing.</summary>
+        public void CancelPendingHitChecks()
+        {
+            _hitSequenceId++;
+        }
+
         /// <summary>
         /// Call this when an attack starts. Performs one or more hit checks based on action combo data and timing fields.
         /// </summary>
@@ -406,22 +412,45 @@ namespace RogueDeal.Combat
             if (target.simpleMeleeBypassTagFilter)
                 return true;
 
-            if (validTargetTags != null && validTargetTags.Length > 0)
-            {
-                bool found = false;
-                foreach (var tag in validTargetTags)
-                {
-                    if (target.gameObject.CompareTag(tag))
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found)
-                    return false;
-            }
+            if (validTargetTags != null && validTargetTags.Length > 0 && !PassesMeleeTargetTagFilter(target.gameObject))
+                return false;
 
             return true;
+        }
+
+        private bool PassesMeleeTargetTagFilter(GameObject targetObject)
+        {
+            for (int i = 0; i < validTargetTags.Length; i++)
+            {
+                string tag = validTargetTags[i];
+                if (string.IsNullOrEmpty(tag))
+                    continue;
+
+                if (tag == "Enemy" && IsOnNamedLayer(targetObject, "Enemy"))
+                    return true;
+
+                try
+                {
+                    if (targetObject.CompareTag(tag))
+                        return true;
+
+                    Transform root = targetObject.transform.root;
+                    if (root != null && root != targetObject.transform && root.CompareTag(tag))
+                        return true;
+                }
+                catch (UnityException)
+                {
+                    // Undefined tag in Tag Manager — skip.
+                }
+            }
+
+            return false;
+        }
+
+        private static bool IsOnNamedLayer(GameObject gameObject, string layerName)
+        {
+            int layer = LayerMask.NameToLayer(layerName);
+            return layer >= 0 && gameObject != null && gameObject.layer == layer;
         }
 
         private void OnDrawGizmosSelected()

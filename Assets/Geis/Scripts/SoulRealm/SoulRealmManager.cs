@@ -258,14 +258,12 @@ namespace Geis.SoulRealm
             if (cameraController == null)
                 cameraController = FindFirstObjectByType<GeisCameraController>();
             if (bodyAnimator == null && bodyLocomotion != null)
-                bodyAnimator = bodyLocomotion.GetComponent<Animator>();
+                bodyAnimator = bodyLocomotion.GetComponentInChildren<Animator>(true);
             if (bodyCharacterController == null && bodyLocomotion != null)
                 bodyCharacterController = bodyLocomotion.GetComponent<CharacterController>();
             if (bodyLookAtTransform == null && bodyLocomotion != null)
-            {
-                var t = bodyLocomotion.transform.Find("SyntyPlayer_LookAt");
-                bodyLookAtTransform = t != null ? t : bodyLocomotion.transform;
-            }
+                bodyLookAtTransform = GeisCameraController.ResolveBodyLookAtTransform(bodyLocomotion.transform)
+                    ?? bodyLocomotion.transform;
 
             if (visuals == null)
                 visuals = GetComponentInChildren<SoulRealmVisuals>(true);

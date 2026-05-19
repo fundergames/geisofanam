@@ -25,7 +25,27 @@ namespace RogueDeal.Combat
     public static class CombatActionDamageUtility
     {
         /// <summary>
-        /// Attempts to find the player CombatEntity in a resilient way (tag, PlayerVisual, then fallback).
+        /// Returns true when the combat entity looks like the player avatar rather than an enemy/NPC.
+        /// </summary>
+        public static bool IsLikelyPlayerEntity(CombatEntity entity, CombatEntity excludedEntity = null)
+        {
+            if (entity == null || entity == excludedEntity)
+                return false;
+
+            if (HasTag(entity.gameObject, "Player"))
+                return true;
+
+            if (entity.GetComponent<PlayerVisual>() != null
+                || entity.GetComponentInParent<PlayerVisual>() != null
+                || entity.GetComponentInChildren<PlayerVisual>() != null)
+                return true;
+
+            Transform root = entity.transform.root;
+            return root != null && HasTag(root.gameObject, "Player");
+        }
+
+        /// <summary>
+        /// Attempts to find the player CombatEntity in a resilient way (tag, PlayerVisual).
         /// </summary>
         public static CombatEntity FindLikelyPlayerEntity(CombatEntity excludedEntity = null)
         {
@@ -45,26 +65,16 @@ namespace RogueDeal.Combat
             }
 
             CombatEntity[] allEntities = Object.FindObjectsByType<CombatEntity>(FindObjectsSortMode.None);
-            CombatEntity fallback = null;
             for (int i = 0; i < allEntities.Length; i++)
             {
                 CombatEntity entity = allEntities[i];
-                if (entity == null || entity == excludedEntity)
+                if (!IsLikelyPlayerEntity(entity, excludedEntity))
                     continue;
 
-                if (HasTag(entity.gameObject, "Player"))
-                    return entity;
-
-                if (entity.GetComponent<PlayerVisual>() != null
-                    || entity.GetComponentInParent<PlayerVisual>() != null
-                    || entity.GetComponentInChildren<PlayerVisual>() != null)
-                    return entity;
-
-                if (fallback == null)
-                    fallback = entity;
+                return entity;
             }
 
-            return fallback;
+            return null;
         }
 
         /// <summary>

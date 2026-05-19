@@ -1,0 +1,26 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6ed9c948d1be2734da3c914141d47d2b, type: 3}
+  m_Name: DirectionalHitReactionSet_PolygonPlayer
+  m_EditorClassIdentifier: Geis::Geis.Combat.DirectionalHitReactionSet
+  front: {fileID: -5694488986427802680, guid: adc1feaf8563f6247989bffd0737b6ad, type: 3}
+  back: {fileID: 5410598297907043000, guid: 646e411aff9e6a3409589c9eebc68c3a, type: 3}
+  left: {fileID: 8990611995264232770, guid: 202a1ac9f04ce2a419bc2bdd6b148b2a, type: 3}
+  right: {fileID: -8134992637236915294, guid: 881ed1a8905746f4d9b1def6f9e773dd, type: 3}
+  stateNameFront: HitReact_F
+  stateNameBack: HitReact_B
+  stateNameLeft: HitReact_L
+  stateNameRight: HitReact_R
+  triggerFront: HitReact_Front
+  triggerBack: HitReact_Back
+  triggerLeft: HitReact_Left
+  triggerRight: HitReact_Right

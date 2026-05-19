@@ -88,10 +88,21 @@ namespace Geis.Combat
             return (transform.position, transform.forward);
         }
 
+        /// <summary>Stops scheduled weapon hitbox windows and pending sphere probes (e.g. attack interrupted by damage).</summary>
+        public void CancelPendingHits()
+        {
+            StopHitboxSchedule();
+            _hitDetector?.CancelPendingHitChecks();
+            _executor?.ClearCurrentAction();
+        }
+
         private void HandleAttackPerformed(int weaponIndex)
         {
             if (_combatEntity == null || _executor == null)
                 return;
+
+            if (TryGetComponent(out CombatAttackInterruptController interrupt))
+                interrupt.NotifyAttackStarted();
 
             CombatAction action = null;
             Weapon weapon = null;
@@ -127,25 +138,33 @@ namespace Geis.Combat
             if (_combatEventReceiver != null && weaponHitbox != null)
                 _combatEventReceiver.SetActiveWeaponHitbox(weaponHitbox);
 
+            bool scheduledWeaponHitbox = false;
             if (_preferWeaponHitbox && !isBow && weaponHitbox != null)
             {
-                if (_debugLog)
-                    Debug.Log($"[GeisCombatBridge] WeaponHitbox path action={action.actionName} comboState={comboState}");
-
                 if (comboData != null && comboData.TryGetMultiHitTimesSeconds(comboState, out float[] hitTimes)
                     && hitTimes != null && hitTimes.Length > 0)
                 {
-                    StartHitboxSchedule(weaponHitbox, hitTimes);
-                }
+                    if (_debugLog)
+                        Debug.Log($"[GeisCombatBridge] WeaponHitbox schedule action={action.actionName} comboState={comboState} hits={hitTimes.Length}");
 
-                return;
+                    StartHitboxSchedule(weaponHitbox, hitTimes);
+                    scheduledWeaponHitbox = true;
+                }
+                else if (_debugLog)
+                {
+                    Debug.Log(
+                        $"[GeisCombatBridge] Weapon has hitbox but combo state {comboState} has no hit timings — using SimpleAttackHitDetector for '{action.actionName}'.");
+                }
             }
+
+            if (scheduledWeaponHitbox)
+                return;
 
             if (_hitDetector == null)
                 return;
 
             if (_debugLog)
-                Debug.Log($"[GeisCombatBridge] SimpleAttackHitDetector fallback action={action.actionName}");
+                Debug.Log($"[GeisCombatBridge] SimpleAttackHitDetector path action={action.actionName} comboState={comboState}");
 
             if (comboData != null && comboData.TryGetMultiHitTimesSeconds(comboState, out float[] geisTimes) &&
                 geisTimes != null && geisTimes.Length > 0)

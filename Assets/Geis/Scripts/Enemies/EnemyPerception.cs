@@ -200,6 +200,9 @@ namespace Geis.Enemies
             if (_combatant != null && target == _combatant.CombatEntity)
                 return false;
 
+            if (!CombatActionDamageUtility.IsLikelyPlayerEntity(target, _combatant != null ? _combatant.CombatEntity : null))
+                return false;
+
             CombatEntityData data = target.GetEntityData();
             if (data == null || !data.IsAlive || !target.gameObject.activeInHierarchy)
                 return false;

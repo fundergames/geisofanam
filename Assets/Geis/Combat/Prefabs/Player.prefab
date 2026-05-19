@@ -353,7 +353,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 06c5360524d5c67418ae94a7c3b23571, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::Geis.Locomotion.GeisCameraController
-  _syntyCharacter: {fileID: 4835237707196811125}
+  _syntyCharacter: {fileID: 3530600683608327810}
   _mainCamera: {fileID: 4444417130243386476}
   _playerTarget: {fileID: 0}
   _lockOnTarget: {fileID: 0}
@@ -1134,6 +1134,11 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 4359838154996232716}
+  - component: {fileID: 2851687277793832976}
+  - component: {fileID: 2248863639609088951}
+  - component: {fileID: 959186816420622490}
+  - component: {fileID: 5175836374676816231}
+  - component: {fileID: 709469704089620938}
   - component: {fileID: 1386048861169640747}
   - component: {fileID: 5612539749402298952}
   - component: {fileID: 1210455581438556543}
@@ -1142,6 +1147,7 @@ GameObject:
   - component: {fileID: 8092402105320207194}
   - component: {fileID: 7711223344556677889}
   - component: {fileID: 8822334455667788001}
+  - component: {fileID: 4558620307210053373}
   m_Layer: 3
   m_Name: Player
   m_TagString: Player
@@ -1157,8 +1163,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3530600683608327810}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 9.51, y: -1.18, z: 0}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalPosition: {x: 9.51, y: 0.05, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1168,6 +1174,206 @@ Transform:
   - {fileID: 9000669497598635718}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &2851687277793832976
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: e1443432c7bcde2438af20b423456373, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.InputSystem.GeisInputReader
+  _mouseDelta: {x: 0, y: 0}
+  _moveComposite: {x: 0, y: 0}
+  _movementInputDuration: 0
+  _movementInputDetected: 0
+  _debugDodgeInput: 1
+  _debugInteractWest: 0
+  _gamepadEastDodgeFallback: 1
+--- !u!114 &2248863639609088951
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 76edc5ad1597a504b870bfecdc474990, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Locomotion.GeisPlayerAnimationController
+  _cameraController: {fileID: 0}
+  _inputReader: {fileID: 2851687277793832976}
+  _animator: {fileID: 1805344173469404896}
+  _controller: {fileID: 709469704089620938}
+  _alwaysStrafe: 1
+  _walkSpeed: 1.4
+  _runSpeed: 2.5
+  _sprintSpeed: 7
+  _speedChangeDamping: 10
+  _accelRate: 25
+  _decelRate: 15
+  _sprintInstantFraction: 0.85
+  _rotationSmoothing: 10
+  _maxTurnDegPerSecond: 720
+  _cameraRotationOffset: 0
+  _bowAimBodyEulerOffset: {x: 0, y: 0, z: 0}
+  _buttonHoldThreshold: 0.15
+  _shuffleDirectionX: 0
+  _shuffleDirectionZ: 0
+  _capsuleStandingHeight: 1.8
+  _capsuleStandingCentre: 0.93
+  _capsuleCrouchingHeight: 1.2
+  _capsuleCrouchingCentre: 0.6
+  _forwardStrafeMinThreshold: -55
+  _forwardStrafeMaxThreshold: 125
+  _forwardStrafe: 1
+  _rearRayPos: {fileID: 119932982296280757}
+  _frontRayPos: {fileID: 9000669497598635718}
+  _groundLayerMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  _inclineAngle: 0
+  _groundedOffset: 0.14
+  _jumpForce: 10
+  _gravityMultiplier: 2
+  _fallingDuration: 0
+  _coyoteTimeSeconds: 0.1
+  _jumpBufferSeconds: 0.15
+  _enableHeadTurn: 1
+  _headLookDelay: 0
+  _headLookX: 0
+  _headLookY: 0
+  _headLookXCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _headLookLimitDegrees: 60
+  _bowAimHeadLookMultiplier: 0.6
+  _enableBodyTurn: 1
+  _bodyLookDelay: 0
+  _bodyLookX: 0
+  _bodyLookY: 0
+  _bodyLookXCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _bowAimBodyLookMultiplier: 0.4
+  _enableLean: 1
+  _leanDelay: 0
+  _leanValue: 0
+  _leanCurve:
+    serializedVersion: 2
+    m_Curve: []
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _leansHeadLooksDelay: 0
+  _animationClipEnd: 0
+  _applyRootRotationDuringAttack: 0
+  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
+  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
+  _weaponSwitcher: {fileID: 1386048861169640747}
+  _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
+  _applyRootRotationDuringDodge: 0
+  _bowEquipLayerBlendSpeed: 8
+  _dodgeInputDeadzone: 0.05
+  _dodgeFallbackDuration: 1.2
+  _requireMovementInputForDodge: 0
+  _dodgeScriptedPlaneSpeed: 7
+  _dodgeScriptedDuration: 0.35
+  _attackMoveCancelStickThreshold: 0.5
+  _attackRecoveryExitNormalizedTime: 0.85
+  _attackExitVelocityCarry: 0.6
+  _dodgeRecoveryStartNormalizedTime: 0.65
+  _dodgeInvulnerabilityEndNormalizedTime: 0.38
+  _dodgeMoveCancelStickThreshold: 0.3
+  _dodgeExitVelocityCarry: 0.75
+  _inputBufferSeconds: 0.18
+  _dodgeDoubleTapWindow: 0.3
+  _dodgeDoubleTapRollEnabled: 1
+  _rollDistanceMultiplier: 1.35
+  _debugDodgeDoubleTap: 1
+  _lockOnIndicator: {fileID: 0}
+--- !u!114 &959186816420622490
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d3324e19b98c0497fa1b3383a5f857fc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisCombatBridge
+  _weaponSwitcher: {fileID: 1386048861169640747}
+  _geisController: {fileID: 2248863639609088951}
+  _combatEventReceiver: {fileID: 0}
+  _preferWeaponHitbox: 1
+  _scheduledHitboxActiveSeconds: 0.12
+  _debugLog: 0
+--- !u!114 &5175836374676816231
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d63dc731849db4e829ef2dd9b593ae8c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.SimpleAttackHitDetector
+  hitDelay: 0.25
+  spacingBetweenHits: 0.15
+  hitTimingsFromAttackStart: []
+  rangeOffset: 1
+  hitRadius: 1.2
+  usePlayerCenterFallback: 1
+  combatOverlapTriggerInteraction: 1
+  debugLog: 0
+  targetLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  validTargetTags:
+  - Enemy
+  notifySwordPuzzleTriggers: 1
+  puzzleProbeLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+--- !u!143 &709469704089620938
+CharacterController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 3
+  m_Height: 1.8
+  m_Radius: 0.28
+  m_SlopeLimit: 45
+  m_StepOffset: 0.25
+  m_SkinWidth: 0.02
+  m_MinMoveDistance: 0.001
+  m_Center: {x: 0, y: 0.93, z: 0}
 --- !u!114 &1386048861169640747
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1216,6 +1422,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 27da310dce5399745a928f36c70d6792, type: 3}
   m_Name: 
   m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.Presentation.CombatExecutor
+  defaultDamageApplyDelaySeconds: 0.18
 --- !u!114 &1210455581438556543
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1358,6 +1565,28 @@ MonoBehaviour:
   abilityOrigin: {fileID: 0}
   cameraController: {fileID: 9185949923837509450}
   feedback: {fileID: 0}
+--- !u!114 &4558620307210053373
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 3530600683608327810}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b576b623c234ec44f9d5410ced844d01, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Geis::Geis.Locomotion.GeisDirectionalHitReaction
+  reactionSet: {fileID: 11400000, guid: 74324061d8a9b2844b2ffd6dcef1fc6b, type: 2}
+  animator: {fileID: 1805344173469404896}
+  combatEntity: {fileID: 1210455581438556543}
+  hitDirectionIntParameter: HitDirection
+  hitTrigger: TakeDamage
+  crossFadeToState: 0
+  crossFadeDuration: 0.08
+  useDirectionalTriggers: 0
+  debugLog: 0
+  hitReactionLayerName: HitReaction
 --- !u!1 &3759892831401217738
 GameObject:
   m_ObjectHideFlags: 0
@@ -1910,17 +2139,10 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 666165706435539312}
-  - component: {fileID: 2851687277793832976}
-  - component: {fileID: 2248863639609088951}
-  - component: {fileID: 959186816420622490}
-  - component: {fileID: 7671744684407968126}
-  - component: {fileID: 2424362898335501432}
-  - component: {fileID: 5175836374676816231}
   - component: {fileID: 1805344173469404896}
-  - component: {fileID: 709469704089620938}
   - component: {fileID: 3180744393651965254}
   m_Layer: 3
-  m_Name: Visual
+  m_Name: GeisCharacter
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1935,7 +2157,7 @@ Transform:
   m_GameObject: {fileID: 4835237707196811125}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1.23, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1945,210 +2167,6 @@ Transform:
   - {fileID: 4721983645019283747}
   m_Father: {fileID: 4359838154996232716}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &2851687277793832976
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e1443432c7bcde2438af20b423456373, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Geis.InputSystem.GeisInputReader
-  _mouseDelta: {x: 0, y: 0}
-  _moveComposite: {x: 0, y: 0}
-  _movementInputDuration: 0
-  _movementInputDetected: 0
-  _debugDodgeInput: 1
-  _debugInteractWest: 0
-  _gamepadEastDodgeFallback: 1
---- !u!114 &2248863639609088951
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 76edc5ad1597a504b870bfecdc474990, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Geis.Locomotion.GeisPlayerAnimationController
-  _cameraController: {fileID: 9185949923837509450}
-  _inputReader: {fileID: 2851687277793832976}
-  _animator: {fileID: 1805344173469404896}
-  _controller: {fileID: 709469704089620938}
-  _alwaysStrafe: 1
-  _walkSpeed: 1.4
-  _runSpeed: 2.5
-  _sprintSpeed: 7
-  _speedChangeDamping: 10
-  _accelRate: 25
-  _decelRate: 15
-  _sprintInstantFraction: 0.85
-  _rotationSmoothing: 10
-  _maxTurnDegPerSecond: 720
-  _cameraRotationOffset: 0
-  _bowAimBodyEulerOffset: {x: 0, y: 0, z: 0}
-  _buttonHoldThreshold: 0.15
-  _shuffleDirectionX: 0
-  _shuffleDirectionZ: 0
-  _capsuleStandingHeight: 1.8
-  _capsuleStandingCentre: 0.93
-  _capsuleCrouchingHeight: 1.2
-  _capsuleCrouchingCentre: 0.6
-  _forwardStrafeMinThreshold: -55
-  _forwardStrafeMaxThreshold: 125
-  _forwardStrafe: 1
-  _rearRayPos: {fileID: 119932982296280757}
-  _frontRayPos: {fileID: 9000669497598635718}
-  _groundLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  _inclineAngle: 0
-  _groundedOffset: 0.14
-  _jumpForce: 10
-  _gravityMultiplier: 2
-  _fallingDuration: 0
-  _coyoteTimeSeconds: 0.1
-  _jumpBufferSeconds: 0.15
-  _enableHeadTurn: 1
-  _headLookDelay: 0
-  _headLookX: 0
-  _headLookY: 0
-  _headLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _headLookLimitDegrees: 60
-  _bowAimHeadLookMultiplier: 0.6
-  _enableBodyTurn: 1
-  _bodyLookDelay: 0
-  _bodyLookX: 0
-  _bodyLookY: 0
-  _bodyLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _bowAimBodyLookMultiplier: 0.4
-  _enableLean: 1
-  _leanDelay: 0
-  _leanValue: 0
-  _leanCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _leansHeadLooksDelay: 0
-  _animationClipEnd: 0
-  _applyRootRotationDuringAttack: 0
-  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
-  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
-  _weaponSwitcher: {fileID: 1386048861169640747}
-  _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
-  _applyRootRotationDuringDodge: 0
-  _bowEquipLayerBlendSpeed: 8
-  _dodgeInputDeadzone: 0.05
-  _dodgeFallbackDuration: 1.2
-  _requireMovementInputForDodge: 0
-  _dodgeScriptedPlaneSpeed: 7
-  _dodgeScriptedDuration: 0.35
-  _attackMoveCancelStickThreshold: 0.5
-  _attackRecoveryExitNormalizedTime: 0.85
-  _attackExitVelocityCarry: 0.6
-  _dodgeRecoveryStartNormalizedTime: 0.65
-  _dodgeMoveCancelStickThreshold: 0.3
-  _dodgeExitVelocityCarry: 0.75
-  _inputBufferSeconds: 0.18
-  _dodgeDoubleTapWindow: 0.25
-  _dodgeDoubleTapRollEnabled: 1
-  _rollDistanceMultiplier: 1
-  _debugDodgeDoubleTap: 0
-  _lockOnIndicator: {fileID: 0}
---- !u!114 &959186816420622490
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d3324e19b98c0497fa1b3383a5f857fc, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Geis.Combat.GeisCombatBridge
-  _weaponSwitcher: {fileID: 1386048861169640747}
-  _geisController: {fileID: 2248863639609088951}
-  _debugLog: 0
---- !u!114 &7671744684407968126
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 27da310dce5399745a928f36c70d6792, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.Presentation.CombatExecutor
---- !u!114 &2424362898335501432
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 50107bdfc5e780d46a6ebbc9beb9ae87, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.CombatEntity
-  heroData: {fileID: 0}
-  vfxSpawnPoint: {fileID: 0}
-  hitPoint: {fileID: 0}
-  attackTrigger: Attack_1
-  hitTrigger: TakeDamage
-  dodgeTrigger: Dodge
-  deathTrigger: Die
-  coneAngle: 60
-  simpleMeleeBypassTagFilter: 0
---- !u!114 &5175836374676816231
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: d63dc731849db4e829ef2dd9b593ae8c, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: RogueDeal::RogueDeal.Combat.SimpleAttackHitDetector
-  hitDelay: 0.25
-  spacingBetweenHits: 0.15
-  hitTimingsFromAttackStart: []
-  rangeOffset: 1
-  hitRadius: 1.2
-  usePlayerCenterFallback: 1
-  combatOverlapTriggerInteraction: 1
-  debugLog: 0
-  targetLayers:
-    serializedVersion: 2
-    m_Bits: 64
-  validTargetTags:
-  - Enemy
-  notifySwordPuzzleTriggers: 1
-  puzzleProbeLayers:
-    serializedVersion: 2
-    m_Bits: 4294967295
 --- !u!95 &1805344173469404896
 Animator:
   serializedVersion: 7
@@ -2171,31 +2189,6 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
---- !u!143 &709469704089620938
-CharacterController:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4835237707196811125}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Height: 1.8
-  m_Radius: 0.28
-  m_SlopeLimit: 45
-  m_StepOffset: 0.25
-  m_SkinWidth: 0.02
-  m_MinMoveDistance: 0.001
-  m_Center: {x: 0, y: 2.05, z: -0.83}
 --- !u!114 &3180744393651965254
 MonoBehaviour:
   m_ObjectHideFlags: 0

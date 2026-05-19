@@ -151,6 +151,9 @@ namespace RogueDeal.Combat
             if (source == null || target == null || effects == null || effects.Length == 0)
                 return 0f;
 
+            if (CombatAttackInterruptController.BlocksOutgoingDamage(source))
+                return 0f;
+
             CombatStrikeOutcome outcome = TryResolveStrike(kind, source, target, action, maxRange);
             if (outcome != CombatStrikeOutcome.Hit)
                 return 0f;
@@ -183,6 +186,7 @@ namespace RogueDeal.Combat
                 return 0f;
 
             Vector3 hitPosition = target.GetHitPoint();
+            CombatHitDirection hitDirection = CombatHitDirectionUtility.Resolve(source, target);
             CombatEvents.TriggerDamageApplied(new CombatEventData
             {
                 source = source,
@@ -191,6 +195,7 @@ namespace RogueDeal.Combat
                 wasCritical = wasCritical,
                 wasImmune = false,
                 hitPosition = hitPosition,
+                hitDirection = hitDirection,
                 strikeOutcome = CombatStrikeOutcome.Hit,
                 strikeKind = kind
             });
@@ -206,6 +211,7 @@ namespace RogueDeal.Combat
                     damageAmount = damageDealt,
                     wasCritical = wasCritical,
                     hitPosition = hitPosition,
+                    hitDirection = hitDirection,
                     strikeKind = kind
                 });
             }

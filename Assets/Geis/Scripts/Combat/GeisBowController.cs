@@ -14,7 +14,7 @@
 // Geis of Anam - Bow weapon controller.
 // Hold LT (aim) for shoulder camera + crosshair. While aiming with the bow equipped, RT draws the bow and
 // releasing RT looses an arrow. Returning from draw falls back to LT aim if still held, otherwise bow idle.
-// RT is bound to LightAttack (see GeisControls.inputactions). We *poll* IsPressed() on the LightAttack action each frame
+// RT is bound to HeavyAttack (see GeisControls.inputactions). We *poll* IsPressed() on the HeavyAttack action each frame
 // and detect the rising/falling edge ourselves instead of using started/canceled callbacks — analog triggers can momentarily
 // dip below the button release point while held, which otherwise re-fires canceled and spawns phantom arrows.
 // Arrows travel toward the camera aim point (raycast hit or max range), not to the nearest enemy.
@@ -107,7 +107,7 @@ namespace Geis.Combat
 
         private bool _isCharging;
         private float _chargeStartTime;
-        private bool _lightAttackWasPressed;
+        private bool _heavyAttackWasPressed;
         private readonly List<Animator> _equippedBowAnimators = new List<Animator>();
         private GameObject _cachedBowAnimatorWeaponRoot;
 
@@ -133,7 +133,7 @@ namespace Geis.Combat
         private void OnDisable()
         {
             _isCharging = false;
-            _lightAttackWasPressed = false;
+            _heavyAttackWasPressed = false;
             ClearBowDrawAnimatorState();
             SetEquippedBowAnimatorState(false, 0f);
             SetCrosshairVisible(false);
@@ -145,7 +145,7 @@ namespace Geis.Combat
             if (_playerController == null)
                 return;
 
-            PollLightAttackEdges();
+            PollHeavyAttackEdges();
 
             if (_isCharging && IsBowEquipped)
             {
@@ -161,22 +161,22 @@ namespace Geis.Combat
         }
 
         /// <summary>
-        /// Edge-detects the LightAttack action by polling <c>IsPressed()</c>. One hold = one start + one release,
+        /// Edge-detects the HeavyAttack action by polling <c>IsPressed()</c>. One hold = one start + one release,
         /// regardless of analog-trigger jitter around the Input System release threshold.
         /// </summary>
-        private void PollLightAttackEdges()
+        private void PollHeavyAttackEdges()
         {
             if (_inputReader == null)
                 return;
-            InputAction action = _inputReader.LightAttack;
+            InputAction action = _inputReader.HeavyAttack;
             if (action == null)
                 return;
 
             bool pressed = action.IsPressed();
-            if (pressed == _lightAttackWasPressed)
+            if (pressed == _heavyAttackWasPressed)
                 return;
 
-            _lightAttackWasPressed = pressed;
+            _heavyAttackWasPressed = pressed;
             if (pressed)
                 OnShootStarted();
             else

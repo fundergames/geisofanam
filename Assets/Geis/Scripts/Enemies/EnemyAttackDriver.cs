@@ -143,6 +143,10 @@ namespace Geis.Enemies
             if (attack == null || ResolveCombatAction(attack) == null)
                 return false;
 
+            if (_combatEntity != null
+                && _combatEntity.TryGetComponent(out CombatAttackInterruptController interrupt))
+                interrupt.NotifyAttackStarted();
+
             _activeRoutine = StartCoroutine(AttackRoutine(attack, target));
             return true;
         }
@@ -301,6 +305,9 @@ namespace Geis.Enemies
 
             bool executed = false;
             bool haveComboHitSchedule = TryGetComboHitTimesFromWeapon(out float[] scheduledHits);
+            if (_combatExecutor != null && target != null)
+                _combatExecutor.SetForcedTargets(new List<CombatEntity> { target });
+
             if (haveComboHitSchedule
                 && _combatExecutor != null
                 && runtimeAction != null)
@@ -313,6 +320,8 @@ namespace Geis.Enemies
 
             if (!executed && _combatEntity != null && runtimeAction != null)
             {
+                _combatExecutor?.ClearForcedTargets();
+
                 float liveDistance = float.PositiveInfinity;
                 if (target != null)
                 {
@@ -330,6 +339,10 @@ namespace Geis.Enemies
                         runtimeAction,
                         new List<CombatEntity> { target });
                 }
+            }
+            else if (!executed)
+            {
+                _combatExecutor?.ClearForcedTargets();
             }
 
             float executionTimeout = Mathf.Max(attack.executionTimeout, 0.05f);

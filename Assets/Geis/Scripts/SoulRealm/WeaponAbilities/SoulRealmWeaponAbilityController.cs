@@ -131,25 +131,23 @@ namespace Geis.SoulRealm.WeaponAbilities
         {
             a1 = _ability1 != null && _ability1.WasPressedThisFrame();
             a2 = _ability2 != null && _ability2.WasPressedThisFrame();
-            if (!a1 || !a2)
-            {
-                var gp = ResolveGamepad();
-                if (gp != null)
-                {
-                    if (!a1 && gp.buttonNorth.wasPressedThisFrame)
-                        a1 = true;
-                    if (!a2 && gp.rightShoulder.wasPressedThisFrame)
-                        a2 = true;
-                }
 
-                var kb = Keyboard.current;
-                if (kb != null)
-                {
-                    if (!a1 && kb.qKey.wasPressedThisFrame)
-                        a1 = true;
-                    if (!a2 && kb.fKey.wasPressedThisFrame)
-                        a2 = true;
-                }
+            Gamepad gp = ResolveGamepad();
+            if (gp != null)
+            {
+                if (!a1 && WasGamepadAbility1PressedThisFrame(gp))
+                    a1 = true;
+                if (!a2 && WasGamepadAbility2PressedThisFrame(gp))
+                    a2 = true;
+            }
+
+            Keyboard kb = Keyboard.current;
+            if (kb != null)
+            {
+                if (!a1 && kb.qKey.wasPressedThisFrame)
+                    a1 = true;
+                if (!a2 && kb.fKey.wasPressedThisFrame)
+                    a2 = true;
             }
         }
 
@@ -159,12 +157,24 @@ namespace Geis.SoulRealm.WeaponAbilities
                 return true;
 
             Gamepad gp = ResolveGamepad();
-            if (gp != null && gp.rightShoulder.isPressed)
+            if (gp != null && IsGamepadAbility2Held(gp))
                 return true;
 
             Keyboard kb = Keyboard.current;
             return kb != null && kb.fKey.isPressed;
         }
+
+        private static bool IsGamepadAimModifierHeld(Gamepad gp) =>
+            gp != null && gp.leftTrigger.isPressed;
+
+        private static bool WasGamepadAbility1PressedThisFrame(Gamepad gp) =>
+            IsGamepadAimModifierHeld(gp) && gp.leftShoulder.wasPressedThisFrame;
+
+        private static bool WasGamepadAbility2PressedThisFrame(Gamepad gp) =>
+            IsGamepadAimModifierHeld(gp) && gp.rightShoulder.wasPressedThisFrame;
+
+        private static bool IsGamepadAbility2Held(Gamepad gp) =>
+            IsGamepadAimModifierHeld(gp) && gp.rightShoulder.isPressed;
 
         private string DescribeWhyAbilityMapIsOff()
         {
@@ -186,7 +196,7 @@ namespace Geis.SoulRealm.WeaponAbilities
 
             bool inSoul = SoulRealmManager.Instance != null && SoulRealmManager.Instance.IsSoulRealmActive;
             if (!inSoul)
-                return "Soul abilities: enter Soul Realm (Tab / LB hold), or use physical-only abilities outside.";
+                return "Soul abilities: enter Soul Realm (Tab / LB), or use physical-only abilities outside.";
 
             return "Soul abilities: input map should be on — check console for errors.";
         }

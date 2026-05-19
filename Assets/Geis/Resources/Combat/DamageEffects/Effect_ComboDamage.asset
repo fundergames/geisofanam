@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   effectName: Combo Damage
   description: 
-  baseDamage: 60
+  baseDamage: 5
   damageType: 0
   scalingStat: 1
   scalingMultiplier: 1

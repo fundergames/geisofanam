@@ -154,14 +154,22 @@ namespace RogueDeal.Combat
 
         public void PlayHitReaction(EffectType effectType)
         {
+            PlayHitReaction(effectType, CombatHitDirection.Front);
+        }
+
+        public void PlayHitReaction(EffectType effectType, CombatHitDirection hitDirection)
+        {
             if (animator == null) return;
 
             switch (effectType)
             {
                 case EffectType.Damage:
+                    if (AnimatorParameterGuard.HasParameterOfType(animator, "HitDirection", AnimatorControllerParameterType.Int))
+                        animator.SetInteger("HitDirection", CombatHitDirectionUtility.ToAnimatorInt(hitDirection));
+
                     if (AnimatorParameterGuard.TrySetTrigger(animator, hitReactionTrigger))
                     {
-                        Debug.Log($"[CombatAnimationController] Playing hit reaction '{hitReactionTrigger}' on {gameObject.name}");
+                        Debug.Log($"[CombatAnimationController] Playing hit reaction '{hitReactionTrigger}' ({hitDirection}) on {gameObject.name}");
                     }
                     else
                     {

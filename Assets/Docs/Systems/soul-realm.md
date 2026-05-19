@@ -43,7 +43,7 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 - **Input**: Assign **`GeisControls`** `InputActionAsset` (contains the **`SoulRealmWeapon`** map); at runtime the controller **Instantiates** a copy so Enable/Disable state is not shared globally.
 - **Required map**: Action map name **`SoulRealmWeapon`**, actions **`Ability1`** and **`Ability2`**. Errors logged if missing.
 - **Enable/disable map** (`SyncActionMapWithRealm`): Map is **on** when current weapon has ability assets **and** either (a) **soul realm** — any primary/secondary asset exists, or (b) **physical realm** — at least one ability has `AllowActivationInPhysicalRealm`. Per-ability realm rules are enforced again in `TryActivateAbility`.
-- **Polling**: Uses `WasPressedThisFrame` on actions; **also** treats gamepad **North** as ability 1 and **Right shoulder** as ability 2; keyboard **Q** / **F** as alternates when actions did not fire.
+- **Polling**: Keyboard **Q** / **F** via the ability map; gamepad **LT+LB** = ability 1 and **LT+RB** = ability 2 (polled on hardware, not separate map bindings).
 - **`TryActivateAbility`**: Resolves current `GeisWeaponDefinition` from `GeisWeaponSwitcher`; reads `PrimarySoulAbility` / `SecondarySoulAbility`; checks `AllowActivationInSoulRealm` / `AllowActivationInPhysicalRealm` vs current realm; builds `SoulWeaponAbilityContext` with `GetAbilityContextTransforms` from manager when present, else `abilityOrigin`; forward from `GeisCameraController.GetCameraForwardZeroedYNormalised()` when available.
 - **Feedback**: `SoulRealmAbilityFeedback` auto-added if missing; shows blocked reasons (no weapon, no abilities, wrong realm, etc.).
 
@@ -86,7 +86,7 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Integration
 
-- [input.md](input.md): Tab/LB soul realm on Player map; Q/F and ability map separate.
+- [input.md](input.md): Tab/LB soul realm on Player map; Q/F abilities; gamepad LT+LB / LT+RB for abilities.
 - [combat.md](combat.md): Weapon definitions carry ability assets.
 
 ## Rules
@@ -108,6 +108,7 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Changelog
 
+- **2026-05-19**: Gamepad abilities use LT+LB / LT+RB; removed Y/RB-only ability fallbacks.
 - **2026-04-29**: Dagger phase shift now transfers a target object into the player's current realm via hold input in either realm; shifted props remain solid only in their owned realm and can be moved back and forth by repeating the hold from the other realm.
 - **2026-04-28**: Object Blink socket manipulation now freezes the ghost motor and uses direct translation/rotation controls (`Move`, vertical via keyboard arrows or gamepad d-pad, `Aim`/left-trigger modifier) so blink targets no longer feel parented to the player while aligning with a socket.
 - **2026-04-27**: Spectral weapon attachment now mirrors the body rig's attachment transform onto the spectral clone before falling back to left/right hand lookup, fixing soul-realm parenting on models that do not share the same prop-bone binder setup.

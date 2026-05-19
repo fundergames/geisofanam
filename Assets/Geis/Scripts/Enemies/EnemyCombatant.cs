@@ -72,6 +72,17 @@ namespace Geis.Enemies
 
             foreach (Transform t in root.GetComponentsInChildren<Transform>(true))
                 t.gameObject.layer = layer;
+
+            // Player melee filters by the Enemy tag as well as the Enemy layer mask.
+            try
+            {
+                if (!root.CompareTag("Enemy"))
+                    root.tag = "Enemy";
+            }
+            catch (UnityException)
+            {
+                // Tag not defined in this project — layer-only targeting still works.
+            }
         }
 
         private void Start()

@@ -74,6 +74,20 @@ namespace Geis.Animation
         public static readonly int DodgeLeafLeft = Animator.StringToHash("Dodge_Left");
         public static readonly int DodgeLeafRight = Animator.StringToHash("Dodge_Right");
 
+        /// <summary>Base-layer roll clips (double-tap); distinct from sidestep <c>Dodge_*_Root</c> leaves.</summary>
+        public static readonly int RollLeafForward = Animator.StringToHash("Dodge_Forward_Roll");
+        public static readonly int RollLeafBack = Animator.StringToHash("Dodge_Back_Rolling");
+        public static readonly int RollLeafLeft = Animator.StringToHash("A_DodgeRoll_L_Sword");
+        public static readonly int RollLeafRight = Animator.StringToHash("A_DodgeRoll_R_Sword");
+
+        /// <summary>Nested paths under the <c>Roll</c> sub-state machine (preferred for CrossFade/Play).</summary>
+        public static readonly int RollNestedForward = Animator.StringToHash("Roll.Dodge_Forward_Roll");
+        public static readonly int RollNestedBack = Animator.StringToHash("Roll.Dodge_Back_Rolling");
+        public static readonly int RollNestedLeft = Animator.StringToHash("Roll.A_DodgeRoll_L_Sword");
+        public static readonly int RollNestedRight = Animator.StringToHash("Roll.A_DodgeRoll_R_Sword");
+
+        public static readonly int RollTrigger = Animator.StringToHash("Roll");
+
         /// <summary>Polygon / normalized locomotion speed (0–1).</summary>
         public static readonly int Speed = Animator.StringToHash("Speed");
 

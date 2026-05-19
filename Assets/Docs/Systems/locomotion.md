@@ -1,7 +1,7 @@
 # Locomotion & camera
 
 **Status**: current  
-**Last updated**: 2026-04-01
+**Last updated**: 2026-05-19
 
 ## Purpose
 
@@ -22,8 +22,16 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 - **Combat bridge contract**: Exposes `OnAttackPerformed` with **`int weaponIndex`** and `CurrentComboState` so `GeisCombatBridge` can resolve `GeisComboData` multi-hit times and `CombatAction` per strike.
 - **Public state** (for other systems): includes `IsAiming`, `IsBowEquipped`, `ShouldUseBowAimZoom`, `IsBowDrawing`, locomotion flags (`LocomotionIsSprinting`, `LocomotionIsWalking`, …), `CurrentComboState`, `LocomotionDodgeRequiresMovementInput`, etc.
 - **Combo jump gate**: While `AnimationState.Attack` is active, jump presses are ignored rather than buffered, so melee combo chains cannot transition into a jump or queue a post-combo jump from the same input.
+- **Dodge / roll (GoW-style)**: Single tap B → `Dodge` sub-state machine (`Dodge_*_Root` sidesteps). Double-tap B → `Roll` sub-state machine (dedicated roll clips). Both use `DodgeDirection` (0–3) for entry routing; rolls use the `Roll` trigger on Any-State. Run **Geis → Animator → Setup Directional Dodge & Roll Clips** after clip or graph changes.
 - **Lock-on anchor**: The player updates a detached world-space helper for lock-on aiming/reticle placement; do not reuse a player-child transform for the active lock-on anchor or root motion will drag the reticle/camera target during attack and dodge clips.
 - **Soul realm**: `SoulRealmManager.ShouldSuppressBodyLocomotion` / related flags suppress normal body locomotion update while soul realm is active; animator may be paused while body follows ground.
+
+### Directional hit reactions (player)
+
+- `GeisDirectionalHitReaction` on the player listens to `CombatEvents.OnHitReactionStarted` and plays **Front / Back / Left / Right** flinch from strike direction (`CombatHitDirectionUtility`).
+- Assign a `DirectionalHitReactionSet` asset (Synty Polygon sword clips: `A_Hit_F_React_Sword`, `A_Hit_B_React_Sword`, `A_Hit_L_React_Sword`, `A_Hit_R_React_Sword`).
+- Animator: **`HitReaction` override layer** on `AC_Polygon_Masculine_Geis` with empty default state plus `HitReact_F/B/L/R`. Synty **F/B/L/R = recoil direction** (not strike origin): hit from behind → F, from front → B, from right → L, from left → R (`CombatHitDirectionUtility.ToReactionDirection`). Layer **weight stays 0** until a hit; **Any State** uses `TakeDamage` + `HitDirection` (0=F … 3=R recoil indices).
+- Run **Geis → Combat → Setup Directional Hit Reactions On Selected GeisPlayer** to create the set asset, layer, transitions, and wire the component (`crossFadeToState` off; uses `TakeDamage` + `HitDirection`).
 
 ### `SoulRealmManager` (locomotion-related)
 
@@ -69,6 +77,11 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 - `Assets/Documentation/WALK_RUN_SETUP_GUIDE.md`, `THIRD_PERSON_ANIMATOR_SETUP.md`, and related setup files.
 
 ## Changelog
+
+- **2026-05-19**: Directional roll clips wired separately from sidesteps (`Dodge_*_Root` vs roll states on Base Layer); menu **Geis → Animator → Setup Directional Dodge & Roll Clips**.
+- **2026-05-19**: GoW-style dodge/roll pass: neutral stick backsteps (away from lock-on target when locked); moving/stick-relative 4-way sidesteps; double-tap rolls follow stick with longer i-frames/recovery and `rollDistanceMultiplier`; lock-on preserves facing during sidesteps; strafe facing capped by `_strafeStyleMaxPlanarSpeed` (default 5).
+- **2026-05-19**: Dodge/dash (tap B) now commits on the first press with no double-tap wait window; a second press within `dodgeDoubleTapWindow` upgrades an early dash to the forward roll.
+- **2026-05-18**: Documented directional player hit reactions (`GeisDirectionalHitReaction`, `CombatHitDirection`, Synty F/B/L/R clips).
 
 - **2026-04-27**: Lock-on now uses a detached world-space runtime anchor instead of the player child `TargetLockOnPos`, preventing attack/dodge root motion from pulling the reticle/camera target forward and back.
 - **2026-04-27**: Jump input is now hard-gated during `AnimationState.Attack`, preventing combo presses from buffering a jump into post-combo locomotion/landing.

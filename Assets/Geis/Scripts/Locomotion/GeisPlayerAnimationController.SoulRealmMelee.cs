@@ -13,7 +13,6 @@
 
 using Geis.Animation;
 using Geis.Combat;
-using Geis.Combat.Music;
 using Geis.SoulRealm;
 using UnityEngine;
 
@@ -69,8 +68,7 @@ namespace Geis.Locomotion
                 ClearComboInputBuffer();
                 spec.SetTrigger(_attack1Hash);
                 _attackStateTimeout = 1.5f;
-                int weaponIdx = GetWeaponIndexForMusic();
-                CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, 0, weaponIdx);
+                int weaponIdx = GetCurrentWeaponIndex();
                 OnAttackPerformed?.Invoke(weaponIdx);
                 return true;
             }
@@ -83,8 +81,7 @@ namespace Geis.Locomotion
             SoulSetComboBlendOnAnimator(spec, _currentComboState);
             spec.SetTrigger(_attackTriggerHash);
             _attackStateTimeout = comboData != null ? 2f : 1.5f;
-            int weaponIdx = GetWeaponIndexForMusic();
-            CombatMusicController.Instance?.OnAttackPerformed(_firstAttackInputType, _currentComboState, weaponIdx);
+            int weaponIdx = GetCurrentWeaponIndex();
             OnAttackPerformed?.Invoke(weaponIdx);
         }
 
@@ -131,8 +128,7 @@ namespace Geis.Locomotion
                         spec.SetTrigger(_attackTriggerHash);
                         AnimationClip clip = comboData.GetClipForState(_currentComboState);
                         _attackStateTimeout = clip != null ? clip.length + 0.2f : 1.5f;
-                        int weaponIdx = GetWeaponIndexForMusic();
-                        CombatMusicController.Instance?.OnAttackPerformed(input, _currentComboState, weaponIdx);
+                        int weaponIdx = GetCurrentWeaponIndex();
                         OnAttackPerformed?.Invoke(weaponIdx);
                     }
                 }

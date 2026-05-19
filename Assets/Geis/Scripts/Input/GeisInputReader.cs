@@ -26,6 +26,12 @@ namespace Geis.InputSystem
         /// </summary>
         public Vector2 LookInput => _controls != null ? _controls.Player.Look.ReadValue<Vector2>() : Vector2.zero;
 
+        /// <summary>
+        /// Read from <c>Player/Move</c> (WASD + gamepad left stick). Polled each frame like
+        /// <see cref="LookInput"/> so locomotion stays reliable when stick callbacks do not fire every frame.
+        /// </summary>
+        public Vector2 MoveInput => _controls != null ? _controls.Player.Move.ReadValue<Vector2>() : Vector2.zero;
+
         public float _movementInputDuration;
         public bool _movementInputDetected;
 
@@ -34,13 +40,16 @@ namespace Geis.InputSystem
         /// <summary>Player/SoulRealm (Tab, gamepad LB).</summary>
         public InputAction SoulRealm => _controls != null ? _controls.Player.SoulRealm : null;
 
-        /// <summary>Player/LightAttack (LMB, E, gamepad RT). Poll <c>IsPressed()</c> for robust hold detection on analog triggers.</summary>
+        /// <summary>Player/LightAttack (LMB, E, gamepad RB). Poll <c>IsPressed()</c> when needed.</summary>
         public InputAction LightAttack => _controls != null ? _controls.Player.LightAttack : null;
 
-        /// <summary>Player/Aim (RMB, gamepad LT).</summary>
+        /// <summary>Player/Aim (RMB, gamepad LT). Bow aim zoom while held.</summary>
         public InputAction AimAction => _controls != null ? _controls.Player.Aim : null;
 
-        /// <summary>Player/HeavyAttack (R).</summary>
+        /// <summary>True while aim (LT / RMB) is held.</summary>
+        public bool IsAimHeld => AimAction != null && AimAction.IsPressed();
+
+        /// <summary>Player/HeavyAttack (R, gamepad RT). Bow draw/release polls this action.</summary>
         public InputAction HeavyAttack => _controls != null ? _controls.Player.HeavyAttack : null;
 
         /// <summary>Player/Jump (Space, gamepad South).</summary>
@@ -73,9 +82,7 @@ namespace Geis.InputSystem
         public Action onWalkToggled;
 
         public Action onLightAttackPerformed;
-        /// <summary>Fires when the light-attack button is first pressed (started phase). Used by bow charge when LightAttack is mapped to RT.</summary>
         public Action onLightAttackStarted;
-        /// <summary>Fires when the light-attack button is released (canceled phase). Used by bow charge-release when LightAttack is mapped to RT.</summary>
         public Action onLightAttackReleased;
         public Action onHeavyAttackPerformed;
         /// <summary>Fires when the heavy-attack button is first pressed (started phase). Used by bow charge.</summary>
@@ -85,6 +92,9 @@ namespace Geis.InputSystem
         public Action onDodgePerformed;
 
         private int _lastDodgeFrame = -1;
+        /// <summary>Collapses Started+Performed from the same gamepad press (they often land on different frames).</summary>
+        private float _lastDodgeInvokeAtUnscaled = -1f;
+        private const float DodgePressDedupeSeconds = 0.05f;
 
         [Header("Debug")]
         [Tooltip("Logs dodge-related input: raw gamepad east, Dodge action, and every OnDodge callback (Console).")]
@@ -154,6 +164,9 @@ namespace Geis.InputSystem
             if (_controls == null)
                 return;
 
+            _moveComposite = MoveInput;
+            _movementInputDetected = _moveComposite.sqrMagnitude > 0.0001f;
+
             var gp = Gamepad.current;
             if (gp == null && Gamepad.all.Count > 0)
                 gp = Gamepad.all[0];
@@ -209,16 +222,22 @@ namespace Geis.InputSystem
 
         private void TryInvokeDodgeOnce()
         {
+            float now = Time.unscaledTime;
+            if (_lastDodgeInvokeAtUnscaled >= 0f && now - _lastDodgeInvokeAtUnscaled < DodgePressDedupeSeconds)
+                return;
             if (Time.frameCount == _lastDodgeFrame)
                 return;
             _lastDodgeFrame = Time.frameCount;
+            _lastDodgeInvokeAtUnscaled = now;
             onDodgePerformed?.Invoke();
         }
 
-        /// <summary>True on the frame SoulRealm was pressed (enter detection).</summary>
+        /// <summary>True on the frame SoulRealm was pressed (enter detection). Suppressed while aim (LT) is held so LT+LB routes to ability 1.</summary>
         public bool SoulRealmWasPressedThisFrame()
         {
-            return _controls != null && _controls.Player.SoulRealm.WasPressedThisFrame();
+            if (_controls == null || IsAimHeld)
+                return false;
+            return _controls.Player.SoulRealm.WasPressedThisFrame();
         }
 
         /// <summary>Shift held or L3 toggled to the faster gait (sprint speed / “run”).</summary>
@@ -375,7 +394,19 @@ namespace Geis.InputSystem
                 onLightAttackReleased?.Invoke();
 
             if (!context.performed) return;
+            if (ShouldSuppressGamepadLightAttackForAbilityModifier(context))
+                return;
             onLightAttackPerformed?.Invoke();
+        }
+
+        /// <summary>LT+RB is ability 2; do not also fire a light attack on that press.</summary>
+        private bool ShouldSuppressGamepadLightAttackForAbilityModifier(InputAction.CallbackContext context)
+        {
+            if (!IsAimHeld)
+                return false;
+
+            string path = context.control?.path ?? string.Empty;
+            return path.Contains("rightShoulder", StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -404,8 +435,9 @@ namespace Geis.InputSystem
                     this);
             }
 
-            // Accept started or performed (devices vary); dedupe when both fire same frame.
-            if (!context.started && !context.performed) return;
+            // Gamepad: Started and Performed often fire on different frames for one physical press.
+            // Only Started counts as a dodge press so double-tap roll is a real second button-down.
+            if (!context.started) return;
             TryInvokeDodgeOnce();
         }
 

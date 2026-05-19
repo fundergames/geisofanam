@@ -17,8 +17,8 @@ MonoBehaviour:
   description: Drop-in melee enemy that acquires the player, telegraphs, attacks,
     and resets cleanly.
   maxHealth: 120
-  attack: 14
-  defense: 4
+  attack: 0
+  defense: 0
   weaponDefinition: {fileID: 11400000, guid: fd3bb153a1613a54b8e27f8073af5953, type: 2}
   animatorEquippedWeaponSlotIndex: 0
   equippedWeapon: {fileID: 11400000, guid: a861212a0fec4fd4aaafa11c44a3b17c, type: 2}

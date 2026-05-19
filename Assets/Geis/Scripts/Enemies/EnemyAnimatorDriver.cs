@@ -61,7 +61,8 @@ namespace Geis.Enemies
 
         [Header("Combat triggers")]
         [SerializeField] private string attackTrigger = "Attack";
-        [SerializeField] private string hitTrigger = "Hit";
+        [Tooltip("Legacy single hit trigger when no ICombatHitReactionPresenter. Polygon controller uses TakeDamage + HitDirection.")]
+        [SerializeField] private string hitTrigger = "TakeDamage";
 
         [Header("Weapon / combo (Polygon-style, optional)")]
         [SerializeField] private string equippedWeaponIndexParameter = "EquippedWeaponIndex";

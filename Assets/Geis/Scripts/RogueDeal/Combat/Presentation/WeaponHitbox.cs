@@ -230,6 +230,10 @@ namespace RogueDeal.Combat.Presentation
                 Debug.Log($"[WeaponHitbox] Hitbox is not active, ignoring collision with {other.gameObject.name}");
                 return;
             }
+
+            CombatEntity attackerEntity = combatExecutor != null ? combatExecutor.GetComponent<CombatEntity>() : null;
+            if (CombatAttackInterruptController.BlocksOutgoingDamage(attackerEntity))
+                return;
             
             if (hitboxCollider == null || !hitboxCollider.enabled)
             {
@@ -251,53 +255,16 @@ namespace RogueDeal.Combat.Presentation
                 Debug.Log($"[WeaponHitbox] {other.gameObject.name} is on layer {other.gameObject.layer} which is not in targetLayers mask {targetLayers.value}");
                 return;
             }
-            
-            // Check tags
-            bool validTag = false;
-            if (validTargetTags != null && validTargetTags.Length > 0)
-            {
-                foreach (var tag in validTargetTags)
-                {
-                    if (other.CompareTag(tag))
-                    {
-                        validTag = true;
-                        Debug.Log($"[WeaponHitbox] {other.gameObject.name} has valid tag: {tag}");
-                        break;
-                    }
-                }
-                if (!validTag)
-                {
-                    Debug.Log($"[WeaponHitbox] {other.gameObject.name} (tag: {other.tag}) does not match any valid target tags: {string.Join(", ", validTargetTags)}");
-                }
-            }
-            else
-            {
-                validTag = true; // If no tags specified, accept all
-                Debug.Log($"[WeaponHitbox] No target tags specified, accepting all");
-            }
-            
-            if (!validTag) return;
-            
-            var target = other.GetComponent<CombatEntity>();
-            if (target == null)
-            {
-                // Try parent
-                target = other.GetComponentInParent<CombatEntity>();
-                if (target != null)
-                {
-                    Debug.Log($"[WeaponHitbox] Found CombatEntity in parent of {other.gameObject.name}: {target.gameObject.name}");
-                }
-            }
-            else
-            {
-                Debug.Log($"[WeaponHitbox] Found CombatEntity on {other.gameObject.name}");
-            }
-            
+
+            CombatEntity target = ResolveTarget(other);
             if (target == null)
             {
                 Debug.LogWarning($"[WeaponHitbox] No CombatEntity found on {other.gameObject.name} or its parents");
                 return;
             }
+
+            if (!MatchesValidTargetTags(other, target))
+                return;
             
             // Prevent double-hits
             if (hitThisSwing.Contains(target))
@@ -351,15 +318,16 @@ namespace RogueDeal.Combat.Presentation
                 Debug.LogWarning($"[WeaponHitbox] Hit detected on {target.gameObject.name} but no current action is set! Make sure CombatExecutor.SetCurrentAction() was called.");
                 return;
             }
-            
-            if (action.effects == null || action.effects.Length == 0)
+
+            BaseEffect[] effectsToApply = ResolveEffectsForCurrentHit(action);
+            if (effectsToApply == null || effectsToApply.Length == 0)
             {
-                Debug.LogWarning($"[WeaponHitbox] Action '{action.actionName}' has no effects!");
+                Debug.LogWarning($"[WeaponHitbox] Action '{action.actionName}' has no usable effects!");
                 return;
             }
-            
-            Debug.Log($"[WeaponHitbox] ✅ Hit detected on {target.gameObject.name} with action: {action.actionName} ({action.effects.Length} effects)");
-            ApplyActionEffects(action, target);
+
+            Debug.Log($"[WeaponHitbox] ✅ Hit detected on {target.gameObject.name} with action: {action.actionName} ({effectsToApply.Length} effects)");
+            ApplyActionEffects(action, target, effectsToApply);
         }
         
         private bool IsValidTarget(CombatEntity target)
@@ -398,7 +366,119 @@ namespace RogueDeal.Combat.Presentation
             return 2f; // Default melee range
         }
         
-        private void ApplyActionEffects(CombatAction action, CombatEntity target)
+        private CombatEntity ResolveTarget(Collider other)
+        {
+            CombatEntity target = other.GetComponent<CombatEntity>();
+            if (target != null)
+            {
+                Debug.Log($"[WeaponHitbox] Found CombatEntity on {other.gameObject.name}");
+                return target;
+            }
+
+            target = other.GetComponentInParent<CombatEntity>();
+            if (target != null)
+                Debug.Log($"[WeaponHitbox] Found CombatEntity in parent of {other.gameObject.name}: {target.gameObject.name}");
+
+            return target;
+        }
+
+        private bool MatchesValidTargetTags(Collider other, CombatEntity target)
+        {
+            if (target != null && target.simpleMeleeBypassTagFilter)
+                return true;
+
+            if (validTargetTags == null || validTargetTags.Length == 0)
+            {
+                Debug.Log("[WeaponHitbox] No target tags specified, accepting all");
+                return true;
+            }
+
+            GameObject[] candidates =
+            {
+                other != null ? other.gameObject : null,
+                target != null ? target.gameObject : null,
+                other != null ? other.transform.root.gameObject : null
+            };
+
+            foreach (string tag in validTargetTags)
+            {
+                if (string.IsNullOrEmpty(tag))
+                    continue;
+
+                if (tag == "Enemy")
+                {
+                    for (int i = 0; i < candidates.Length; i++)
+                    {
+                        GameObject candidate = candidates[i];
+                        if (candidate != null && IsOnNamedLayer(candidate, "Enemy"))
+                        {
+                            Debug.Log($"[WeaponHitbox] Accepted {other.gameObject.name} via Enemy layer on {candidate.name}");
+                            return true;
+                        }
+                    }
+                }
+
+                for (int i = 0; i < candidates.Length; i++)
+                {
+                    GameObject candidate = candidates[i];
+                    if (candidate == null)
+                        continue;
+
+                    try
+                    {
+                        if (candidate.CompareTag(tag))
+                        {
+                            Debug.Log($"[WeaponHitbox] Accepted {other.gameObject.name} via tag '{tag}' on {candidate.name}");
+                            return true;
+                        }
+                    }
+                    catch (UnityException)
+                    {
+                        // Ignore undefined tags and keep checking remaining candidates.
+                    }
+                }
+            }
+
+            Debug.Log(
+                $"[WeaponHitbox] {other.gameObject.name} did not match valid target tags on collider/root/entity. Collider tag={other.tag}, entity tag={(target != null ? target.gameObject.tag : "n/a")}, valid tags={string.Join(", ", validTargetTags)}");
+            return false;
+        }
+
+        private static bool IsOnNamedLayer(GameObject gameObject, string layerName)
+        {
+            int layer = LayerMask.NameToLayer(layerName);
+            return layer >= 0 && gameObject != null && gameObject.layer == layer;
+        }
+
+        private BaseEffect[] ResolveEffectsForCurrentHit(CombatAction action)
+        {
+            if (action == null)
+                return null;
+
+            if (action.effects != null && action.effects.Length > 0)
+                return action.effects;
+
+            if (action.perHitEffects == null || action.perHitEffects.Length == 0)
+                return null;
+
+            int comboHitNumber = combatExecutor != null ? combatExecutor.GetCurrentComboHit() : 0;
+            if (comboHitNumber > 0
+                && comboHitNumber <= action.perHitEffects.Length
+                && action.perHitEffects[comboHitNumber - 1] != null)
+            {
+                return new[] { action.perHitEffects[comboHitNumber - 1] };
+            }
+
+            for (int i = 0; i < action.perHitEffects.Length; i++)
+            {
+                if (action.perHitEffects[i] != null)
+                    return new[] { action.perHitEffects[i] };
+            }
+
+            return null;
+        }
+
+        private void ApplyActionEffects(CombatAction action, CombatEntity target, BaseEffect[] effectsToApply)
         {
             if (combatExecutor == null)
             {
@@ -407,7 +487,7 @@ namespace RogueDeal.Combat.Presentation
             }
 
             CombatEntity attackerEntity = combatExecutor.GetComponent<CombatEntity>();
-            if (attackerEntity == null || action?.effects == null || action.effects.Length == 0)
+            if (attackerEntity == null || effectsToApply == null || effectsToApply.Length == 0)
                 return;
 
             float maxRange = GetMaxRange(combatExecutor.GetEntityData());
@@ -415,7 +495,7 @@ namespace RogueDeal.Combat.Presentation
                 CombatStrikeResolver.ResolveStrikeKind(action, CombatStrikeKind.Melee),
                 attackerEntity,
                 target,
-                action.effects,
+                effectsToApply,
                 action,
                 maxRange,
                 1f,

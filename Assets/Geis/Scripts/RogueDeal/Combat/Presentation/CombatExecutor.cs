@@ -44,6 +44,8 @@ namespace RogueDeal.Combat.Presentation
         private Vector3 currentTargetPosition;
         private int currentComboHit = 0;
         private bool isExecuting = false;
+        private List<CombatEntity> forcedTargets;
+        private bool lockForcedTargetsAtStrikeTime;
 
         /// <summary>True while an action is being executed (movement, animation, effects).</summary>
         public bool IsExecuting => isExecuting;
@@ -179,8 +181,7 @@ namespace RogueDeal.Combat.Presentation
                 return false;
             }
             
-            var targetResult = action.targetingStrategy.ResolveTargets(entityData);
-            if (!targetResult.isReady || targetResult.targets == null || targetResult.targets.Count == 0)
+            if (!TryResolveActionTargets(action, out List<CombatEntity> resolvedTargets, out Vector3 resolvedTargetPosition))
             {
                 string rangeInfo = action.targetingStrategy is SingleTargetSelector singleTarget 
                     ? $"Range: {singleTarget.maxRange}" 
@@ -191,8 +192,8 @@ namespace RogueDeal.Combat.Presentation
             
             // Store action context
             currentAction = action;
-            currentTargets = targetResult.targets;
-            currentTargetPosition = targetResult.targetPosition;
+            currentTargets = resolvedTargets;
+            currentTargetPosition = resolvedTargetPosition;
             currentComboHit = 0;
             isExecuting = true;
             
@@ -334,16 +335,15 @@ namespace RogueDeal.Combat.Presentation
 
             entityData.position = transform.position;
 
-            var targetResult = action.targetingStrategy.ResolveTargets(entityData);
-            if (!targetResult.isReady || targetResult.targets == null || targetResult.targets.Count == 0)
+            if (!TryResolveActionTargets(action, out List<CombatEntity> resolvedTargets, out Vector3 resolvedTargetPosition))
             {
                 Debug.Log($"[CombatExecutor] ExecuteActionWithScheduledEffectTimes: could not resolve targets for {action.actionName}.");
                 return false;
             }
 
             currentAction = action;
-            currentTargets = targetResult.targets;
-            currentTargetPosition = targetResult.targetPosition;
+            currentTargets = resolvedTargets;
+            currentTargetPosition = resolvedTargetPosition;
             currentComboHit = 0;
             isExecuting = true;
 
@@ -523,6 +523,13 @@ namespace RogueDeal.Combat.Presentation
         /// </summary>
         private bool TryRefreshTargetsAtStrikeTime()
         {
+            if (TryUseForcedTargets(out List<CombatEntity> resolvedTargets, out Vector3 targetPosition))
+            {
+                currentTargets = resolvedTargets;
+                currentTargetPosition = targetPosition;
+                return true;
+            }
+
             if (currentAction == null || currentAction.targetingStrategy == null || entityData == null)
                 return currentTargets != null && currentTargets.Count > 0;
 
@@ -553,41 +560,47 @@ namespace RogueDeal.Combat.Presentation
         public void TriggerHitReaction(CombatEntity target, float damageDealt, bool isCritical)
         {
             if (target == null) return;
-            
-            // Play hit reaction animation
-            CombatAnimationController animController = target.GetComponent<CombatAnimationController>();
-            if (animController != null)
-            {
-                animController.PlayHitReaction(EffectType.Damage);
-            }
-            else if (target.animator != null)
-            {
-                if (!AnimatorParameterGuard.TrySetTrigger(target.animator, target.hitTrigger))
-                {
-                    Debug.LogWarning(
-                        $"[CombatExecutor] Animator on '{target.animator.gameObject.name}' has no trigger '{target.hitTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(target.animator)}");
-                }
-            }
-            
-            // Fire hit reaction event (for VFX/SFX - damage visuals come from OnDamageApplied)
-            CombatEvents.TriggerHitReactionStarted(new CombatEventData
+
+            Vector3 hitPosition = target.GetHitPoint();
+            CombatHitDirection hitDirection = CombatHitDirectionUtility.Resolve(combatEntity, target);
+            var eventData = new CombatEventData
             {
                 source = combatEntity,
                 target = target,
                 damageAmount = damageDealt,
                 wasCritical = isCritical,
-                hitPosition = target.GetHitPoint(),
+                hitPosition = hitPosition,
+                hitDirection = hitDirection,
                 effect = null
-            });
+            };
+
+            if (target.GetComponent<ICombatHitReactionPresenter>() == null)
+            {
+                CombatAnimationController animController = target.GetComponent<CombatAnimationController>();
+                if (animController != null)
+                {
+                    animController.PlayHitReaction(EffectType.Damage, hitDirection);
+                }
+                else if (target.animator != null)
+                {
+                    if (AnimatorParameterGuard.HasParameterOfType(target.animator, "HitDirection", AnimatorControllerParameterType.Int))
+                        target.animator.SetInteger("HitDirection", CombatHitDirectionUtility.ToAnimatorInt(hitDirection));
+
+                    if (!AnimatorParameterGuard.TrySetTrigger(target.animator, target.hitTrigger))
+                    {
+                        Debug.LogWarning(
+                            $"[CombatExecutor] Animator on '{target.animator.gameObject.name}' has no trigger '{target.hitTrigger}'. Available: {AnimatorParameterGuard.FormatParameterList(target.animator)}");
+                    }
+                }
+            }
+
+            CombatEvents.TriggerHitReactionStarted(eventData);
             
             // Fallback: if target has no EnemyVisual/PlayerVisual to receive OnDamageApplied, show popup directly
             bool hasVisualFeedback = target.GetComponent<EnemyVisual>() != null || target.GetComponentInParent<EnemyVisual>() != null
                 || target.GetComponent<PlayerVisual>() != null || target.GetComponentInParent<PlayerVisual>() != null;
             if (!hasVisualFeedback && DamagePopupManager.Instance != null)
-            {
-                Vector3 hitPosition = target.hitPoint != null ? target.hitPoint.position : target.transform.position + Vector3.up;
                 DamagePopupManager.Instance.ShowDamagePopup(Mathf.RoundToInt(damageDealt), isCritical, hitPosition);
-            }
         }
         
         /// <summary>
@@ -600,6 +613,7 @@ namespace RogueDeal.Combat.Presentation
             currentComboHit = 0;
             isExecuting = false;
             needsToMove = false;
+            ClearForcedTargets();
         }
         
         /// <summary>
@@ -629,6 +643,7 @@ namespace RogueDeal.Combat.Presentation
         
         // Getters for other components
         public CombatAction GetCurrentAction() => currentAction;
+        public int GetCurrentComboHit() => currentComboHit;
         
         /// <summary>
         /// Sets the current action for weapon collider-based combat.
@@ -656,6 +671,22 @@ namespace RogueDeal.Combat.Presentation
             
             Debug.Log($"[CombatExecutor] Set current action for weapon collider: {action.actionName}");
         }
+
+        /// <summary>
+        /// Forces the next execution path to use these targets instead of the action's targeting strategy.
+        /// Useful for AI that already picked a specific target and should not retarget at strike time.
+        /// </summary>
+        public void SetForcedTargets(List<CombatEntity> targets, bool lockAtStrikeTime = true)
+        {
+            forcedTargets = SanitizeTargets(targets);
+            lockForcedTargetsAtStrikeTime = lockAtStrikeTime;
+        }
+
+        public void ClearForcedTargets()
+        {
+            forcedTargets = null;
+            lockForcedTargetsAtStrikeTime = false;
+        }
         
         /// <summary>
         /// Clears the current action (called when attack completes)
@@ -665,6 +696,14 @@ namespace RogueDeal.Combat.Presentation
             currentAction = null;
             currentTargets = null;
             isExecuting = false;
+            ClearForcedTargets();
+        }
+
+        /// <summary>Stops strike coroutines and clears the active action (e.g. when hit during a swing).</summary>
+        public void InterruptCurrentAction()
+        {
+            StopAllCoroutines();
+            ClearCurrentAction();
         }
         
         // Getters for other components
@@ -672,6 +711,64 @@ namespace RogueDeal.Combat.Presentation
         public Vector3 GetTargetPosition() => currentTargetPosition;
         public CombatEntityData GetEntityData() => entityData;
         public ActionCooldownManager GetCooldownManager() => cooldownManager;
+
+        private bool TryResolveActionTargets(CombatAction action, out List<CombatEntity> targets, out Vector3 targetPosition)
+        {
+            if (TryUseForcedTargets(out targets, out targetPosition))
+                return true;
+
+            var targetResult = action.targetingStrategy.ResolveTargets(entityData);
+            if (!targetResult.isReady || targetResult.targets == null || targetResult.targets.Count == 0)
+            {
+                targets = null;
+                targetPosition = entityData != null ? entityData.position : transform.position;
+                return false;
+            }
+
+            targets = targetResult.targets;
+            targetPosition = targetResult.targetPosition;
+            return true;
+        }
+
+        private bool TryUseForcedTargets(out List<CombatEntity> targets, out Vector3 targetPosition)
+        {
+            targets = null;
+            targetPosition = entityData != null ? entityData.position : transform.position;
+
+            List<CombatEntity> sanitized = SanitizeTargets(forcedTargets);
+            if (sanitized == null || sanitized.Count == 0)
+                return false;
+
+            if (!lockForcedTargetsAtStrikeTime)
+                forcedTargets = sanitized;
+
+            targets = sanitized;
+            targetPosition = sanitized[0].transform.position;
+            return true;
+        }
+
+        private static List<CombatEntity> SanitizeTargets(List<CombatEntity> targets)
+        {
+            if (targets == null || targets.Count == 0)
+                return null;
+
+            var result = new List<CombatEntity>(targets.Count);
+            for (int i = 0; i < targets.Count; i++)
+            {
+                CombatEntity target = targets[i];
+                if (target == null)
+                    continue;
+
+                CombatEntityData data = target.GetEntityData();
+                if (data == null || !data.IsAlive || !target.gameObject.activeInHierarchy)
+                    continue;
+
+                if (!result.Contains(target))
+                    result.Add(target);
+            }
+
+            return result.Count > 0 ? result : null;
+        }
         
         /// <summary>
         /// Called at the start of each turn (for turn-based combat)

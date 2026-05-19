@@ -31,6 +31,8 @@ namespace RogueDeal.Combat
         /// </summary>
         public bool skipEntityDamageInterceptors;
         public Vector3 hitPosition;
+        /// <summary>Planar strike direction relative to <see cref="target"/> facing (for directional hit reacts).</summary>
+        public CombatHitDirection hitDirection;
         public CombatStrikeKind strikeKind;
         public CombatStrikeOutcome strikeOutcome;
     }
@@ -67,6 +69,12 @@ namespace RogueDeal.Combat
 
         public static void TriggerHitReactionStarted(CombatEventData data)
         {
+            if (data?.target != null)
+            {
+                ICombatHitReactionPresenter presenter = data.target.GetComponent<ICombatHitReactionPresenter>();
+                presenter?.PresentHitReaction(data);
+            }
+
             OnHitReactionStarted?.Invoke(data);
         }
 

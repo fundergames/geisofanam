@@ -254,13 +254,18 @@ namespace Geis.Locomotion
         {
             _syntyCamera = gameObject.transform.GetChild(0);
 
-            _inputReader = _syntyCharacter.GetComponent<GeisInputReader>();
+            _inputReader = _syntyCharacter.GetComponent<GeisInputReader>()
+                ?? _syntyCharacter.GetComponentInChildren<GeisInputReader>(true);
             if (_playerAnimation == null)
-                _playerAnimation = _syntyCharacter.GetComponent<GeisPlayerAnimationController>();
+                _playerAnimation = _syntyCharacter.GetComponent<GeisPlayerAnimationController>()
+                    ?? _syntyCharacter.GetComponentInChildren<GeisPlayerAnimationController>(true);
 
             if (_playerTarget == null)
-                _playerTarget = _syntyCharacter.transform.Find("SyntyPlayer_LookAt");
+                _playerTarget = ResolveBodyLookAtTransform(_syntyCharacter.transform);
+
             _lockOnTarget = _syntyCharacter.transform.Find("TargetLockOnPos");
+            if (_lockOnTarget == null)
+                _lockOnTarget = _syntyCharacter.transform.Find("GeisCharacter/TargetLockOnPos");
             if (_lockOnTarget == null)
             {
                 var go = new GameObject("TargetLockOnPos");
@@ -297,6 +302,22 @@ namespace Geis.Locomotion
 
             _syntyCamera.localPosition = new Vector3(_rigHorizontalOffsetSmoothed, _rigHeightSmoothed, _rigDistanceSmoothed * -1);
             _syntyCamera.localEulerAngles = new Vector3(_cameraTiltOffset, 0f, 0f);
+        }
+
+        /// <summary>
+        /// Finds the body look-at rig on the player root or under GeisCharacter / Visual children.
+        /// </summary>
+        public static Transform ResolveBodyLookAtTransform(Transform playerRoot)
+        {
+            if (playerRoot == null)
+                return null;
+
+            return playerRoot.Find("Player_LookAt")
+                ?? playerRoot.Find("SyntyPlayer_LookAt")
+                ?? playerRoot.Find("GeisCharacter/Player_LookAt")
+                ?? playerRoot.Find("GeisCharacter/SyntyPlayer_LookAt")
+                ?? playerRoot.Find("Visual/Player_LookAt")
+                ?? playerRoot.Find("Visual/SyntyPlayer_LookAt");
         }
 
         /// <summary>

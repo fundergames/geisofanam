@@ -196,7 +196,7 @@ namespace Geis.SoulRealm
         private int ComputeDodgeDirectionIndex(Vector2 m, float deadzone)
         {
             if (m.sqrMagnitude < deadzone * deadzone)
-                return 0;
+                return 1;
 
             Vector3 camFwd = _cameraController.GetCameraForwardZeroedYNormalised();
             Vector3 camRight = _cameraController.GetCameraRightZeroedYNormalised();
@@ -213,7 +213,7 @@ namespace Geis.SoulRealm
             Vector2 m, float deadzone, Vector3 camFwd, Vector3 camRight, Transform characterTransform)
         {
             if (m.sqrMagnitude < deadzone * deadzone)
-                return 0;
+                return 1;
 
             Vector3 world = (camFwd * m.y + camRight * m.x).normalized;
             Vector3 local = characterTransform.InverseTransformDirection(world);

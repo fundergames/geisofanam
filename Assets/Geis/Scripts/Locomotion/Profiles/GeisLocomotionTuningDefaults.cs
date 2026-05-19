@@ -61,12 +61,16 @@ namespace Geis.Locomotion
         public const float AttackMoveCancelStickThreshold = 0.5f;
         public const float AttackRecoveryExitNormalizedTime = 0.85f;
         public const float AttackExitVelocityCarry = 0.6f;
-        public const float DodgeRecoveryStartNormalizedTime = 0.65f;
+        public const float DodgeRecoveryStartNormalizedTime = 0.62f;
+        public const float RollRecoveryStartNormalizedTime = 0.72f;
         public const float DodgeMoveCancelStickThreshold = 0.3f;
         public const float DodgeExitVelocityCarry = 0.75f;
+        public const float RollExitVelocityCarry = 0f;
         public const float InputBufferSeconds = 0.18f;
-        public const float DodgeDoubleTapWindow = 0.25f;
+        public const float DodgeDoubleTapWindow = 0.3f;
         public const bool DodgeDoubleTapRollEnabled = true;
-        public const float RollDistanceMultiplier = 1f;
+        public const float RollDistanceMultiplier = 1.35f;
+        public const float RollInvulnerabilityEndNormalizedTime = 0.52f;
+        public const float StrafeStyleMaxPlanarSpeed = 5f;
     }
 }
