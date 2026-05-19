@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.coplaydev.unity-mcp": "https://github.com/CoplayDev/unity-mcp.git?path=/MCPForUnity#main",
     "com.funder.core": "https://github.com/fundergames/funder-core.git?path=Packages/com.funder.core#main",
     "com.tonythedev.unity-claude-code-cli": "https://github.com/Exano/UnityClaudeCLI.git",
     "com.unity.2d.sprite": "1.0.0",
