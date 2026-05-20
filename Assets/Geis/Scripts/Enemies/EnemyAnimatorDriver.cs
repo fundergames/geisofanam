@@ -300,7 +300,7 @@ namespace Geis.Enemies
         }
 
         /// <summary>
-        /// Mirrors <c>GeisPlayerAnimationController.SetComboStateBlend</c>: prefers Float ComboStateBlend, else Int ComboState.
+        /// Mirrors <c>GeisPlayerAnimationController.SetComboStateBlend</c> via <see cref="GeisComboAnimatorBlend"/>.
         /// </summary>
         public void SetWeaponComboState(int state)
         {
@@ -308,16 +308,8 @@ namespace Geis.Enemies
             if (_animator == null)
                 return;
 
-            state = Mathf.Max(0, state);
-
-            if (AnimatorParameterGuard.HasParameterOfType(_animator, comboStateBlendParameter, AnimatorControllerParameterType.Float))
-            {
-                float blend = (float)state / (ComboBlendSlotCount - 1);
-                _animator.SetFloat(Animator.StringToHash(comboStateBlendParameter), blend);
-                return;
-            }
-
-            SetIntIfPresent(comboStateIntParameter, state);
+            GeisComboAnimatorBlend.Apply(
+                _animator, state, ComboBlendSlotCount, comboStateBlendParameter, comboStateIntParameter);
         }
 
         public void TriggerAttack(string overrideTrigger = null)

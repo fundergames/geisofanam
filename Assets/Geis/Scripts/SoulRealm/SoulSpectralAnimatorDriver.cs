@@ -86,6 +86,13 @@ namespace Geis.SoulRealm
             if (SoulRealmManager.Instance == null || !SoulRealmManager.Instance.IsSoulRealmActive)
                 return;
 
+            if (bodyLocomotion != null && bodyLocomotion.IsDrivingSoulRealmLocomotion)
+            {
+                if (animator != null && animator.speed < 1f)
+                    animator.speed = 1f;
+                return;
+            }
+
             const int bowSlot = 3;
             bool bowEquipped = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowSlot;
             bool bowAimOrDraw = bowEquipped && (bodyLocomotion.IsBowDrawing || bodyLocomotion.IsAiming);
@@ -109,17 +116,6 @@ namespace Geis.SoulRealm
             }
             else if (animator.speed < 1f)
                 animator.speed = 1f;
-
-            if (motor.TryConsumeSpectralDodgeAnimatorTrigger(out int dodgeDir))
-            {
-                if (AnimatorParameterGuard.HasParameter(animator, "DodgeDirection"))
-                    animator.SetInteger(LocomotionAnimatorIds.DodgeDirection, dodgeDir);
-                if (AnimatorParameterGuard.HasParameter(animator, "Dodge"))
-                    animator.SetTrigger(LocomotionAnimatorIds.Dodge);
-            }
-
-            if (bodyLocomotion.IsSoulRealmMeleeAnimating)
-                return;
 
             // Soul-realm movement frozen (but bow kept animator.speed up): skip locomotion snapshot only.
             if (!allowMove && bowAimOrDraw)

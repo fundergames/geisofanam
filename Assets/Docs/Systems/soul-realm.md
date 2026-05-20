@@ -13,7 +13,7 @@ Soul realm mode (ghost vs. frozen body), world freeze hooks, weapon-bound supern
 
 - **Singleton**: `Instance`; raises static `SoulRealmStateChanged` when entering/exiting (puzzles, ability controller, presentation subscribe).
 - **State**: `IsSoulRealmActive`, `SoulRealmBlend` (0/1), exit hold progress APIs (`SoulRealmExitHoldProgress01`, `IsSoulRealmExitHoldInProgress`, etc.).
-- **Movement**: `AllowGhostMovement` — during enter grace, ghost can move; after grace, holding **SoulRealm** input blocks ghost movement (exit path). Body locomotion suppressed via `ShouldSuppressBodyLocomotion` while active. Runtime ability flows may temporarily push an external ghost-movement freeze (for example, object blink manipulation).
+- **Movement**: `AllowGhostMovement` — when true, `GeisPlayerAnimationController` drives the ghost via `BindSoulRealmLocomotionAvatar` (same FSM/combat/dodge as the body). When false (enter dissolve, exit hold, external freezes), the controller still ground-rides the frozen body and applies bow params to the spectral animator; `SoulSpectralAnimatorDriver` handles enter/exit-hold presentation only. `SoulGhostMotor` remains a component tag for triggers. `ShouldSuppressBodyLocomotion` only means the body root does not run the full locomotion FSM on itself.
 - **Camera return target**: On entry, capture the camera controller's current follow target and use that same transform for exit-hold interpolation and final restore. Do not reconstruct the return pivot from a separate look-at lookup, or the camera can fall back to the body root/feet on exit.
 - **Abilities / VFX origin**: `GetAbilityContextTransforms(out ownerTransform, out originWorld)` — in soul realm uses **ghost** root and chest-height style origin; otherwise body locomotion and look-at. **Weapon ability activation** should use this when the manager exists.
 - **Freeze registry**: `SoulRealmFreezeTarget` list for selective world freeze (implementation detail in manager code).
@@ -108,6 +108,7 @@ Rule of thumb: if you are using `WaitForSeconds` or a `Time.deltaTime` loop for 
 
 ## Changelog
 
+- **2026-05-20**: Unified locomotion/combat: one `GeisPlayerAnimationController` owns input, movement, dodge/roll, and melee on whichever avatar is bound (body or spectral). `SoulGhostMotor` no longer runs a parallel motor.
 - **2026-05-19**: Gamepad abilities use LT+LB / LT+RB; removed Y/RB-only ability fallbacks.
 - **2026-04-29**: Dagger phase shift now transfers a target object into the player's current realm via hold input in either realm; shifted props remain solid only in their owned realm and can be moved back and forth by repeating the hold from the other realm.
 - **2026-04-28**: Object Blink socket manipulation now freezes the ghost motor and uses direct translation/rotation controls (`Move`, vertical via keyboard arrows or gamepad d-pad, `Aim`/left-trigger modifier) so blink targets no longer feel parented to the player while aligning with a socket.

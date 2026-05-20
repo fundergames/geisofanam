@@ -167,7 +167,7 @@ namespace Geis.SoulRealm
         /// <summary>True while the player is holding exit (after enter grace). Matches camera/pivot lerp; spectral dissolve should use this, not <c>_exitHoldTimer &gt; 0</c>.</summary>
         public bool IsSoulRealmExitHoldInProgress => _isSoulRealm && _exitHoldHeld;
 
-        /// <summary>True while the ghost motor should run (soul realm; disabled during enter transition, explicit manipulation freezes, and while holding exit).</summary>
+        /// <summary>True while the body controller drives the ghost avatar (soul realm; false during enter transition, external freezes, and exit hold).</summary>
         public bool AllowGhostMovement
         {
             get
@@ -405,8 +405,6 @@ namespace Geis.SoulRealm
                             exitHoldVfx.End();
                         if (cameraController != null)
                             cameraController.EndSoulRealmExitHoldRotationLerp();
-                        if (ghostMotor != null)
-                            ghostMotor.enabled = true;
                         if (cameraController != null && _ghostLookAt != null)
                             cameraController.SetFollowTarget(_ghostLookAt);
                     }
@@ -459,7 +457,7 @@ namespace Geis.SoulRealm
             }
 
             if (ghostMotor != null)
-                ghostMotor.enabled = true;
+                ghostMotor.enabled = false;
 
             if (ghostRoot != null && bodyLocomotion != null && ghostMotor != null && inputReader != null)
             {
@@ -481,6 +479,13 @@ namespace Geis.SoulRealm
                     spectralDissolveInvertForShader);
                 _spectralVisualInstance = existing;
                 CacheSpectralAnimatorRefs(_spectralVisualInstance, bodyAnimator);
+            }
+
+            if (bodyLocomotion != null && ghostRoot != null)
+            {
+                var ghostCc = ghostRoot.GetComponent<CharacterController>();
+                bodyLocomotion.BindSoulRealmLocomotionAvatar(
+                    ghostRoot.transform, ghostCc, _spectralAnimator);
             }
 
             if (cameraController != null)
@@ -792,6 +797,8 @@ namespace Geis.SoulRealm
 
             if (bodyLocomotion != null)
             {
+                bodyLocomotion.ExitSoulRealmLocomotionAvatar();
+
                 if (bodyCharacterController != null)
                     bodyCharacterController.enabled = false;
                 bodyLocomotion.transform.SetPositionAndRotation(_bodyPositionAtEntry, _bodyRotationAtEntry);

@@ -63,7 +63,35 @@ namespace Geis.Locomotion
             float runSpeed,
             float sprintSpeed)
         {
-            if (isCrouching)
+            return ResolveTargetMaxSpeed(
+                isGrounded: true,
+                forceWalk: false,
+                isCrouching,
+                isSprinting,
+                isWalking,
+                walkSpeed,
+                runSpeed,
+                sprintSpeed,
+                currentMaxSpeedWhenAirborne: runSpeed);
+        }
+
+        /// <summary>
+        /// Target max planar speed for one locomotion tick (airborne keeps <paramref name="currentMaxSpeedWhenAirborne"/>).
+        /// </summary>
+        public static float ResolveTargetMaxSpeed(
+            bool isGrounded,
+            bool forceWalk,
+            bool isCrouching,
+            bool isSprinting,
+            bool isWalking,
+            float walkSpeed,
+            float runSpeed,
+            float sprintSpeed,
+            float currentMaxSpeedWhenAirborne)
+        {
+            if (!isGrounded)
+                return currentMaxSpeedWhenAirborne;
+            if (forceWalk || isCrouching)
                 return walkSpeed;
             if (isSprinting)
                 return sprintSpeed;
@@ -72,7 +100,49 @@ namespace Geis.Locomotion
             return runSpeed;
         }
 
-        /// <summary>Same logic as <see cref="GeisPlayerAnimationController.CalculateMoveDirection"/> for planar motion.</summary>
+        /// <summary>
+        /// Body <see cref="GeisPlayerAnimationController.CalculateMoveDirection"/> speed blend (sprint snap + accel/decel).
+        /// </summary>
+        public static void StepBodyPlanarVelocity(
+            ref float currentMaxSpeed,
+            ref float velocityX,
+            ref float velocityZ,
+            Vector3 moveDirection,
+            float targetMaxSpeed,
+            float maxSpeedLerpRate,
+            float sprintInstantFraction,
+            float accelRate,
+            float decelRate,
+            float speedChangeDamping,
+            float deltaTime)
+        {
+            if (targetMaxSpeed > currentMaxSpeed && sprintInstantFraction > 0f)
+                currentMaxSpeed = Mathf.Max(currentMaxSpeed, targetMaxSpeed * sprintInstantFraction);
+
+            currentMaxSpeed = ExpSmooth(currentMaxSpeed, targetMaxSpeed, maxSpeedLerpRate, deltaTime);
+
+            float targetVx = moveDirection.x * currentMaxSpeed;
+            float targetVz = moveDirection.z * currentMaxSpeed;
+
+            float targetPlanarSqr = targetVx * targetVx + targetVz * targetVz;
+            float currentPlanarSqr = velocityX * velocityX + velocityZ * velocityZ;
+            bool accelerating = targetPlanarSqr > currentPlanarSqr;
+            float activeRate = accelerating
+                ? (accelRate > 0f ? accelRate : speedChangeDamping)
+                : (decelRate > 0f ? decelRate : speedChangeDamping);
+
+            velocityX = ExpSmooth(velocityX, targetVx, activeRate, deltaTime);
+            velocityZ = ExpSmooth(velocityZ, targetVz, activeRate, deltaTime);
+        }
+
+        public static float ExpSmooth(float current, float target, float rate, float deltaTime)
+        {
+            if (rate <= 0f)
+                return target;
+            return Mathf.Lerp(current, target, 1f - Mathf.Exp(-rate * deltaTime));
+        }
+
+        /// <summary>Legacy ghost motor lerp path (single damping rate toward target max speed).</summary>
         public static void StepPlanarLocomotionVelocity(
             ref float currentMaxSpeed,
             ref Vector3 velocity,

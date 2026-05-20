@@ -42882,12 +42882,13 @@ MonoBehaviour:
   _rollInvulnerabilityEndNormalizedTime: 0.52
   _dodgeMoveCancelStickThreshold: 0.3
   _dodgeExitVelocityCarry: 0.75
+  _rollExitVelocityCarry: 0
   _inputBufferSeconds: 0.18
   _dodgeDoubleTapWindow: 0.25
   _dodgeDoubleTapRollEnabled: 1
-  _rollDistanceMultiplier: 0.8
+  _rollDistanceMultiplier: 1
   _strafeStyleMaxPlanarSpeed: 5
-  _debugDodgeDoubleTap: 1
+  _debugDodgeDoubleTap: 0
   _lockOnIndicator: {fileID: 1302732657}
 --- !u!114 &1976761596
 MonoBehaviour:

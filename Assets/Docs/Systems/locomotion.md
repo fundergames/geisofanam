@@ -54,7 +54,8 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 | Piece | Path |
 |-------|------|
 | Camera | `Assets/Geis/Scripts/Locomotion/GeisCameraController.cs` |
-| Animation / state | `Assets/Geis/Scripts/Locomotion/GeisPlayerAnimationController.cs` |
+| Animation / state | `Assets/Geis/Scripts/Locomotion/GeisPlayerAnimationController*.cs` (core + Avatar, LockOn, Combat, LocomotionStates partials) |
+| Locomotion kinematics | `Assets/Geis/Scripts/Locomotion/GeisLocomotionKinematics.cs` |
 | Soul realm | `Assets/Geis/Scripts/SoulRealm/SoulRealmManager.cs` |
 
 ## Integration
@@ -78,6 +79,10 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 
 ## Changelog
 
+- **2026-05-20**: Fixed soul ghost appearing frozen after enter dissolve: `SoulSpectralAnimatorDriver` left `animator.speed` at 0 when handing off to `GeisPlayerAnimationController` (`EnsurePresentationAnimatorAdvancing`).
+- **2026-05-20**: Single locomotion/combat owner: `GeisPlayerAnimationController` binds the soul ghost via `.Avatar.cs` (`BindSoulRealmLocomotionAvatar` / `PresentationAnimator`); `SoulGhostMotor` is a trigger marker only. Enter freeze still applies bow params on the spectral rig; full FSM runs when `AllowGhostMovement`.
+- **2026-05-20**: `GeisPlayerAnimationController` split into partials (`GeisPlayerAnimationController.cs` core, `.Avatar.cs`, `.LockOn.cs`, `.Combat.cs`, `.LocomotionStates.cs`). Planar speed via `GeisLocomotionKinematics`. `HasAnimatorParameter` uses `AnimatorParameterGuard`.
+- **2026-05-20**: Body locomotion animator writes now route through `LocomotionAnimatorApplier` + `LocomotionPresentationSnapshot`; combo blend/playback shared via `GeisComboAnimatorBlend` and `ComboAttackPlayback` (body, soul-realm melee, enemies).
 - **2026-05-19**: Directional roll clips wired separately from sidesteps (`Dodge_*_Root` vs roll states on Base Layer); menu **Geis → Animator → Setup Directional Dodge & Roll Clips**.
 - **2026-05-19**: GoW-style dodge/roll pass: neutral stick backsteps (away from lock-on target when locked); moving/stick-relative 4-way sidesteps; double-tap rolls follow stick with longer i-frames/recovery and `rollDistanceMultiplier`; lock-on preserves facing during sidesteps; strafe facing capped by `_strafeStyleMaxPlanarSpeed` (default 5).
 - **2026-05-19**: Dodge/dash (tap B) now commits on the first press with no double-tap wait window; a second press within `dodgeDoubleTapWindow` upgrades an early dash to the forward roll.
