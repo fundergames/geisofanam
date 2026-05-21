@@ -22,7 +22,7 @@ namespace Geis.Animation
     {
         /// <summary>
         /// Applies the same parameter set as <c>GeisPlayerAnimationController.UpdateAnimatorController</c>,
-        /// plus optional spectral <see cref="LocomotionApplyContext.SetIsJumping"/>.
+        /// plus spectral <see cref="LocomotionApplyContext.IsJumpingValue"/> (always written).
         /// </summary>
         public static void ApplySyntyLocomotion(Animator animator, LocomotionPresentationSnapshot s, LocomotionApplyContext ctx)
         {
@@ -66,12 +66,18 @@ namespace Geis.Animation
 
             animator.SetBool(LocomotionAnimatorIds.IsWalking, air ? false : s.IsWalking);
             animator.SetBool(LocomotionAnimatorIds.IsStopped, air ? true : s.IsStopped);
-            animator.SetBool(LocomotionAnimatorIds.IsStarting, s.IsStarting);
+            if (ctx.OverrideIsStarting)
+                animator.SetBool(LocomotionAnimatorIds.IsStarting, ctx.IsStartingValue);
+            else
+                animator.SetBool(LocomotionAnimatorIds.IsStarting, s.IsStarting);
 
-            animator.SetFloat(LocomotionAnimatorIds.LocomotionStartDirection, s.LocomotionStartDirection);
+            if (ctx.OverrideLocomotionStartDirection)
+                animator.SetFloat(LocomotionAnimatorIds.LocomotionStartDirection, ctx.LocomotionStartDirectionValue);
+            else
+                animator.SetFloat(LocomotionAnimatorIds.LocomotionStartDirection, s.LocomotionStartDirection);
 
-            if (ctx.SetIsJumping)
-                animator.SetBool(LocomotionAnimatorIds.IsJumping, ctx.IsJumpingValue);
+            // Always write IsJumping so false clears the bool after apex/landing. Conditional writes left it stuck true and cycled LandingSoft <-> Jump_Idle.
+            animator.SetBool(LocomotionAnimatorIds.IsJumping, ctx.IsJumpingValue);
         }
 
         /// <summary>

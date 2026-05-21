@@ -12,6 +12,7 @@
  */
 
 using System;
+using Geis.SoulRealm.WeaponAbilities;
 using RogueDeal.Combat;
 using RogueDeal.Combat.Core.Data;
 using RogueDeal.Combat.Presentation;
@@ -28,15 +29,15 @@ namespace Geis.Puzzles
     /// Default realm: PhysicalOnly (see <see cref="Reset"/>).
     /// </summary>
     [RequireComponent(typeof(Collider))]
-    public class SwordHitTrigger : PuzzleTriggerBase, IPuzzleMeleeHitSink
+    public class SwordHitTrigger : PuzzleTriggerBase, IPuzzleMeleeHitSink, ITrueStrikeDestroyable
     {
         [Header("Hit Settings")]
         [Tooltip("Number of melee hit windows required to activate.")]
         [SerializeField] private int hitsRequired = 1;
 
         [Header("Weapon filter (Geis slots)")]
-        [Tooltip("0=Unarmed, 1=Knife, 2=Sword, 3=Bow. Empty = any slot. Default is sword only.")]
-        [SerializeField] private int[] acceptedWeaponSlots = { 2 };
+        [Tooltip("GeisWeaponSwitcher slot index (Player prefab: 0=Emberblade, 1=Aetherstorm, 2=Bow). Empty = any slot.")]
+        [SerializeField] private int[] acceptedWeaponSlots = { 0, 1 };
 
         [Header("Action / ability filter (CombatAction)")]
         [Tooltip("If non-empty, only hits from a CombatAction whose actionName matches (use unique names per ability in your action assets, e.g. Sword_Light vs Sword_Charged).")]
@@ -113,6 +114,19 @@ namespace Geis.Puzzles
             int hitWindowIndex)
         {
             TryRegisterFromSimpleAttack(action, weaponSlotIndex);
+        }
+
+        /// <summary>
+        /// True Strike bypasses weapon-slot filtering so any weapon with the ability can break this volume.
+        /// </summary>
+        public void DestroyFromTrueStrike()
+        {
+            if (IsActivated)
+                return;
+            if (!IsAccessibleInCurrentRealm())
+                return;
+
+            RegisterHitProgress();
         }
 
         private void TryRegisterFromSimpleAttack(CombatAction action, int weaponSlotIndex)

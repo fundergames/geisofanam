@@ -72,5 +72,17 @@ namespace Geis.Locomotion
         public const float RollDistanceMultiplier = 1.35f;
         public const float RollInvulnerabilityEndNormalizedTime = 0.52f;
         public const float StrafeStyleMaxPlanarSpeed = 5f;
+
+        public const float CameraRotationOffset = 0f;
+        public const float BowEquipLayerBlendSpeed = 8f;
+        public const float BowAimHeadLookMultiplier = 0.6f;
+        public const float BowAimBodyLookMultiplier = 0.4f;
+        public const float DodgeInvulnerabilityEndNormalizedTime = 0.38f;
+        public const float DodgeScriptedPlaneSpeed = 7f;
+        public const float DodgeScriptedDuration = 0.35f;
+        public const bool DebugDodgeDoubleTap = false;
+
+        /// <summary>Animator max-speed blend rate; must match locomotion damp time on the player controller.</summary>
+        public const float AnimationDampTime = 5f;
     }
 }

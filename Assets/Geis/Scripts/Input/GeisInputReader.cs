@@ -35,6 +35,49 @@ namespace Geis.InputSystem
         public float _movementInputDuration;
         public bool _movementInputDetected;
 
+        /// <summary>Latest movement tap / press / held classification from <see cref="UpdateMovementTapState"/>.</summary>
+        public readonly struct MovementTapState
+        {
+            public readonly bool Tapped;
+            public readonly bool Pressed;
+            public readonly bool Held;
+
+            public MovementTapState(bool tapped, bool pressed, bool held)
+            {
+                Tapped = tapped;
+                Pressed = pressed;
+                Held = held;
+            }
+        }
+
+        /// <summary>
+        /// Effective move stick for locomotion (polled each frame). Prefer over <see cref="_moveComposite"/>.
+        /// </summary>
+        public Vector2 EffectiveMoveComposite => _moveComposite;
+
+        /// <summary>
+        /// Updates tap/press/held classification and owns <see cref="_movementInputDuration"/>.
+        /// Call once per locomotion tick with movement detected from input (after interaction freeze checks).
+        /// </summary>
+        public MovementTapState UpdateMovementTapState(bool movementDetected, float holdThreshold, float deltaTime)
+        {
+            if (movementDetected)
+            {
+                bool tapped = _movementInputDuration == 0f;
+                bool pressed = !tapped && _movementInputDuration > 0f && _movementInputDuration < holdThreshold;
+                bool held = !tapped && !pressed && _movementInputDuration >= holdThreshold;
+
+                _movementInputDuration += deltaTime;
+                return new MovementTapState(tapped, pressed, held);
+            }
+
+            _movementInputDuration = 0f;
+            return new MovementTapState(false, false, false);
+        }
+
+        /// <summary>Clears movement duration (e.g. when entering attack).</summary>
+        public void ResetMovementTapState() => _movementInputDuration = 0f;
+
         private GeisControls _controls;
 
         /// <summary>Player/SoulRealm (Tab, gamepad LB).</summary>

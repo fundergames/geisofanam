@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 0425e83e361c63d4db8223fbaf1da2ad, type: 3}
+  m_Name: PlayerLocomotionProfiles
+  m_EditorClassIdentifier: Geis::Geis.Locomotion.GeisPlayerLocomotionProfileBundle
+  speedProfile: {fileID: 11400000, guid: 95e06b2ff0a189d47b1b9fe1b0b90d83, type: 2}
+  airMovementProfile: {fileID: 11400000, guid: 51d09a4acb225d64ba6486aaa2a60c65, type: 2}
+  attackDodgeProfile: {fileID: 11400000, guid: 551d769f3d1650d4e8bada53fe02b68d, type: 2}
+  groundingProfile: {fileID: 11400000, guid: 33538525a68bcbb4faf96ba82eb04e1b, type: 2}
+  capsuleProfile: {fileID: 11400000, guid: 4ab6bd85fed6c234eadfe48709db12c7, type: 2}
+  strafeInputProfile: {fileID: 11400000, guid: 21b51dedc6ba85d448806b8f2c0e5a3c, type: 2}
+  lookLeanProfile: {fileID: 11400000, guid: 99fd3a08605e9a142a12ad1f8ac211e7, type: 2}
+  bowPresentationProfile: {fileID: 11400000, guid: a9b8c7d6e5f4321098765432fedcba98, type: 2}

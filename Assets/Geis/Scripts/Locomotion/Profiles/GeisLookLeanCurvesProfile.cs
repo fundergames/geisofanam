@@ -25,10 +25,18 @@ namespace Geis.Locomotion
         [Tooltip("Degrees beyond which head look clamps; character may rotate in place instead.")]
         public float headLookLimitDegrees = GeisLocomotionTuningDefaults.HeadLookLimitDegrees;
 
+        [Tooltip("Light reduction applied to head-look additives while bow aiming/drawing.")]
+        [Range(0f, 1f)]
+        public float bowAimHeadLookMultiplier = GeisLocomotionTuningDefaults.BowAimHeadLookMultiplier;
+
         [Header("Body look")]
         public bool enableBodyTurn = true;
         public float bodyLookDelay;
         public AnimationCurve bodyLookXCurve;
+
+        [Tooltip("Light reduction applied to body-look additives while bow aiming/drawing.")]
+        [Range(0f, 1f)]
+        public float bowAimBodyLookMultiplier = GeisLocomotionTuningDefaults.BowAimBodyLookMultiplier;
 
         [Header("Lean")]
         public bool enableLean = true;

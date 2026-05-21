@@ -465,6 +465,11 @@ namespace Geis.SoulRealm
                     ? spectralDissolveMaterialTemplate
                     : null;
 
+                GeisWeaponSwitcher weaponSwitcher = bodyLocomotion != null
+                    ? bodyLocomotion.GetComponent<GeisWeaponSwitcher>()
+                    : null;
+                weaponSwitcher?.DetachAllWeaponsFromCharacterRig();
+
                 var existing = SoulSpectralGhostVisual.Spawn(
                     ghostRoot.transform,
                     bodyLocomotion.transform,
@@ -479,7 +484,12 @@ namespace Geis.SoulRealm
                     spectralDissolveInvertForShader);
                 _spectralVisualInstance = existing;
                 CacheSpectralAnimatorRefs(_spectralVisualInstance, bodyAnimator);
+                weaponSwitcher?.RefreshAllWeaponAttachmentParents();
             }
+
+            if (bodyLocomotion?.GetComponent<GeisWeaponSwitcher>() is GeisWeaponSwitcher switcherWithoutGhost
+                && _spectralVisualInstance == null)
+                switcherWithoutGhost.RefreshAllWeaponAttachmentParents();
 
             if (bodyLocomotion != null && ghostRoot != null)
             {
@@ -559,6 +569,156 @@ namespace Geis.SoulRealm
         }
 
         /// <summary>
+        /// Forces the spectral rig to apply its current layer weights to bones (e.g. after Bow_Draw snap-off).
+        /// </summary>
+        public void ReevaluateSpectralAnimatorPose()
+        {
+            if (!_isSoulRealm || _spectralAnimator == null)
+                return;
+
+            float previousSpeed = _spectralAnimator.speed;
+            _spectralAnimator.speed = 1f;
+            _spectralAnimator.Update(0f);
+            _spectralAnimator.Update(0f);
+            _spectralAnimator.speed = previousSpeed;
+        }
+
+        /// <summary>
+        /// Snaps bow layers off both body and spectral animators, copies cleared arm local rotations
+        /// from the body rig onto the spectral clone, then re-evaluates the spectral pose.
+        /// </summary>
+        public void ResetSpectralAndBodyMeleePose()
+        {
+            if (!_isSoulRealm)
+                return;
+
+            var presenter = new GeisBowAnimatorPresenter();
+            if (bodyAnimator != null)
+            {
+                float bodySpeed = bodyAnimator.speed;
+                bodyAnimator.speed = 1f;
+                presenter.ForceExitBowPresentation(bodyAnimator, reevaluateAnimator: true);
+                bodyAnimator.speed = bodySpeed;
+            }
+
+            if (_spectralAnimator != null)
+            {
+                float specSpeed = _spectralAnimator.speed;
+                _spectralAnimator.speed = 1f;
+                presenter.ForceExitBowPresentation(_spectralAnimator, reevaluateAnimator: true);
+                _spectralAnimator.speed = specSpeed;
+            }
+
+            // Copy cleared idle locals from the frozen body onto the ghost, then do not Update(0) again
+            // or the animator will overwrite the synced bones with stale bow-poisoned state.
+            SyncSpectralWeaponArmFromBody(WeaponAttachmentHand.RightHand);
+            SyncSpectralWeaponArmFromBody(WeaponAttachmentHand.LeftHand);
+        }
+
+        /// <summary>
+        /// Copies local rotations for an arm/prop chain from the body GeisCharacter onto the spectral clone.
+        /// </summary>
+        public void SyncSpectralWeaponArmFromBody(WeaponAttachmentHand hand)
+        {
+            if (!_isSoulRealm || bodyAnimator == null || _spectralAnimator == null || _spectralVisualInstance == null)
+                return;
+
+            Transform bodyRoot = _spectralMeshSourceRoot != null
+                ? _spectralMeshSourceRoot
+                : bodyAnimator.transform;
+            Transform specRoot = _spectralVisualInstance.transform;
+            string[] chain = hand == WeaponAttachmentHand.LeftHand ? LeftArmPoseChain : RightArmPoseChain;
+
+            for (int i = 0; i < chain.Length; i++)
+            {
+                Transform bodyBone = FindFirstChildByNames(bodyRoot, new[] { chain[i] });
+                if (bodyBone == null)
+                    continue;
+
+                if (TryResolveSpectralCloneTransform(bodyRoot, specRoot, bodyBone, out Transform specBone))
+                {
+                    specBone.localPosition = bodyBone.localPosition;
+                    specBone.localRotation = bodyBone.localRotation;
+                    specBone.localScale = bodyBone.localScale;
+                }
+            }
+        }
+
+        /// <summary>
+        /// Finds Hand_L/Hand_R on the live spectral clone (never the frozen body rig).
+        /// </summary>
+        public bool TryGetLiveSpectralHand(WeaponAttachmentHand attachmentHand, out Transform handBone)
+        {
+            handBone = null;
+            if (!_isSoulRealm || _spectralAnimator == null)
+                return false;
+
+            handBone = FindFirstChildByNames(
+                _spectralAnimator.transform,
+                attachmentHand == WeaponAttachmentHand.LeftHand
+                    ? LeftHandBoneNames
+                    : RightHandBoneNames);
+
+            if (handBone != null && IsPropOrSocketTransform(handBone))
+                handBone = null;
+
+            if (handBone == null
+                && _spectralAnimator.avatar != null
+                && _spectralAnimator.avatar.isHuman)
+            {
+                handBone = _spectralAnimator.GetBoneTransform(
+                    attachmentHand == WeaponAttachmentHand.LeftHand
+                        ? HumanBodyBones.LeftHand
+                        : HumanBodyBones.RightHand);
+                if (handBone != null && IsPropOrSocketTransform(handBone))
+                    handBone = null;
+            }
+
+            return handBone != null && IsTransformUnderSpectralVisual(handBone);
+        }
+
+        /// <summary>
+        /// Finds Prop_L/Prop_R socket transforms on the live spectral clone (never the frozen body rig).
+        /// </summary>
+        public bool TryGetLiveSpectralWeaponSocket(WeaponAttachmentHand attachmentHand, out Transform socket)
+        {
+            socket = null;
+            if (!_isSoulRealm || _spectralAnimator == null)
+                return false;
+
+            socket = FindFirstChildByNames(
+                _spectralAnimator.transform,
+                attachmentHand == WeaponAttachmentHand.LeftHand
+                    ? LeftHandSocketNames
+                    : RightHandSocketNames);
+
+            if (socket == null)
+                return false;
+
+            if (attachmentHand == WeaponAttachmentHand.LeftHand)
+                _spectralLeftWeaponAttach = socket;
+            else
+                _spectralRightWeaponAttach = socket;
+
+            return IsTransformUnderSpectralVisual(socket);
+        }
+
+        /// <summary>True when <paramref name="t"/> lives under the active spectral character clone.</summary>
+        public bool IsTransformUnderSpectralVisual(Transform t)
+        {
+            if (t == null)
+                return false;
+
+            for (Transform current = t; current != null; current = current.parent)
+            {
+                if (_spectralVisualInstance != null && current == _spectralVisualInstance.transform)
+                    return true;
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// World position and horizontal forward for melee overlap probes while the ghost is active.
         /// </summary>
         public bool TryGetGhostMeleeOrigin(out Vector3 position, out Vector3 forward)
@@ -582,6 +742,44 @@ namespace Geis.SoulRealm
         }
 
         /// <summary>
+        /// Maps a body-rig socket transform to the matching transform on the live spectral clone.
+        /// </summary>
+        public bool TryResolveSpectralSocketForBodyAttachment(Transform bodySocket, out Transform spectralSocket)
+        {
+            spectralSocket = null;
+            if (!_isSoulRealm || bodySocket == null || _spectralVisualInstance == null)
+                return false;
+
+            Transform cloneRoot = _spectralVisualInstance.transform;
+            Transform bodyRoot = _spectralMeshSourceRoot != null
+                ? _spectralMeshSourceRoot
+                : bodyAnimator != null
+                    ? bodyAnimator.transform
+                    : null;
+
+            if (bodyRoot != null
+                && TryResolveSpectralCloneTransform(bodyRoot, cloneRoot, bodySocket, out spectralSocket))
+                return true;
+
+            if (bodyAnimator != null
+                && _spectralAnimator != null
+                && TryResolveSpectralCloneTransform(
+                    bodyAnimator.transform,
+                    _spectralAnimator.transform,
+                    bodySocket,
+                    out spectralSocket))
+                return true;
+
+            WeaponAttachmentHand hand = bodySocket.name.Contains("_L")
+                || bodySocket.name.Contains("Left")
+                || bodySocket.name.Contains("_l")
+                    ? WeaponAttachmentHand.LeftHand
+                    : WeaponAttachmentHand.RightHand;
+
+            return TryGetSpectralWeaponAttachTransform(hand, out spectralSocket);
+        }
+
+        /// <summary>
         /// Resolves the matching attachment on the spectral clone for a body attachment transform. Prefers the
         /// exact cloned path first so custom prop sockets still work in soul realm, then falls back to hand-based
         /// spectral sockets.
@@ -596,22 +794,9 @@ namespace Geis.SoulRealm
             if (!_isSoulRealm || _spectralAnimator == null)
                 return false;
 
-            if (bodyAttachment != null)
-            {
-                if (TryResolveSpectralCloneTransform(
-                        bodyAnimSource != null ? bodyAnimSource.transform : null,
-                        _spectralAnimator.transform,
-                        bodyAttachment,
-                        out hand))
-                    return true;
-
-                if (TryResolveSpectralCloneTransform(
-                        _spectralMeshSourceRoot,
-                        _spectralVisualInstance != null ? _spectralVisualInstance.transform : null,
-                        bodyAttachment,
-                        out hand))
-                    return true;
-            }
+            if (bodyAttachment != null
+                && TryResolveSpectralSocketForBodyAttachment(bodyAttachment, out hand))
+                return true;
 
             return TryGetSpectralWeaponAttachTransform(attachmentHand, out hand);
         }
@@ -639,27 +824,78 @@ namespace Geis.SoulRealm
             if (_spectralAnimator == null)
                 return;
 
-            _spectralRightWeaponAttach = ResolveSpectralWeaponAttach(
-                _spectralAnimator,
-                bodyAnimSource,
-                HumanBodyBones.RightHand,
-                RightHandSocketNames,
-                RightHandBoneNames);
-            _spectralLeftWeaponAttach = ResolveSpectralWeaponAttach(
-                _spectralAnimator,
-                bodyAnimSource,
-                HumanBodyBones.LeftHand,
-                LeftHandSocketNames,
-                LeftHandBoneNames);
+            Transform bodyRoot = _spectralMeshSourceRoot != null
+                ? _spectralMeshSourceRoot
+                : bodyAnimSource != null
+                    ? bodyAnimSource.transform
+                    : null;
+            Transform cloneRoot = spectralInstance.transform;
+
+            GeisWeaponSwitcher weaponSwitcher = bodyLocomotion != null
+                ? bodyLocomotion.GetComponent<GeisWeaponSwitcher>()
+                : null;
+            if (weaponSwitcher != null && bodyRoot != null && cloneRoot != null)
+            {
+                CacheSpectralSocketFromBody(
+                    weaponSwitcher.GetHandAttachmentTransform(WeaponAttachmentHand.RightHand),
+                    bodyRoot,
+                    cloneRoot,
+                    ref _spectralRightWeaponAttach);
+                CacheSpectralSocketFromBody(
+                    weaponSwitcher.GetHandAttachmentTransform(WeaponAttachmentHand.LeftHand),
+                    bodyRoot,
+                    cloneRoot,
+                    ref _spectralLeftWeaponAttach);
+            }
+
+            if (_spectralRightWeaponAttach == null)
+            {
+                _spectralRightWeaponAttach = ResolveSpectralWeaponAttach(
+                    _spectralAnimator,
+                    bodyAnimSource,
+                    HumanBodyBones.RightHand,
+                    RightHandSocketNames,
+                    RightHandBoneNames);
+            }
+
+            if (_spectralLeftWeaponAttach == null)
+            {
+                _spectralLeftWeaponAttach = ResolveSpectralWeaponAttach(
+                    _spectralAnimator,
+                    bodyAnimSource,
+                    HumanBodyBones.LeftHand,
+                    LeftHandSocketNames,
+                    LeftHandBoneNames);
+            }
 
             if (_spectralLeftWeaponAttach == null)
                 _spectralLeftWeaponAttach = _spectralRightWeaponAttach;
         }
 
+        private static void CacheSpectralSocketFromBody(
+            Transform bodySocket,
+            Transform bodyRoot,
+            Transform cloneRoot,
+            ref Transform spectralSocket)
+        {
+            if (bodySocket == null || spectralSocket != null)
+                return;
+
+            TryResolveSpectralCloneTransform(bodyRoot, cloneRoot, bodySocket, out spectralSocket);
+        }
+
         private static readonly string[] RightHandSocketNames = { "Prop_R_Socket", "Prop_R" };
         private static readonly string[] LeftHandSocketNames = { "Prop_L_Socket", "Prop_L" };
-        private static readonly string[] RightHandBoneNames = { "weapon_r", "hand_r", "Hand_R", "Weapon" };
-        private static readonly string[] LeftHandBoneNames = { "weapon_l", "hand_l", "Hand_L", "Weapon_L" };
+        private static readonly string[] RightHandBoneNames = { "Hand_R", "hand_r" };
+        private static readonly string[] LeftHandBoneNames = { "Hand_L", "hand_l" };
+        private static readonly string[] RightArmPoseChain =
+        {
+            "Clavicle_R", "Shoulder_R", "Elbow_R", "Hand_R", "Prop_R", "Prop_R_Socket"
+        };
+        private static readonly string[] LeftArmPoseChain =
+        {
+            "Clavicle_L", "Shoulder_L", "Elbow_L", "Hand_L", "Prop_L", "Prop_L_Socket"
+        };
 
         private static Transform ResolveSpectralWeaponAttach(
             Animator spectralAnimator,
@@ -671,19 +907,29 @@ namespace Geis.SoulRealm
             if (spectralAnimator == null)
                 return null;
 
-            Transform attach = FindFirstChildByNames(spectralAnimator.transform, socketNames);
-            if (attach == null)
-                attach = FindFirstChildByNames(spectralAnimator.transform, boneNames);
+            Transform attach = FindFirstChildByNames(spectralAnimator.transform, boneNames);
+            if (attach != null && IsPropOrSocketTransform(attach))
+                attach = null;
 
             if (attach == null
-                && bodyAnimSource != null
-                && bodyAnimSource.avatar != null
-                && bodyAnimSource.avatar.isHuman)
+                && spectralAnimator.avatar != null
+                && spectralAnimator.avatar.isHuman)
             {
                 attach = spectralAnimator.GetBoneTransform(fallbackBone);
+                if (attach != null && IsPropOrSocketTransform(attach))
+                    attach = null;
             }
 
             return attach;
+        }
+
+        private static bool IsPropOrSocketTransform(Transform t)
+        {
+            if (t == null)
+                return false;
+
+            string name = t.name;
+            return name.Contains("Prop_") || name.Contains("Socket", System.StringComparison.OrdinalIgnoreCase);
         }
 
         private static Transform FindFirstChildByNames(Transform root, string[] names)
@@ -749,12 +995,20 @@ namespace Geis.SoulRealm
 
         private static Transform FindChildRecursive(Transform root, string name)
         {
-            if (root == null) return null;
-            if (root.name == name) return root;
+            if (root == null)
+                return null;
+            if (root.name == name)
+                return root;
+
             for (int i = 0; i < root.childCount; i++)
             {
-                var found = FindChildRecursive(root.GetChild(i), name);
-                if (found != null) return found;
+                Transform child = root.GetChild(i);
+                if (child.GetComponent<GeisEquippedWeaponInstanceMarker>() != null)
+                    continue;
+
+                Transform found = FindChildRecursive(child, name);
+                if (found != null)
+                    return found;
             }
 
             return null;
@@ -828,6 +1082,8 @@ namespace Geis.SoulRealm
 
             if (bodyLocomotion != null)
                 bodyLocomotion.PrepareBodyAfterSoulRealmExit();
+
+            bodyLocomotion?.GetComponent<GeisWeaponSwitcher>()?.RefreshAllWeaponAttachmentParents();
 
             Transform bodyReturnTarget = ResolveBodyFollowTarget();
             if (cameraController != null && bodyReturnTarget != null)

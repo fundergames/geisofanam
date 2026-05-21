@@ -35,6 +35,12 @@ namespace Geis.Locomotion
         [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
         public bool requireMovementInputForDodge = GeisLocomotionTuningDefaults.RequireMovementInputForDodge;
 
+        [Tooltip("Soul-ghost scripted dodge planar speed; physical dodge uses animation clips.")]
+        public float dodgeScriptedPlaneSpeed = GeisLocomotionTuningDefaults.DodgeScriptedPlaneSpeed;
+
+        [Tooltip("Soul-ghost scripted dodge duration in seconds.")]
+        public float dodgeScriptedDuration = GeisLocomotionTuningDefaults.DodgeScriptedDuration;
+
         [Header("Cancel Windows (Action-feel)")]
         [Tooltip("Min stick magnitude (0-1) to move-cancel an attack during its cancel window.")]
         [Range(0f, 1f)]
@@ -56,6 +62,10 @@ namespace Geis.Locomotion
         [Range(0f, 1f)]
         public float rollRecoveryStartNormalizedTime = GeisLocomotionTuningDefaults.RollRecoveryStartNormalizedTime;
 
+        [Tooltip("Normalized time on the sidestep clip while the player has dodge i-frames.")]
+        [Range(0f, 1f)]
+        public float dodgeInvulnerabilityEndNormalizedTime = GeisLocomotionTuningDefaults.DodgeInvulnerabilityEndNormalizedTime;
+
         [Tooltip("Min stick magnitude (0-1) to move-cancel a dodge during its recovery window.")]
         [Range(0f, 1f)]
         public float dodgeMoveCancelStickThreshold = GeisLocomotionTuningDefaults.DodgeMoveCancelStickThreshold;
@@ -63,6 +73,10 @@ namespace Geis.Locomotion
         [Tooltip("Fraction of _currentMaxSpeed pre-seeded onto planar velocity when exiting a dodge into movement.")]
         [Range(0f, 1f)]
         public float dodgeExitVelocityCarry = GeisLocomotionTuningDefaults.DodgeExitVelocityCarry;
+
+        [Tooltip("Same as dodge exit carry, but for rolls. Keep at 0 so the roll root-motion arc stops cleanly.")]
+        [Range(0f, 1f)]
+        public float rollExitVelocityCarry = GeisLocomotionTuningDefaults.RollExitVelocityCarry;
 
         [Tooltip("Seconds a light/heavy/dodge input stays live in the buffer so presses just before a cancel window still register.")]
         public float inputBufferSeconds = GeisLocomotionTuningDefaults.InputBufferSeconds;
@@ -79,8 +93,14 @@ namespace Geis.Locomotion
         [Range(0.25f, 3f)]
         public float rollDistanceMultiplier = GeisLocomotionTuningDefaults.RollDistanceMultiplier;
 
+        [Tooltip("Maximum planar speed (m/s) that uses camera-forward strafe facing and strafe-style dodges.")]
+        public float strafeStyleMaxPlanarSpeed = GeisLocomotionTuningDefaults.StrafeStyleMaxPlanarSpeed;
+
         [Tooltip("Normalized time on a roll clip while the player has dodge i-frames (longer than sidestep).")]
         [Range(0f, 1f)]
         public float rollInvulnerabilityEndNormalizedTime = GeisLocomotionTuningDefaults.RollInvulnerabilityEndNormalizedTime;
+
+        [Tooltip("Logs each dodge press with its double-tap detection result. Leave off in shipping.")]
+        public bool debugDodgeDoubleTap = GeisLocomotionTuningDefaults.DebugDodgeDoubleTap;
     }
 }

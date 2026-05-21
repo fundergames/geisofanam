@@ -11,6 +11,7 @@
  * It may not be redistributed, sublicensed, or sold in any form.
  */
 
+using Geis.Combat;
 using Geis.InputSystem;
 using Geis.Locomotion;
 using UnityEngine;
@@ -66,6 +67,8 @@ namespace Geis.SoulRealm
             instance.transform.localRotation = Quaternion.identity;
             instance.transform.localScale = Vector3.one;
 
+            StripEquippedWeaponClones(instance);
+
             foreach (var r in instance.GetComponentsInChildren<Renderer>(true))
             {
                 if (r != null)
@@ -109,6 +112,16 @@ namespace Geis.SoulRealm
         {
             if (instance != null)
                 Object.Destroy(instance);
+        }
+
+        private static void StripEquippedWeaponClones(GameObject root)
+        {
+            var markers = root.GetComponentsInChildren<GeisEquippedWeaponInstanceMarker>(true);
+            for (int i = markers.Length - 1; i >= 0; i--)
+            {
+                if (markers[i] != null)
+                    Object.Destroy(markers[i].gameObject);
+            }
         }
 
         private static void StripGameplayComponents(GameObject root)

@@ -147,7 +147,7 @@ namespace Geis.Combat
                     if (_debugLog)
                         Debug.Log($"[GeisCombatBridge] WeaponHitbox schedule action={action.actionName} comboState={comboState} hits={hitTimes.Length}");
 
-                    StartHitboxSchedule(weaponHitbox, hitTimes);
+                    StartHitboxSchedule(weaponHitbox, hitTimes, action, weaponIndex);
                     scheduledWeaponHitbox = true;
                 }
                 else if (_debugLog)
@@ -189,11 +189,11 @@ namespace Geis.Combat
             return GetComponentInChildren<WeaponHitbox>(true);
         }
 
-        private void StartHitboxSchedule(WeaponHitbox hitbox, float[] timesFromAttackStartSeconds)
+        private void StartHitboxSchedule(WeaponHitbox hitbox, float[] timesFromAttackStartSeconds, CombatAction action, int weaponSlotIndex)
         {
             StopHitboxSchedule();
             _hitboxScheduleGeneration++;
-            _hitboxScheduleRoutine = StartCoroutine(HitboxScheduleCoroutine(hitbox, timesFromAttackStartSeconds, _hitboxScheduleGeneration));
+            _hitboxScheduleRoutine = StartCoroutine(HitboxScheduleCoroutine(hitbox, timesFromAttackStartSeconds, _hitboxScheduleGeneration, action, weaponSlotIndex));
         }
 
         private void StopHitboxSchedule()
@@ -208,7 +208,7 @@ namespace Geis.Combat
             hb?.Disable();
         }
 
-        private IEnumerator HitboxScheduleCoroutine(WeaponHitbox hitbox, float[] times, int generation)
+        private IEnumerator HitboxScheduleCoroutine(WeaponHitbox hitbox, float[] times, int generation, CombatAction action, int weaponSlotIndex)
         {
             float elapsed = 0f;
             for (int i = 0; i < times.Length; i++)
@@ -226,6 +226,7 @@ namespace Geis.Combat
                     yield break;
 
                 hitbox.Enable();
+                _hitDetector?.NotifyPuzzleMeleeHitSinks(action, i + 1, weaponSlotIndex);
                 yield return new WaitForSeconds(_scheduledHitboxActiveSeconds);
                 hitbox.Disable();
             }

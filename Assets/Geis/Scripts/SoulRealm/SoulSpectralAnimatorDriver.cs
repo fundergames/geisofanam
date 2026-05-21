@@ -23,7 +23,9 @@ namespace Geis.SoulRealm
     /// <summary>
     /// Drives the spectral copy's Animator with the same locomotion parameters as
     /// <see cref="GeisPlayerAnimationController"/> via <see cref="LocomotionAnimatorApplier"/>.
+    /// Runs after <see cref="GeisWeaponSwitcher"/> so bow layer snap-off and melee attach finish first.
     /// </summary>
+    [DefaultExecutionOrder(250)]
     public sealed class SoulSpectralAnimatorDriver : MonoBehaviour
     {
         private const float AnimationDampTime = 5f;
@@ -43,6 +45,7 @@ namespace Geis.SoulRealm
         private GeisPlayerAnimationController bodyLocomotion;
         private GeisWeaponSwitcher _weaponSwitcher;
         private bool _hasFallingBlendParameter;
+        private readonly GeisBowAnimatorPresenter _bowPresenter = new GeisBowAnimatorPresenter();
 
         private float movementInputDuration;
         private bool movementInputHeld;
@@ -93,8 +96,7 @@ namespace Geis.SoulRealm
                 return;
             }
 
-            const int bowSlot = 3;
-            bool bowEquipped = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowSlot;
+            bool bowEquipped = IsBowWeaponEquipped();
             bool bowAimOrDraw = bowEquipped && (bodyLocomotion.IsBowDrawing || bodyLocomotion.IsAiming);
 
             // Must run before AllowGhostMovement handling — that path used to return early and never pushed
@@ -184,7 +186,6 @@ namespace Geis.SoulRealm
                 FallingBlendValue = bodyLocomotion != null
                     ? bodyLocomotion.GetFallingBlendParameter(fallingDuration)
                     : 0f,
-                SetIsJumping = true,
                 IsJumpingValue = !grounded && motor.VerticalVelocity > 0.5f
             };
 
@@ -196,10 +197,14 @@ namespace Geis.SoulRealm
 
         private void ApplyBowParametersToSpectralAnimator()
         {
-            const int bowSlot = 3;
-            bool bowEquipped = _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponIndex == bowSlot;
-            if (!bowEquipped || animator == null)
+            if (animator == null)
                 return;
+
+            if (!IsBowWeaponEquipped())
+            {
+                _bowPresenter.ForceExitBowPresentation(animator, reevaluateAnimator: true);
+                return;
+            }
 
             if (AnimatorParameterGuard.HasParameter(animator, "BowDrawing"))
                 animator.SetBool(Animator.StringToHash("BowDrawing"), bodyLocomotion.IsBowDrawing);
@@ -210,6 +215,10 @@ namespace Geis.SoulRealm
             if (AnimatorParameterGuard.HasParameter(animator, "BowChargedShotReady"))
                 animator.SetBool(Animator.StringToHash("BowChargedShotReady"), bodyLocomotion.IsBowChargedShotReady);
         }
+
+        private bool IsBowWeaponEquipped() =>
+            _weaponSwitcher != null && _weaponSwitcher.CurrentWeaponDefinition != null
+            && _weaponSwitcher.CurrentWeaponDefinition.IsBowWeapon;
 
         private void UpdateMovementInputFlags()
         {

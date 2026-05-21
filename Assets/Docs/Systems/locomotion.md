@@ -1,7 +1,7 @@
 # Locomotion & camera
 
 **Status**: current  
-**Last updated**: 2026-05-19
+**Last updated**: 2026-05-20
 
 ## Purpose
 
@@ -79,6 +79,8 @@ Third-person movement, rotation, and camera follow; coordination with animation 
 
 ## Changelog
 
+- **2026-05-20**: Profile bundle is tuning source of truth: `ApplyLocomotionTuningFromProfiles()` applies code defaults then overlays assigned `GeisPlayerLocomotionProfileBundle` (Resources fallback at `Movement/PlayerLocomotionProfiles`). Bow animator writes extracted to `GeisBowAnimatorPresenter` with `GeisBowPresentationProfile`.
+- **2026-05-20**: Refactor pass: input buffer/dodge/combo extracted (`GeisInputBufferTracker`, `GeisDodgeRollController`, `GeisComboAttackController`); profile bundle wired on Player prefab; animator IDs consolidated via `LocomotionAnimatorIds` / `BowAnimatorIds`; `GeisInputReader.UpdateMovementTapState` encapsulates movement tap/press/held.
 - **2026-05-20**: Fixed soul ghost appearing frozen after enter dissolve: `SoulSpectralAnimatorDriver` left `animator.speed` at 0 when handing off to `GeisPlayerAnimationController` (`EnsurePresentationAnimatorAdvancing`).
 - **2026-05-20**: Single locomotion/combat owner: `GeisPlayerAnimationController` binds the soul ghost via `.Avatar.cs` (`BindSoulRealmLocomotionAvatar` / `PresentationAnimator`); `SoulGhostMotor` is a trigger marker only. Enter freeze still applies bow params on the spectral rig; full FSM runs when `AllowGhostMovement`.
 - **2026-05-20**: `GeisPlayerAnimationController` split into partials (`GeisPlayerAnimationController.cs` core, `.Avatar.cs`, `.LockOn.cs`, `.Combat.cs`, `.LocomotionStates.cs`). Planar speed via `GeisLocomotionKinematics`. `HasAnimatorParameter` uses `AnimatorParameterGuard`.

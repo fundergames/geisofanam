@@ -32,6 +32,8 @@ namespace Geis.Locomotion
     /// Runs after <see cref="Puzzles.PlatformMover"/> (-50) so <see cref="GroundRideUtility"/> sees this frame&apos;s platform motion.
     /// </summary>
     [DefaultExecutionOrder(100)]
+    [RequireComponent(typeof(CharacterController))]
+    [RequireComponent(typeof(PlayerDefensiveCombatState))]
     public partial class GeisPlayerAnimationController : MonoBehaviour, IAttackerPhaseProvider
     {
         #region Enum
@@ -57,83 +59,16 @@ namespace Geis.Locomotion
 
         #endregion
 
-        #region Animation Variable Hashes
+        #region Sub-controllers
 
-        private readonly int _movementInputTappedHash = Animator.StringToHash("MovementInputTapped");
-        private readonly int _movementInputPressedHash = Animator.StringToHash("MovementInputPressed");
-        private readonly int _movementInputHeldHash = Animator.StringToHash("MovementInputHeld");
-        private readonly int _shuffleDirectionXHash = Animator.StringToHash("ShuffleDirectionX");
-        private readonly int _shuffleDirectionZHash = Animator.StringToHash("ShuffleDirectionZ");
+        private readonly GeisInputBufferTracker _inputBuffers = new GeisInputBufferTracker();
+        private readonly GeisDodgeRollController _dodgeController = new GeisDodgeRollController();
+        private readonly GeisComboAttackController _comboController = new GeisComboAttackController();
+        private readonly GeisBowAnimatorPresenter _bowPresenter = new GeisBowAnimatorPresenter();
 
-        private readonly int _moveSpeedHash = Animator.StringToHash("MoveSpeed");
-        private readonly int _currentGaitHash = Animator.StringToHash("CurrentGait");
-
-        private readonly int _isJumpingAnimHash = Animator.StringToHash("IsJumping");
-        private readonly int _fallingDurationHash = Animator.StringToHash("FallingDuration");
-
-        private readonly int _inclineAngleHash = Animator.StringToHash("InclineAngle");
-
-        private readonly int _strafeDirectionXHash = Animator.StringToHash("StrafeDirectionX");
-        private readonly int _strafeDirectionZHash = Animator.StringToHash("StrafeDirectionZ");
-
-        private readonly int _forwardStrafeHash = Animator.StringToHash("ForwardStrafe");
-        private readonly int _cameraRotationOffsetHash = Animator.StringToHash("CameraRotationOffset");
-        private readonly int _isStrafingHash = Animator.StringToHash("IsStrafing");
-        private readonly int _isTurningInPlaceHash = Animator.StringToHash("IsTurningInPlace");
-
-        private readonly int _isCrouchingHash = Animator.StringToHash("IsCrouching");
-
-        private readonly int _isWalkingHash = Animator.StringToHash("IsWalking");
-        private readonly int _isStoppedHash = Animator.StringToHash("IsStopped");
-        private readonly int _isStartingHash = Animator.StringToHash("IsStarting");
-
-        private readonly int _isGroundedHash = Animator.StringToHash("IsGrounded");
-
-        private readonly int _leanValueHash = Animator.StringToHash("LeanValue");
-        private readonly int _headLookXHash = Animator.StringToHash("HeadLookX");
-        private readonly int _headLookYHash = Animator.StringToHash("HeadLookY");
-
-        private readonly int _bodyLookXHash = Animator.StringToHash("BodyLookX");
-        private readonly int _bodyLookYHash = Animator.StringToHash("BodyLookY");
-
-        private readonly int _locomotionStartDirectionHash = Animator.StringToHash("LocomotionStartDirection");
-
-        private readonly int _attack1Hash = Animator.StringToHash("Attack_1");
-        private readonly int _attackTriggerHash = Animator.StringToHash("Attack");
-        private const int COMBO_BLEND_SLOTS = GeisComboAnimatorBlend.DefaultSlotCount;
-
-        private readonly int _bowDrawingHash = Animator.StringToHash("BowDrawing");
-        private readonly int _bowDrawChargeHash = Animator.StringToHash("BowDrawCharge");
-        private readonly int _bowAimingHash = Animator.StringToHash("BowAiming");
-        private readonly int _bowChargedShotReadyHash = Animator.StringToHash("BowChargedShotReady");
-        private const string BowDrawLayerName = "Bow_Draw";
+        private const int COMBO_BLEND_SLOTS = GeisComboAttackController.DefaultBlendSlots;
+        private const float AnimationDampTime = GeisLocomotionTuningDefaults.AnimationDampTime;
         private const float BowAimRootYawOffsetDegrees = 90f;
-
-        private readonly int _dodgeDirectionHash = Animator.StringToHash("DodgeDirection");
-        private readonly int _dodgeTriggerHash = Animator.StringToHash("Dodge");
-        private readonly int _rollTriggerHash = LocomotionAnimatorIds.RollTrigger;
-
-        /// <summary>Layer 0 leaf state shortNameHashes for sidestep clips nested under the <c>Dodge</c> sub-state machine.</summary>
-        private static readonly int _dodgeLeafFrontHash = LocomotionAnimatorIds.DodgeLeafFront;
-        private static readonly int _dodgeLeafBackHash = LocomotionAnimatorIds.DodgeLeafBack;
-        private static readonly int _dodgeLeafLeftHash = LocomotionAnimatorIds.DodgeLeafLeft;
-        private static readonly int _dodgeLeafRightHash = LocomotionAnimatorIds.DodgeLeafRight;
-        /// <summary>Full layer-0 paths for sidestep clips nested under the <c>Dodge</c> sub-state machine.</summary>
-        private static readonly int _dodgeNestedFrontHash = Animator.StringToHash("Dodge.Dodge_Front");
-        private static readonly int _dodgeNestedBackHash = Animator.StringToHash("Dodge.Dodge_Back");
-        private static readonly int _dodgeNestedLeftHash = Animator.StringToHash("Dodge.Dodge_Left");
-        private static readonly int _dodgeNestedRightHash = Animator.StringToHash("Dodge.Dodge_Right");
-        /// <summary>Base-layer roll clips (double-tap); distinct from sidestep <c>Dodge_*_Root</c> leaves.</summary>
-        private static readonly int _rollLeafForwardHash = LocomotionAnimatorIds.RollLeafForward;
-        private static readonly int _rollLeafBackHash = LocomotionAnimatorIds.RollLeafBack;
-        private static readonly int _rollLeafLeftHash = LocomotionAnimatorIds.RollLeafLeft;
-        private static readonly int _rollLeafRightHash = LocomotionAnimatorIds.RollLeafRight;
-        private static readonly int _rollNestedForwardHash = LocomotionAnimatorIds.RollNestedForward;
-        private static readonly int _rollNestedBackHash = LocomotionAnimatorIds.RollNestedBack;
-        private static readonly int _rollNestedLeftHash = LocomotionAnimatorIds.RollNestedLeft;
-        private static readonly int _rollNestedRightHash = LocomotionAnimatorIds.RollNestedRight;
-        /// <summary>Layer 0 leaf state shortNameHash for the data-driven combo <c>Attack</c> blend tree.</summary>
-        private static readonly int _attackLeafHash = Animator.StringToHash("Attack");
 
         #endregion
 
@@ -159,93 +94,75 @@ namespace Geis.Locomotion
 
         #endregion
 
-        #region Locomotion Settings
+        #region Locomotion tuning (from profiles on Awake)
 
-        [Tooltip("Whether the character always faces the camera facing direction")]
-        [SerializeField]
-        private bool _alwaysStrafe = true;
-        [Tooltip("Slowest movement speed of the player when set to a walk state or half press tick")]
-        [SerializeField]
-        private float _walkSpeed = 1.4f;
-        [Tooltip("Default movement speed of the player")]
-        [SerializeField]
-        private float _runSpeed = 2.5f;
-        [Tooltip("Top movement speed of the player")]
-        [SerializeField]
-        private float _sprintSpeed = 7f;
-        [Tooltip("Damping factor for changing speed (fallback when accel/decel are equal or disabled)")]
-        [SerializeField]
-        private float _speedChangeDamping = 10f;
-        [Tooltip("Rate toward target planar speed when accelerating (higher = snappier starts). Frame-rate stable.")]
-        [SerializeField]
-        private float _accelRate = 25f;
-        [Tooltip("Rate toward target planar speed when decelerating (higher = snappier stops). Frame-rate stable.")]
-        [SerializeField]
-        private float _decelRate = 15f;
-        [Tooltip("When target max speed increases (e.g. sprint pressed), snap _currentMaxSpeed up to this fraction of the new target immediately, then continue smoothing. 1 = instant; 0 = disabled.")]
-        [SerializeField]
-        [Range(0f, 1f)]
-        private float _sprintInstantFraction = 0.85f;
-        [Tooltip("Rotation smoothing factor.")]
-        [SerializeField]
-        private float _rotationSmoothing = 10f;
-        [Tooltip("Maximum root yaw rotation speed (deg/sec). Caps how long large redirects take even when smoothing factor would otherwise stall.")]
-        [SerializeField]
-        private float _maxTurnDegPerSecond = 720f;
-        [Tooltip("Offset for camera rotation.")]
-        [SerializeField]
+        private bool _alwaysStrafe;
+        private float _walkSpeed;
+        private float _runSpeed;
+        private float _sprintSpeed;
+        private float _speedChangeDamping;
+        private float _accelRate;
+        private float _decelRate;
+        private float _sprintInstantFraction;
+        private float _rotationSmoothing;
+        private float _maxTurnDegPerSecond;
         private float _cameraRotationOffset;
-        [Tooltip("Local euler offset (degrees) applied after the bow base facing. While bow aiming/drawing, only Y (yaw) is applied to the root; pitch/roll should come from the upper-body bow layer.")]
-        [SerializeField]
         private Vector3 _bowAimBodyEulerOffset;
+
         #endregion
 
-        #region Shuffle Settings
+        #region Shuffle / strafe tuning
 
-        [Tooltip("Threshold for button hold duration.")]
-        [SerializeField]
-        private float _buttonHoldThreshold = 0.15f;
-        [Tooltip("Direction of shuffling on the X-axis.")]
-        [SerializeField]
+        private float _buttonHoldThreshold;
         private float _shuffleDirectionX;
-        [Tooltip("Direction of shuffling on the Z-axis.")]
-        [SerializeField]
         private float _shuffleDirectionZ;
+        private float _capsuleStandingHeight;
+        private float _capsuleStandingCentre;
+        private float _capsuleCrouchingHeight;
+        private float _capsuleCrouchingCentre;
+        private float _forwardStrafeMinThreshold;
+        private float _forwardStrafeMaxThreshold;
+        private float _forwardStrafe;
 
         #endregion
 
-        #region Capsule Settings
+        #region Grounding / air tuning
 
-        [Tooltip("Standing height of the player capsule.")]
-        [SerializeField]
-        private float _capsuleStandingHeight = 1.8f;
-        [Tooltip("Standing center of the player capsule.")]
-        [SerializeField]
-        private float _capsuleStandingCentre = 0.93f;
-        [Tooltip("Crouching height of the player capsule.")]
-        [SerializeField]
-        private float _capsuleCrouchingHeight = 1.2f;
-        [Tooltip("Crouching center of the player capsule.")]
-        [SerializeField]
-        private float _capsuleCrouchingCentre = 0.6f;
+        private LayerMask _groundLayerMask;
+        private float _inclineAngle;
+        private float _groundedOffset;
+        private float _jumpForce;
+        private float _gravityMultiplier;
+        private float _fallingDuration;
+        private float _coyoteTimeSeconds;
+        private float _jumpBufferSeconds;
 
         #endregion
 
-        #region Strafing
+        #region Look / lean tuning
 
-        [Tooltip("Minimum threshold for forward strafing angle.")]
-        [SerializeField]
-        private float _forwardStrafeMinThreshold = -55.0f;
-        [Tooltip("Maximum threshold for forward strafing angle.")]
-        [SerializeField]
-        private float _forwardStrafeMaxThreshold = 125.0f;
-        [Tooltip("Current forward strafing value.")]
-        [SerializeField]
-        private float _forwardStrafe = 1f;
+        private bool _enableHeadTurn;
+        private float _headLookDelay;
+        private float _headLookX;
+        private float _headLookY;
+        private AnimationCurve _headLookXCurve;
+        private float _headLookLimitDegrees;
+        private float _bowAimHeadLookMultiplier;
+        private bool _enableBodyTurn;
+        private float _bodyLookDelay;
+        private float _bodyLookX;
+        private float _bodyLookY;
+        private AnimationCurve _bodyLookXCurve;
+        private float _bowAimBodyLookMultiplier;
+        private bool _enableLean;
+        private float _leanDelay;
+        private float _leanValue;
+        private AnimationCurve _leanCurve;
+        private float _leansHeadLooksDelay;
 
         #endregion
 
-        #region Grounded Settings
+        #region Scene references
 
         [Tooltip("Position of the rear ray for grounded angle check.")]
         [SerializeField]
@@ -253,133 +170,30 @@ namespace Geis.Locomotion
         [Tooltip("Position of the front ray for grounded angle check.")]
         [SerializeField]
         private Transform _frontRayPos;
-        [Tooltip("Layer mask for checking ground. Default: all layers. If ground isn't detected, ensure your ground has a collider and is on a layer included here.")]
-        [SerializeField]
-        private LayerMask _groundLayerMask = ~0;
-        [Tooltip("Current incline angle.")]
-        [SerializeField]
-        private float _inclineAngle;
-        [Tooltip("Offset below character center for ground check sphere. Positive = below feet for detection.")]
-        [SerializeField]
-        private float _groundedOffset = 0.14f;
 
         #endregion
 
-        #region In-Air Settings
-
-        [Tooltip("Force applied when the player jumps.")]
-        [SerializeField]
-        private float _jumpForce = 10f;
-        [Tooltip("Multiplier for gravity when in the air.")]
-        [SerializeField]
-        private float _gravityMultiplier = 2f;
-        [Tooltip("Duration of falling.")]
-        [SerializeField]
-        private float _fallingDuration;
-        [Tooltip("Seconds after leaving the ground the player can still jump (coyote time). 0 disables.")]
-        [SerializeField]
-        private float _coyoteTimeSeconds = 0.10f;
-        [Tooltip("Seconds a jump press stays live so one pressed just before landing still triggers the jump. 0 disables.")]
-        [SerializeField]
-        private float _jumpBufferSeconds = 0.15f;
-
-        #endregion
-
-        #region Head Look Settings
-
-        [Tooltip("Flag indicating if head turning is enabled.")]
-        [SerializeField]
-        private bool _enableHeadTurn = true;
-        [Tooltip("Delay for head turning.")]
-        [SerializeField]
-        private float _headLookDelay;
-        [Tooltip("X-axis value for head turning.")]
-        [SerializeField]
-        private float _headLookX;
-        [Tooltip("Y-axis value for head turning.")]
-        [SerializeField]
-        private float _headLookY;
-        [Tooltip("Curve for X-axis head turning.")]
-        [SerializeField]
-        private AnimationCurve _headLookXCurve;
-        [Tooltip("Degrees beyond which head/body look can't follow; character rotates in place instead. Tune to match animator head look limit.")]
-        [SerializeField]
-        private float _headLookLimitDegrees = 60f;
-        [Tooltip("Light reduction applied to head-look additives while bow aiming/drawing. 1 = unchanged, 0 = disabled.")]
-        [SerializeField]
-        [Range(0f, 1f)]
-        private float _bowAimHeadLookMultiplier = 0.6f;
-
-        #endregion
-
-        #region Body Look Settings
-
-        [Tooltip("Flag indicating if body turning is enabled.")]
-        [SerializeField]
-        private bool _enableBodyTurn = true;
-        [Tooltip("Delay for body turning.")]
-        [SerializeField]
-        private float _bodyLookDelay;
-        [Tooltip("X-axis value for body turning.")]
-        [SerializeField]
-        private float _bodyLookX;
-        [Tooltip("Y-axis value for body turning.")]
-        [SerializeField]
-        private float _bodyLookY;
-        [Tooltip("Curve for X-axis body turning.")]
-        [SerializeField]
-        private AnimationCurve _bodyLookXCurve;
-        [Tooltip("Light reduction applied to body-look additives while bow aiming/drawing. 1 = unchanged, 0 = disabled.")]
-        [SerializeField]
-        [Range(0f, 1f)]
-        private float _bowAimBodyLookMultiplier = 0.4f;
-
-        #endregion
-
-        #region Lean Settings
-
-        [Tooltip("Flag indicating if leaning is enabled.")]
-        [SerializeField]
-        private bool _enableLean = true;
-        [Tooltip("Delay for leaning.")]
-        [SerializeField]
-        private float _leanDelay;
-        [Tooltip("Current value for leaning.")]
-        [SerializeField]
-        private float _leanValue;
-        [Tooltip("Curve for leaning.")]
-        [SerializeField]
-        private AnimationCurve _leanCurve;
-        [Tooltip("Delay for head leaning looks.")]
-        [SerializeField]
-        private float _leansHeadLooksDelay;
-        [Tooltip("Flag indicating if an animation clip has ended.")]
-        [SerializeField]
-        private bool _animationClipEnd;
-
-        #endregion
-
-        #region Attack Settings
+        #region Attack / combo assets
 
         /// <summary>
         /// Fired when an attack is triggered (first hit or combo continuation).
         /// Subscribe from GeisCombatBridge to apply RogueDeal damage/hit detection.
         /// </summary>
-        public event Action<int> OnAttackPerformed;
+        public event Action<int> OnAttackPerformed
+        {
+            add => _comboController.AttackPerformed += value;
+            remove => _comboController.AttackPerformed -= value;
+        }
 
         /// <summary>
         /// Current data-driven combo step (0 = first hit). Aligns with GeisComboData clip index for combat/hit timing.
         /// </summary>
-        public int CurrentComboState => _currentComboState;
-
-        [Tooltip("Apply animation root rotation during attacks. Disable if attacks drift left/right (baked rotation mismatch).")]
-        [SerializeField]
-        private bool _applyRootRotationDuringAttack;
+        public int CurrentComboState => _comboController.CurrentComboState;
 
         [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
         [SerializeField]
         private GeisComboData _comboData;
-        [Tooltip("Optional: resolves combo by weapon index when set. Takes precedence over _comboData when both assigned.")]
+        [Tooltip("Optional: resolves combo by weapon index when set.")]
         [SerializeField]
         private GeisWeaponComboData _weaponComboData;
         [Tooltip("Optional: provides current weapon index for _weaponComboData lookup.")]
@@ -389,79 +203,33 @@ namespace Geis.Locomotion
         [SerializeField]
         private GeisComboPlaceholders _comboPlaceholders;
 
-        [Tooltip("Apply animation root rotation during dodge clips.")]
-        [SerializeField]
-        private bool _applyRootRotationDuringDodge;
-        [Tooltip("How quickly the Bow_Draw upper-body layer blends in/out when equipping or unequipping the bow. Higher = snappier.")]
-        [SerializeField]
-        private float _bowEquipLayerBlendSpeed = 8f;
-        [Tooltip("Stick magnitude below this counts as neutral (backstep / away from lock-on target).")]
-        [SerializeField]
-        private float _dodgeInputDeadzone = 0.05f;
-        [Tooltip("Fallback seconds if clip length cannot be read.")]
-        [SerializeField]
-        private float _dodgeFallbackDuration = 1.2f;
-        [Tooltip("If true, dodge only when movement stick exceeds deadzone.")]
-        [SerializeField]
-        private bool _requireMovementInputForDodge;
-        [Tooltip("Soul-ghost scripted dodge planar speed; physical dodge uses animation clips.")]
-        [SerializeField]
-        private float _dodgeScriptedPlaneSpeed = 7f;
-        [Tooltip("Soul-ghost scripted dodge duration in seconds.")]
-        [SerializeField]
-        private float _dodgeScriptedDuration = 0.35f;
+        #endregion
 
-        [Header("Cancel Windows (Action-feel)")]
-        [Tooltip("Min stick magnitude (0-1) to move-cancel an attack during its cancel window.")]
-        [SerializeField]
-        private float _attackMoveCancelStickThreshold = 0.5f;
-        [Tooltip("Normalized time on the attack clip after which the state exits back to Locomotion (if no buffered combo/dodge input).")]
-        [SerializeField]
-        private float _attackRecoveryExitNormalizedTime = 0.85f;
-        [Tooltip("Fraction of _currentMaxSpeed pre-seeded onto planar velocity when move-cancelling an attack.")]
-        [SerializeField]
-        private float _attackExitVelocityCarry = 0.6f;
-        [Tooltip("Normalized time on the dodge clip after which recovery cancels are allowed.")]
-        [SerializeField]
-        private float _dodgeRecoveryStartNormalizedTime = GeisLocomotionTuningDefaults.DodgeRecoveryStartNormalizedTime;
-        [Tooltip("Normalized time on a roll clip after which recovery cancels are allowed.")]
-        [SerializeField]
-        private float _rollRecoveryStartNormalizedTime = GeisLocomotionTuningDefaults.RollRecoveryStartNormalizedTime;
-        [Tooltip("Normalized time on the dodge leaf clip while the player has dodge i-frames (CombatStrikeResolver).")]
-        [Range(0f, 1f)]
-        [SerializeField]
-        private float _dodgeInvulnerabilityEndNormalizedTime = 0.38f;
-        [Tooltip("Normalized time on a roll clip while the player has dodge i-frames (longer coverage than sidestep).")]
-        [Range(0f, 1f)]
-        [SerializeField]
-        private float _rollInvulnerabilityEndNormalizedTime = GeisLocomotionTuningDefaults.RollInvulnerabilityEndNormalizedTime;
-        [Tooltip("Min stick magnitude (0-1) to move-cancel a dodge during its recovery window.")]
-        [SerializeField]
-        private float _dodgeMoveCancelStickThreshold = 0.3f;
-        [Tooltip("Fraction of _currentMaxSpeed pre-seeded onto planar velocity when exiting a sidestep into movement.")]
-        [SerializeField]
-        private float _dodgeExitVelocityCarry = 0.75f;
-        [Tooltip("Same as dodge exit carry, but for rolls. Keep at 0 so the roll root-motion arc stops cleanly.")]
-        [SerializeField]
-        private float _rollExitVelocityCarry = GeisLocomotionTuningDefaults.RollExitVelocityCarry;
-        [Tooltip("Seconds a light/heavy/dodge input stays live in the buffer, so presses just before a cancel window still register.")]
-        [SerializeField]
-        private float _inputBufferSeconds = 0.18f;
-        [Tooltip("Max seconds between two dodge presses to count as a double-tap (triggers the roll variant).")]
-        [SerializeField]
-        private float _dodgeDoubleTapWindow = GeisLocomotionTuningDefaults.DodgeDoubleTapWindow;
-        [Tooltip("If true, double-tapping dodge performs a directional roll (dedicated roll clips per direction).")]
-        [SerializeField]
-        private bool _dodgeDoubleTapRollEnabled = true;
-        [Tooltip("Multiplier applied to roll horizontal root-motion travel. 1 = baked distance; >1 rolls further; <1 rolls shorter. Vertical (gravity) travel is never scaled.")]
-        [Range(0.25f, 3f)]
-        [SerializeField]
-        private float _rollDistanceMultiplier = GeisLocomotionTuningDefaults.RollDistanceMultiplier;
-        [Tooltip("Maximum planar speed (m/s) that uses camera-forward strafe facing and strafe-style dodges. Above this (and while sprinting) the body turns with velocity.")]
-        [SerializeField]
-        private float _strafeStyleMaxPlanarSpeed = GeisLocomotionTuningDefaults.StrafeStyleMaxPlanarSpeed;
-        [Tooltip("Logs each dodge press with its double-tap detection result. Leave off in shipping.")]
-        [SerializeField]
+        #region Combat / dodge tuning (from profiles on Awake)
+
+        private bool _applyRootRotationDuringAttack;
+        private bool _applyRootRotationDuringDodge;
+        private float _bowEquipLayerBlendSpeed;
+        private float _dodgeInputDeadzone;
+        private float _dodgeFallbackDuration;
+        private bool _requireMovementInputForDodge;
+        private float _dodgeScriptedPlaneSpeed;
+        private float _dodgeScriptedDuration;
+        private float _attackMoveCancelStickThreshold;
+        private float _attackRecoveryExitNormalizedTime;
+        private float _attackExitVelocityCarry;
+        private float _dodgeRecoveryStartNormalizedTime;
+        private float _rollRecoveryStartNormalizedTime;
+        private float _dodgeInvulnerabilityEndNormalizedTime;
+        private float _rollInvulnerabilityEndNormalizedTime;
+        private float _dodgeMoveCancelStickThreshold;
+        private float _dodgeExitVelocityCarry;
+        private float _rollExitVelocityCarry;
+        private float _inputBufferSeconds;
+        private float _dodgeDoubleTapWindow;
+        private bool _dodgeDoubleTapRollEnabled;
+        private float _rollDistanceMultiplier;
+        private float _strafeStyleMaxPlanarSpeed;
         private bool _debugDodgeDoubleTap;
 
         #endregion
@@ -478,15 +246,10 @@ namespace Geis.Locomotion
         private bool _isBowDrawing;
         private bool _isBowChargedShotReady;
         private float _bowDrawCharge;
-        private bool _animatorHasBowDrawing;
-        private bool _animatorHasBowDrawCharge;
-        private bool _animatorHasBowAiming;
-        private bool _animatorHasBowChargedShotReady;
         private bool _hasFallingBlendParameter;
-        private int _bowDrawLayerIndex = -1;
-        private float _currentBowDrawLayerWeight;
         private bool _isCrouching;
         private bool _isGrounded = true;
+        private int _ungroundedFrameCount;
         private Transform _groundRideSurface;
         private Vector3 _groundRideLastWorldPos;
         private bool _isLockedOn;
@@ -521,45 +284,21 @@ namespace Geis.Locomotion
         private Vector3 _velocity;
 
         private float _attackStateTimeout;
-        private float _dodgeStateTimeout;
         /// <summary>Seconds of coyote time remaining: counts up to <see cref="_coyoteTimeSeconds"/> while grounded, decrements in air.</summary>
         private float _coyoteTimer;
-        /// <summary>Unscaled time the most recent jump press was buffered (-1 = no pending press).</summary>
-        private float _jumpBufferedAt = -1f;
-        private bool _loggedDodgeAnimatorMissing;
-        private bool _loggedForwardRollMissing;
-        /// <summary>True if dodge started while strafing — keep camera-relative facing instead of snapping to dodge axis.</summary>
-        private bool _dodgePreserveStrafeFacing;
-        /// <summary>Set once layer 0 actually enters a Dodge_* clip (avoids exiting before Any-State transition fires).</summary>
-        private bool _dodgeAnimatorEnteredLeaf;
-        /// <summary>Set once layer 0 actually enters the Attack combo clip (avoids reading locomotion normalizedTime).</summary>
-        private bool _attackAnimatorEnteredLeaf;
+        private float _landingGroundGraceTimer;
 
-        // Data-driven combo
-        private int _currentComboState;
-        private GeisComboInputType? _comboInputBuffered;
-        /// <summary>Unscaled time the current <see cref="_comboInputBuffered"/> was set. Used by <see cref="IsBufferFresh"/>.</summary>
-        private float _comboInputBufferedAt = -1f;
-        /// <summary>Unscaled time the most recent dodge press was buffered (-1 = no pending buffer). Enables attack→dodge cancel.</summary>
-        private float _dodgeInputBufferedAt = -1f;
-        /// <summary>When <see cref="_dodgeInputBufferedAt"/> is fresh, whether that buffered dodge should spawn as a forward roll (double-tap).</summary>
-        private bool _dodgeInputBufferIsRoll;
-        /// <summary>Unscaled time of the most recent dodge press (any state), used for double-tap detection. -1 = no prior press.</summary>
-        private float _lastDodgeTapAt = -1f;
-        /// <summary>One-shot request consumed by <see cref="EnterDodgeState"/>; set by whichever path triggers the next dodge to request a roll.</summary>
-        private bool _dodgeRequestIsRoll;
-        /// <summary>True while the current Dodge state is playing a roll clip (double-tap).</summary>
-        private bool _dodgeIsRoll;
-        /// <summary>Animator direction index (0–3) for the active dodge/roll clip.</summary>
-        private int _dodgeAnimatorDir;
-        /// <summary>Unscaled time <see cref="EnterDodgeState"/> last ran; used for double-tap roll upgrades.</summary>
-        private float _dodgeStateEnteredAtUnscaled = -1f;
-        /// <summary>After a sidestep starts, a second dodge press before this time (unscaled) upgrades to / starts a roll.</summary>
-        private float _dodgeRollFollowUpExpiresAtUnscaled = -1f;
-        private GeisComboInputType _firstAttackInputType;
+        private const float LandingGroundGraceSeconds = 0.25f;
+        private const float GroundedVerticalStickVelocity = -2f;
+        private const int UngroundedFramesBeforeAirborne = 3;
+
+        /// <summary>
+        /// Animator fall/land transitions use <see cref="LocomotionAnimatorIds.IsGrounded"/>; keep true briefly after landing so physics flicker does not retrigger fall clips.
+        /// </summary>
+        private bool IsGroundedForAnimator => _isGrounded || _landingGroundGraceTimer > 0f;
+        private bool _jumpAnimatorIsActive;
+
         private bool _useDataDrivenCombo;
-        private AnimatorOverrideController _comboOverrideController;
-        private GeisComboData _lastAppliedComboData;
 
         #endregion
 
@@ -576,8 +315,8 @@ namespace Geis.Locomotion
         public float LocomotionForwardStrafeMaxThreshold => _forwardStrafeMaxThreshold;
         public float LocomotionButtonHoldThreshold => _buttonHoldThreshold;
 
-        /// <summary>Max-speed blend rate; must stay in sync with <c>_ANIMATION_DAMP_TIME</c> (soul ghost motor).</summary>
-        public float LocomotionMaxSpeedLerpRate => 5f;
+        /// <summary>Max-speed blend rate; must stay in sync with <see cref="AnimationDampTime"/> (soul ghost motor).</summary>
+        public float LocomotionMaxSpeedLerpRate => AnimationDampTime;
 
         public bool LocomotionIsWalking => _isWalking;
         public bool LocomotionIsSprinting => _isSprinting;
@@ -707,50 +446,41 @@ namespace Geis.Locomotion
         /// </summary>
         public void PrepareBodyAfterSoulRealmExit()
         {
-            _attackStateTimeout = 0f;
-            _attackAnimatorEnteredLeaf = false;
-            ClearComboInputBuffer();
-            _dodgeInputBufferedAt = -1f;
-            _dodgeInputBufferIsRoll = false;
-            _dodgeRequestIsRoll = false;
-            _lastDodgeTapAt = -1f;
-            _dodgeRollFollowUpExpiresAtUnscaled = -1f;
-            _currentComboState = 0;
+            ResetCombatTransientState(exitAttack: true, exitDodge: false, resetJumpVelocity: true);
 
             if (_currentState == AnimationState.Jump || _currentState == AnimationState.Fall)
                 SwitchState(AnimationState.Locomotion);
 
             GroundedCheck();
-            _velocity.y = _isGrounded ? -2f : 0f;
+            _velocity.y = _isGrounded ? GroundedVerticalStickVelocity : 0f;
         }
 
         /// <summary>Clears attack/dodge state when entering soul realm so spectral combat starts from a known baseline.</summary>
         public void ResetCombatStateForSoulRealmEntry()
         {
-            _attackStateTimeout = 0f;
-            _attackAnimatorEnteredLeaf = false;
-            ClearComboInputBuffer();
-            _dodgeInputBufferedAt = -1f;
-            _dodgeInputBufferIsRoll = false;
-            _dodgeRequestIsRoll = false;
-            _lastDodgeTapAt = -1f;
-            _dodgeRollFollowUpExpiresAtUnscaled = -1f;
-            _currentComboState = 0;
-            if (_currentState == AnimationState.Attack || _currentState == AnimationState.Dodge)
-                SwitchState(AnimationState.Locomotion);
+            ResetCombatTransientState(exitAttack: true, exitDodge: true, resetJumpVelocity: false);
         }
 
         /// <summary>Ends the current melee swing when damaged (hit reaction plays on the HitReaction layer).</summary>
         public void InterruptAttackFromIncomingHit()
         {
-            _attackStateTimeout = 0f;
-            _attackAnimatorEnteredLeaf = false;
-            ClearComboInputBuffer();
-            _dodgeInputBufferedAt = -1f;
-            _dodgeInputBufferIsRoll = false;
-            _currentComboState = 0;
+            ResetCombatTransientState(exitAttack: true, exitDodge: false, resetJumpVelocity: false);
+        }
 
-            if (_currentState == AnimationState.Attack)
+        private void ResetCombatTransientState(bool exitAttack, bool exitDodge, bool resetJumpVelocity)
+        {
+            _attackStateTimeout = 0f;
+            _comboController.ResetComboState();
+            _inputBuffers.ResetCombatBuffers();
+            _dodgeController.ResetTransientState();
+
+            if (resetJumpVelocity)
+                _inputBuffers.ResetJumpBuffer();
+
+            if (exitAttack && _currentState == AnimationState.Attack)
+                SwitchState(AnimationState.Locomotion);
+
+            if (exitDodge && _currentState == AnimationState.Dodge)
                 SwitchState(AnimationState.Locomotion);
         }
 
@@ -766,7 +496,7 @@ namespace Geis.Locomotion
 
             AnimatorStateInfo info = PresentationAnimator.GetCurrentAnimatorStateInfo(0);
             float normalizedTime = info.length > 0.01f ? info.normalizedTime % 1f : 0f;
-            phase = comboData.GetAttackPhase(_currentComboState, normalizedTime);
+            phase = comboData.GetAttackPhase(_comboController.CurrentComboState, normalizedTime);
             return true;
         }
 
@@ -785,7 +515,7 @@ namespace Geis.Locomotion
                     return false;
 
                 return phase == GeisComboAttackPhase.Startup
-                    && comboData.HasSuperArmorDuringStartup(_currentComboState);
+                    && comboData.HasSuperArmorDuringStartup(_comboController.CurrentComboState);
             }
         }
 
@@ -794,7 +524,7 @@ namespace Geis.Locomotion
             get
             {
                 GeisComboData comboData = GetCurrentComboData();
-                return comboData == null || comboData.DodgeOnlyAvoidsDuringActivePhase(_currentComboState);
+                return comboData == null || comboData.DodgeOnlyAvoidsDuringActivePhase(_comboController.CurrentComboState);
             }
         }
 
@@ -802,8 +532,7 @@ namespace Geis.Locomotion
 
         #region Base State Variables
 
-        private const float _ANIMATION_DAMP_TIME = 5f;
-        private const float _STRAFE_DIRECTION_DAMP_TIME = 20f;
+        private const float StrafeDirectionDampTime = 20f;
         private float _targetMaxSpeed;
         private float _fallStartTime;
         private float _rotationRate;
@@ -844,8 +573,6 @@ namespace Geis.Locomotion
         {
             if (_defensiveCombatState == null)
                 _defensiveCombatState = GetComponent<PlayerDefensiveCombatState>();
-            if (_defensiveCombatState == null)
-                _defensiveCombatState = gameObject.AddComponent<PlayerDefensiveCombatState>();
         }
 
         private void UpdateDodgeInvulnerabilityFromAnimator()
@@ -858,13 +585,13 @@ namespace Geis.Locomotion
             if (_currentState == AnimationState.Dodge)
             {
                 AnimatorStateInfo info = PresentationAnimator.GetCurrentAnimatorStateInfo(0);
-                if (_dodgeAnimatorEnteredLeaf
-                    && IsDodgeLeafShortNameHash(info.shortNameHash)
+                if (_dodgeController.AnimatorEnteredLeaf
+                    && GeisDodgeRollController.IsDodgeLeafShortNameHash(info.shortNameHash)
                     && !PresentationAnimator.IsInTransition(0)
                     && info.length > 0.01f)
                 {
                     float t = info.normalizedTime % 1f;
-                    float invulnEnd = _dodgeIsRoll
+                    float invulnEnd = _dodgeController.IsRoll
                         ? _rollInvulnerabilityEndNormalizedTime
                         : _dodgeInvulnerabilityEndNormalizedTime;
                     invuln = t < invulnEnd;
@@ -877,6 +604,7 @@ namespace Geis.Locomotion
         private void Awake()
         {
             EnsureComponentReferences();
+            ApplyLocomotionTuningFromProfiles();
         }
 
         private void EnsureComponentReferences()
@@ -885,6 +613,8 @@ namespace Geis.Locomotion
                 _inputReader = GetComponent<GeisInputReader>();
             if (_controller == null)
                 _controller = GetComponent<CharacterController>();
+            if (_weaponSwitcher == null)
+                _weaponSwitcher = GetComponent<GeisWeaponSwitcher>();
             if (_animator == null)
                 _animator = GetComponentInChildren<Animator>(true);
             if (_cameraController == null)
@@ -903,6 +633,85 @@ namespace Geis.Locomotion
 
             _targetLockOnPos = EnsureWorldSpaceLockOnAnchor();
 
+            SubscribeInputEvents();
+
+            _isStrafing = _alwaysStrafe;
+
+            if (_controller != null)
+                CapsuleCrouchingSize(_isCrouching);
+
+            _comboController.Configure(
+                _comboData,
+                _weaponComboData,
+                _weaponSwitcher,
+                _comboPlaceholders,
+                _animator);
+            _useDataDrivenCombo = _comboController.UseDataDrivenCombo;
+
+            ApplyComboOverridesIfReady();
+
+            if (_animator != null)
+            {
+                RefreshPresentationAnimatorCaches();
+            }
+
+            SwitchState(AnimationState.Locomotion);
+
+            if (_weaponSwitcher != null)
+                _weaponSwitcher.WeaponEquipped += HandleWeaponEquipped;
+        }
+
+        private void HandleWeaponEquipped(int slotIndex)
+        {
+            if (!IsBowEquipped)
+            {
+                PrepareAnimatorForNonBowWeapon(reevaluateAnimator: true);
+            }
+            else
+            {
+                _bowPresenter.RefreshCaches(PresentationAnimator, true);
+                ApplyBowParametersToAnimator();
+            }
+        }
+
+        /// <summary>
+        /// Clears bow aim/draw and snaps the Bow_Draw layer off. Call before showing a melee weapon.
+        /// </summary>
+        public void PrepareAnimatorForNonBowWeapon(bool reevaluateAnimator = true)
+        {
+            SetBowDrawState(false, 0f, false);
+
+            if (_isAiming)
+                DeactivateAim();
+
+            _bowPresenter.RefreshCaches(PresentationAnimator, bowEquipped: false);
+            ForceExitBowPresentationOnAnimator(PresentationAnimator, reevaluateAnimator);
+
+            if (_animator != null && _animator != PresentationAnimator)
+                ForceExitBowPresentationOnAnimator(_animator, reevaluateAnimator);
+
+            SoulRealmManager mgr = SoulRealmManager.Instance;
+            if (mgr != null
+                && mgr.IsSoulRealmActive
+                && mgr.SpectralAnimator != null
+                && mgr.SpectralAnimator != PresentationAnimator
+                && mgr.SpectralAnimator != _animator)
+                ForceExitBowPresentationOnAnimator(mgr.SpectralAnimator, reevaluateAnimator);
+        }
+
+        private void ForceExitBowPresentationOnAnimator(Animator anim, bool reevaluateAnimator)
+        {
+            if (anim == null)
+                return;
+
+            _bowPresenter.ForceExitBowPresentation(anim, reevaluateAnimator);
+        }
+
+        private void SubscribeInputEvents()
+        {
+            if (_inputReader == null)
+                return;
+
             _inputReader.onLockOnToggled += ToggleLockOn;
             _inputReader.onLockOnCycleLeft += CycleLockOnLeft;
             _inputReader.onLockOnCycleRight += CycleLockOnRight;
@@ -915,36 +724,27 @@ namespace Geis.Locomotion
             _inputReader.onLightAttackPerformed += OnLightAttackRequested;
             _inputReader.onHeavyAttackPerformed += OnHeavyAttackRequested;
             _inputReader.onDodgePerformed += OnDodgeRequested;
-            // Always-on jump hook: per-state handlers still process immediate jumps (Locomotion/Crouch); this buffers
-            // presses that arrive while airborne and fires coyote jumps from Fall state.
             _inputReader.onJumpPerformed += OnJumpInputBufferAndCoyote;
+        }
 
-            _isStrafing = _alwaysStrafe;
+        private void UnsubscribeInputEvents()
+        {
+            if (_inputReader == null)
+                return;
 
-            if (_controller != null)
-                CapsuleCrouchingSize(_isCrouching);
-
-            _useDataDrivenCombo = _comboData != null && _animator != null && HasAnimatorParameter("Attack")
-                && (HasAnimatorParameter("ComboStateBlend") || HasAnimatorParameter("ComboState"));
-
-            ApplyComboOverridesIfReady();
-
-            if (_animator != null)
-            {
-                _animatorHasBowDrawing = HasAnimatorParameter("BowDrawing");
-                _animatorHasBowDrawCharge = HasAnimatorParameter("BowDrawCharge");
-                _animatorHasBowAiming = HasAnimatorParameter("BowAiming");
-                _animatorHasBowChargedShotReady = HasAnimatorParameter("BowChargedShotReady");
-                _hasFallingBlendParameter = AnimatorParameterGuard.HasParameter(_animator, "FallingBlend");
-                _bowDrawLayerIndex = _animator.GetLayerIndex(BowDrawLayerName);
-                if (_bowDrawLayerIndex >= 0)
-                {
-                    _currentBowDrawLayerWeight = IsBowEquipped ? 1f : 0f;
-                    _animator.SetLayerWeight(_bowDrawLayerIndex, _currentBowDrawLayerWeight);
-                }
-            }
-
-            SwitchState(AnimationState.Locomotion);
+            _inputReader.onLockOnToggled -= ToggleLockOn;
+            _inputReader.onLockOnCycleLeft -= CycleLockOnLeft;
+            _inputReader.onLockOnCycleRight -= CycleLockOnRight;
+            _inputReader.onSprintActivated -= ActivateSprint;
+            _inputReader.onSprintDeactivated -= DeactivateSprint;
+            _inputReader.onCrouchActivated -= ActivateCrouch;
+            _inputReader.onCrouchDeactivated -= DeactivateCrouch;
+            _inputReader.onAimActivated -= ActivateAim;
+            _inputReader.onAimDeactivated -= DeactivateAim;
+            _inputReader.onLightAttackPerformed -= OnLightAttackRequested;
+            _inputReader.onHeavyAttackPerformed -= OnHeavyAttackRequested;
+            _inputReader.onDodgePerformed -= OnDodgeRequested;
+            _inputReader.onJumpPerformed -= OnJumpInputBufferAndCoyote;
         }
 
         private void EnsurePersistentLockOnIndicator()
@@ -993,20 +793,10 @@ namespace Geis.Locomotion
 
         private void OnDestroy()
         {
-            if (_inputReader != null)
-            {
-                _inputReader.onLockOnToggled -= ToggleLockOn;
-                _inputReader.onLockOnCycleLeft -= CycleLockOnLeft;
-                _inputReader.onLockOnCycleRight -= CycleLockOnRight;
-                _inputReader.onDodgePerformed -= OnDodgeRequested;
-                _inputReader.onJumpPerformed -= OnJumpInputBufferAndCoyote;
-            }
-
-            if (_comboOverrideController != null)
-            {
-                Destroy(_comboOverrideController);
-                _comboOverrideController = null;
-            }
+            if (_weaponSwitcher != null)
+                _weaponSwitcher.WeaponEquipped -= HandleWeaponEquipped;
+            UnsubscribeInputEvents();
+            _comboController.DestroyOverrideController();
 
             if (_ownsTargetLockOnPos && _targetLockOnPos != null)
             {
@@ -1025,27 +815,22 @@ namespace Geis.Locomotion
             // instead of being buffered and leaking into the post-combo locomotion/fall transition.
             if (_currentState == AnimationState.Attack)
             {
-                _jumpBufferedAt = -1f;
+                _inputBuffers.ResetJumpBuffer();
                 return;
             }
 
-            _jumpBufferedAt = Time.unscaledTime;
+            _inputBuffers.BufferJump(Time.unscaledTime);
 
             if (_currentState == AnimationState.Fall && _coyoteTimer > 0f)
             {
                 _coyoteTimer = 0f;
-                _jumpBufferedAt = -1f;
+                _inputBuffers.ResetJumpBuffer();
                 SwitchState(AnimationState.Jump);
             }
         }
 
         /// <summary>True if a jump press was buffered within <see cref="_jumpBufferSeconds"/>.</summary>
-        private bool IsJumpBufferFresh()
-        {
-            return _jumpBufferedAt >= 0f
-                && _jumpBufferSeconds > 0f
-                && (Time.unscaledTime - _jumpBufferedAt) <= _jumpBufferSeconds;
-        }
+        private bool IsJumpBufferFresh() => _inputBuffers.IsJumpBufferFresh(Time.unscaledTime);
 
         #endregion
 
@@ -1172,17 +957,8 @@ namespace Geis.Locomotion
             if (anim == null)
                 return;
 
-            _animatorHasBowDrawing = AnimatorParameterGuard.HasParameter(anim, "BowDrawing");
-            _animatorHasBowDrawCharge = AnimatorParameterGuard.HasParameter(anim, "BowDrawCharge");
-            _animatorHasBowAiming = AnimatorParameterGuard.HasParameter(anim, "BowAiming");
-            _animatorHasBowChargedShotReady = AnimatorParameterGuard.HasParameter(anim, "BowChargedShotReady");
             _hasFallingBlendParameter = AnimatorParameterGuard.HasParameter(anim, "FallingBlend");
-            _bowDrawLayerIndex = anim.GetLayerIndex(BowDrawLayerName);
-            if (_bowDrawLayerIndex >= 0)
-            {
-                _currentBowDrawLayerWeight = IsBowEquipped ? 1f : 0f;
-                anim.SetLayerWeight(_bowDrawLayerIndex, _currentBowDrawLayerWeight);
-            }
+            _bowPresenter.RefreshCaches(anim, IsBowEquipped);
         }
 
     }

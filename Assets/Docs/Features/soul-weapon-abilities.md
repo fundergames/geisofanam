@@ -6,8 +6,8 @@
 ## Scope
 
 - **Harp-Bow (Bow weapon definition)**: Soul Marking (Q), Path Reveal (F).
-- **Lyre Sword (Emberblade)**: Passive resonance on hits; Wave Release (Q); secondary slot empty.
-- **Dagger-Flute (Aetherstorm)**: Object Blink (Q), Phase Shift Object (F).
+- **Lyre Sword (Emberblade)**: Passive resonance on hits; Wave Release (Q, Soul Realm); True Strike (F, Physical Realm — sword-break / physical obstacles).
+- **Dagger-Flute (Aetherstorm)**: Object Blink (Q, Soul Realm), Phase Shift Object (F, both realms).
 
 ## Integration
 

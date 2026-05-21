@@ -145,7 +145,7 @@ namespace Geis.Locomotion
         private LocomotionPresentationSnapshot BuildLocomotionPresentationSnapshot()
         {
             bool animatorStrafe = UseStrafeStyleLocomotionFacing;
-            if (_currentState == AnimationState.Dodge && _dodgePreserveStrafeFacing)
+            if (_currentState == AnimationState.Dodge && _dodgeController.PreserveStrafeFacing)
                 animatorStrafe = true;
 
             return new LocomotionPresentationSnapshot
@@ -171,40 +171,12 @@ namespace Geis.Locomotion
                 IsTurningInPlace = _isTurningInPlace,
                 IsCrouching = _isCrouching,
                 FallingDuration = _fallingDuration,
-                IsGrounded = _isGrounded,
+                IsGrounded = IsGroundedForAnimator,
                 IsWalking = _isWalking,
                 IsStopped = _isStopped,
                 IsStarting = _isStarting,
                 LocomotionStartDirection = _locomotionStartDirection
             };
-        }
-
-        private void ApplyBowParametersToAnimator()
-        {
-            if (PresentationAnimator == null)
-                return;
-
-            if (_animatorHasBowDrawing)
-                PresentationAnimator.SetBool(_bowDrawingHash, _isBowDrawing);
-            if (_animatorHasBowDrawCharge)
-                PresentationAnimator.SetFloat(_bowDrawChargeHash, _bowDrawCharge);
-            if (_animatorHasBowAiming)
-            {
-                bool bowAiming = IsBowEquipped && _isAiming;
-                PresentationAnimator.SetBool(_bowAimingHash, bowAiming);
-            }
-            if (_animatorHasBowChargedShotReady)
-                PresentationAnimator.SetBool(_bowChargedShotReadyHash, _isBowChargedShotReady);
-
-            if (_bowDrawLayerIndex >= 0)
-            {
-                float targetBowLayerWeight = IsBowEquipped ? 1f : 0f;
-                float blendSpeed = Mathf.Max(0f, _bowEquipLayerBlendSpeed);
-                _currentBowDrawLayerWeight = blendSpeed > 0f
-                    ? Mathf.MoveTowards(_currentBowDrawLayerWeight, targetBowLayerWeight, blendSpeed * Time.deltaTime)
-                    : targetBowLayerWeight;
-                PresentationAnimator.SetLayerWeight(_bowDrawLayerIndex, _currentBowDrawLayerWeight);
-            }
         }
 
         /// <summary>
@@ -222,7 +194,7 @@ namespace Geis.Locomotion
                 AirGaitForAnimator = airGait,
                 HasFallingBlendParameter = _hasFallingBlendParameter,
                 FallingBlendValue = airGait ? GetFallingBlendParameter(_fallingDuration) : 0f,
-                SetIsJumping = false
+                IsJumpingValue = _jumpAnimatorIsActive
             };
 
             LocomotionAnimatorApplier.ApplySyntyLocomotion(PresentationAnimator, snap, ctx);
@@ -253,36 +225,15 @@ namespace Geis.Locomotion
             bool moveFrozen = GeisInteractInput.IsMovementFrozenForInteraction;
             bool movementDetected = !moveFrozen && _inputReader._movementInputDetected;
 
-            if (movementDetected)
-            {
-                if (_inputReader._movementInputDuration == 0)
-                {
-                    _movementInputTapped = true;
-                }
-                else if (_inputReader._movementInputDuration > 0 && _inputReader._movementInputDuration < _buttonHoldThreshold)
-                {
-                    _movementInputTapped = false;
-                    _movementInputPressed = true;
-                    _movementInputHeld = false;
-                }
-                else
-                {
-                    _movementInputTapped = false;
-                    _movementInputPressed = false;
-                    _movementInputHeld = true;
-                }
+            var tapState = _inputReader.UpdateMovementTapState(
+                movementDetected,
+                _buttonHoldThreshold,
+                Time.deltaTime);
+            _movementInputTapped = tapState.Tapped;
+            _movementInputPressed = tapState.Pressed;
+            _movementInputHeld = tapState.Held;
 
-                _inputReader._movementInputDuration += Time.deltaTime;
-            }
-            else
-            {
-                _inputReader._movementInputDuration = 0;
-                _movementInputTapped = false;
-                _movementInputPressed = false;
-                _movementInputHeld = false;
-            }
-
-            Vector2 composite = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(_inputReader._moveComposite);
+            Vector2 composite = GeisInteractInput.GetEffectiveMoveCompositeForLocomotion(_inputReader.EffectiveMoveComposite);
             _moveDirection = GeisLocomotionKinematics.ComputeCameraRelativeMoveDirection(composite, _cameraController);
         }
 
@@ -366,7 +317,7 @@ namespace Geis.Locomotion
                 ref _velocity.z,
                 _moveDirection,
                 _targetMaxSpeed,
-                _ANIMATION_DAMP_TIME,
+                AnimationDampTime,
                 _sprintInstantFraction,
                 _accelRate,
                 _decelRate,
@@ -466,7 +417,7 @@ namespace Geis.Locomotion
                         }
                         else
                         {
-                            float t = Mathf.Clamp01(_STRAFE_DIRECTION_DAMP_TIME * Time.deltaTime);
+                            float t = Mathf.Clamp01(StrafeDirectionDampTime * Time.deltaTime);
                             _forwardStrafe = Mathf.SmoothStep(_forwardStrafe, targetValue, t);
                         }
                     }
@@ -597,10 +548,7 @@ namespace Geis.Locomotion
                 if (isStartingCheck)
                 {
                     if (!_isStarting)
-                    {
                         _locomotionStartDirection = _newDirectionDifferenceAngle;
-                        PresentationAnimator.SetFloat(_locomotionStartDirectionHash, _locomotionStartDirection);
-                    }
 
                     float delayTime = 0.2f;
                     _leanDelay = delayTime;
@@ -616,7 +564,6 @@ namespace Geis.Locomotion
             }
 
             _isStarting = isStartingCheck;
-            PresentationAnimator.SetBool(_isStartingHash, _isStarting);
         }
 
         /// <summary>
@@ -626,8 +573,8 @@ namespace Geis.Locomotion
         /// <param name="TargetX">The value to set for X axis.</param>
         private void UpdateStrafeDirection(float TargetZ, float TargetX)
         {
-            _strafeDirectionZ = Mathf.Lerp(_strafeDirectionZ, TargetZ, _ANIMATION_DAMP_TIME * Time.deltaTime);
-            _strafeDirectionX = Mathf.Lerp(_strafeDirectionX, TargetX, _ANIMATION_DAMP_TIME * Time.deltaTime);
+            _strafeDirectionZ = Mathf.Lerp(_strafeDirectionZ, TargetZ, AnimationDampTime * Time.deltaTime);
+            _strafeDirectionX = Mathf.Lerp(_strafeDirectionX, TargetX, AnimationDampTime * Time.deltaTime);
             _strafeDirectionZ = Mathf.Round(_strafeDirectionZ * 1000f) / 1000f;
             _strafeDirectionX = Mathf.Round(_strafeDirectionX * 1000f) / 1000f;
         }
@@ -641,20 +588,34 @@ namespace Geis.Locomotion
         /// </summary>
         private void GroundedCheck()
         {
+            CharacterController cc = LocomotionController;
+            if (cc == null)
+                return;
+
             // Use bottom of CharacterController capsule (center - height/2) plus grounded offset for tolerance
-            float sphereY = LocomotionController.transform.position.y + LocomotionController.center.y - (LocomotionController.height * 0.5f) - _groundedOffset;
+            float sphereY = cc.transform.position.y + cc.center.y - (cc.height * 0.5f) - _groundedOffset;
             Vector3 spherePosition = new Vector3(
-                LocomotionController.transform.position.x,
+                cc.transform.position.x,
                 sphereY,
-                LocomotionController.transform.position.z
+                cc.transform.position.z
             );
             // Fallback: if layer mask is "Nothing" (0), use all layers so ground is detected
             LayerMask mask = _groundLayerMask.value != 0 ? _groundLayerMask : (LayerMask)(-1);
-            _isGrounded = Physics.CheckSphere(spherePosition, LocomotionController.radius, mask, QueryTriggerInteraction.Ignore);
+            bool sphereGrounded = Physics.CheckSphere(spherePosition, cc.radius, mask, QueryTriggerInteraction.Ignore);
+            bool controllerGrounded = cc.isGrounded && _velocity.y <= 0.5f;
+            bool rawGrounded = sphereGrounded || controllerGrounded;
 
-            if (_isGrounded)
+            if (rawGrounded)
             {
+                _ungroundedFrameCount = 0;
+                _isGrounded = true;
                 GroundInclineCheck();
+            }
+            else
+            {
+                _ungroundedFrameCount++;
+                if (_ungroundedFrameCount >= UngroundedFramesBeforeAirborne)
+                    _isGrounded = false;
             }
         }
 
@@ -882,12 +843,12 @@ namespace Geis.Locomotion
 
             if (isMultiplier)
             {
-                float multiplier = referenceCurve.Evaluate(referenceValue);
+                float multiplier = referenceCurve != null ? referenceCurve.Evaluate(referenceValue) : 1f;
                 changeVariable *= multiplier;
             }
             else
             {
-                changeVariable = referenceCurve.Evaluate(changeVariable);
+                changeVariable = referenceCurve != null ? referenceCurve.Evaluate(changeVariable) : changeVariable;
             }
 
             if (!changeVariable.Equals(mainVariable))
@@ -939,21 +900,9 @@ namespace Geis.Locomotion
         private void UpdateLocomotionState()
         {
             UpdateBestTarget();
-            GroundedCheck();
 
-            // Recharge coyote time whenever we're genuinely on the ground in a locomotion-friendly state.
-            if (_isGrounded)
-                _coyoteTimer = _coyoteTimeSeconds;
-
-            if (!_isGrounded)
-            {
-                SwitchState(AnimationState.Fall);
-            }
-
-            if (_isCrouching)
-            {
-                SwitchState(AnimationState.Crouch);
-            }
+            if (_landingGroundGraceTimer > 0f)
+                _landingGroundGraceTimer -= Time.deltaTime;
 
             CheckEnableTurns();
             CheckEnableLean();
@@ -963,7 +912,29 @@ namespace Geis.Locomotion
             CheckIfStarting();
             CheckIfStopped();
             FaceMoveDirection();
+
+            ApplyGroundedVerticalStick(ref _velocity);
+
             Move();
+            GroundedCheck();
+
+            if (_isGrounded)
+            {
+                _coyoteTimer = _coyoteTimeSeconds;
+                ApplyGroundedVerticalStick(ref _velocity);
+            }
+            else if (_landingGroundGraceTimer <= 0f)
+            {
+                SwitchState(AnimationState.Fall);
+                return;
+            }
+
+            if (_isCrouching)
+            {
+                SwitchState(AnimationState.Crouch);
+                return;
+            }
+
             UpdateAnimatorController();
         }
 
@@ -992,11 +963,12 @@ namespace Geis.Locomotion
         /// </summary>
         private void EnterJumpState()
         {
-            PresentationAnimator.SetBool(_isJumpingAnimHash, true);
+            _jumpAnimatorIsActive = true;
 
             _isSliding = false;
-            // Consume any pending buffered jump so it doesn't re-fire on the upcoming Fall landing.
-            _jumpBufferedAt = -1f;
+            _inputBuffers.ResetJumpBuffer();
+            _ungroundedFrameCount = UngroundedFramesBeforeAirborne;
+            _isGrounded = false;
 
             _velocity = new Vector3(_velocity.x, _jumpForce, _velocity.z);
         }
@@ -1016,7 +988,7 @@ namespace Geis.Locomotion
 
             if (_velocity.y <= 0f)
             {
-                PresentationAnimator.SetBool(_isJumpingAnimHash, false);
+                _jumpAnimatorIsActive = false;
                 SwitchState(AnimationState.Fall);
             }
 
@@ -1034,7 +1006,7 @@ namespace Geis.Locomotion
         /// </summary>
         private void ExitJumpState()
         {
-            PresentationAnimator.SetBool(_isJumpingAnimHash, false);
+            _jumpAnimatorIsActive = false;
         }
 
         #endregion
@@ -1042,12 +1014,38 @@ namespace Geis.Locomotion
         #region Fall State
 
         /// <summary>
+        ///     Snap velocity and timers when transitioning from air to locomotion on the ground.
+        /// </summary>
+        private void CompleteLanding()
+        {
+            _velocity.y = GroundedVerticalStickVelocity;
+            _jumpAnimatorIsActive = false;
+            _ungroundedFrameCount = 0;
+            ResetFallingDuration();
+            _coyoteTimer = _coyoteTimeSeconds;
+            _landingGroundGraceTimer = LandingGroundGraceSeconds;
+        }
+
+        private static void ApplyGroundedVerticalStick(ref Vector3 velocity)
+        {
+            if (velocity.y < 0f)
+                velocity.y = GroundedVerticalStickVelocity;
+        }
+
+        /// <summary>
         ///     Sets up the fall state upon entry.
         /// </summary>
         private void EnterFallState()
         {
+            if (_ungroundedFrameCount < UngroundedFramesBeforeAirborne)
+            {
+                _ungroundedFrameCount = UngroundedFramesBeforeAirborne;
+                _isGrounded = false;
+            }
+
             ResetFallingDuration();
-            _velocity.y = 0f;
+            if (_velocity.y > 0f)
+                _velocity.y = 0f;
 
             DeactivateCrouch();
             _isSliding = false;
@@ -1074,25 +1072,24 @@ namespace Geis.Locomotion
 
             // GroundedCheck must run AFTER Move() so we detect landing using the new position
             GroundedCheck();
-            UpdateAnimatorController();
 
-            // Use _isGrounded (Physics.CheckSphere) instead of LocomotionController.isGrounded - CharacterController
-            // isGrounded is unreliable and often fails to detect landing
             if (_isGrounded)
             {
                 // Jump buffer: a jump pressed just before landing fires immediately instead of being dropped.
-                if (IsJumpBufferFresh())
+                if (_inputBuffers.TryConsumeJumpBuffer(Time.unscaledTime))
                 {
-                    _jumpBufferedAt = -1f;
                     _coyoteTimer = _coyoteTimeSeconds;
                     SwitchState(AnimationState.Jump);
+                    return;
                 }
-                else
-                {
-                    SwitchState(AnimationState.Locomotion);
-                }
+
+                CompleteLanding();
+                SwitchState(AnimationState.Locomotion);
+                UpdateAnimatorController();
+                return;
             }
 
+            UpdateAnimatorController();
             UpdateFallingDuration();
         }
 

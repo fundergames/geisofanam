@@ -74,6 +74,12 @@ namespace Geis.Animation
         public static readonly int DodgeLeafLeft = Animator.StringToHash("Dodge_Left");
         public static readonly int DodgeLeafRight = Animator.StringToHash("Dodge_Right");
 
+        /// <summary>Nested paths under the <c>Dodge</c> sub-state machine.</summary>
+        public static readonly int DodgeNestedFront = Animator.StringToHash("Dodge.Dodge_Front");
+        public static readonly int DodgeNestedBack = Animator.StringToHash("Dodge.Dodge_Back");
+        public static readonly int DodgeNestedLeft = Animator.StringToHash("Dodge.Dodge_Left");
+        public static readonly int DodgeNestedRight = Animator.StringToHash("Dodge.Dodge_Right");
+
         /// <summary>Base-layer roll clips (double-tap); distinct from sidestep <c>Dodge_*_Root</c> leaves.</summary>
         public static readonly int RollLeafForward = Animator.StringToHash("Dodge_Forward_Roll");
         public static readonly int RollLeafBack = Animator.StringToHash("Dodge_Back_Rolling");

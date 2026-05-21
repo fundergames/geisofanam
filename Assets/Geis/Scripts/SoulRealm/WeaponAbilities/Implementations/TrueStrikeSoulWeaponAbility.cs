@@ -12,12 +12,15 @@
  */
 
 using System.Collections.Generic;
+using Geis.Puzzles;
+using RogueDeal.Combat.Core.Data;
 using UnityEngine;
 
 namespace Geis.SoulRealm.WeaponAbilities
 {
     /// <summary>
-    /// Emberblade (physical realm): forward sphere cast breaks <see cref="ITrueStrikeDestroyable"/> obstacles.
+    /// Emberblade (physical realm): forward sphere cast breaks <see cref="ITrueStrikeDestroyable"/> obstacles
+    /// and can register hits on <see cref="SwordHitTrigger"/> puzzle volumes.
     /// </summary>
     [CreateAssetMenu(
         fileName = "SoulAbility_Sword_TrueStrike",
@@ -27,6 +30,10 @@ namespace Geis.SoulRealm.WeaponAbilities
         [SerializeField] private float strikeDistance = 10f;
         [SerializeField] private float strikeRadius = 0.85f;
         [SerializeField] private LayerMask obstacleLayers = ~0;
+
+        [Header("Puzzles")]
+        [Tooltip("Notify IPuzzleMeleeHitSink (e.g. SwordHitTrigger) along the strike path.")]
+        [SerializeField] private bool notifySwordPuzzleVolumes = true;
 
         public override string AbilityDisplayName => "True Strike";
 
@@ -44,27 +51,84 @@ namespace Geis.SoulRealm.WeaponAbilities
                 dir = Vector3.forward;
             dir.Normalize();
 
-            RaycastHit[] hits = Physics.SphereCastAll(
+            var seen = new HashSet<int>();
+            var puzzleCols = new List<Collider>();
+
+            CollectCollider(
+                Physics.OverlapSphere(origin, strikeRadius, obstacleLayers, QueryTriggerInteraction.Collide),
+                seen,
+                puzzleCols,
+                notifySwordPuzzleVolumes);
+
+            RaycastHit[] castHits = Physics.SphereCastAll(
                 origin,
                 strikeRadius,
                 dir,
                 strikeDistance,
                 obstacleLayers,
                 QueryTriggerInteraction.Collide);
-
-            var seen = new HashSet<int>();
-            for (var i = 0; i < hits.Length; i++)
+            for (var i = 0; i < castHits.Length; i++)
             {
-                var col = hits[i].collider;
+                var col = castHits[i].collider;
                 if (col == null)
                     continue;
                 int id = col.gameObject.GetInstanceID();
                 if (!seen.Add(id))
                     continue;
 
-                var destroyable = col.GetComponentInParent<ITrueStrikeDestroyable>();
-                destroyable?.DestroyFromTrueStrike();
+                RegisterStrikeHit(col, puzzleCols, notifySwordPuzzleVolumes);
             }
+
+            if (notifySwordPuzzleVolumes && puzzleCols.Count > 0)
+            {
+                CombatAction puzzleAction = context.WeaponDefinition != null
+                    ? context.WeaponDefinition.GetCombatAction()
+                    : null;
+                PuzzleMeleeHitUtility.NotifySinksFromColliders(
+                    puzzleCols,
+                    null,
+                    puzzleAction,
+                    context.WeaponSlotIndex,
+                    1);
+            }
+        }
+
+        private static void CollectCollider(
+            Collider[] colliders,
+            HashSet<int> seen,
+            List<Collider> puzzleCols,
+            bool notifySwordPuzzleVolumes)
+        {
+            if (colliders == null)
+                return;
+
+            for (var i = 0; i < colliders.Length; i++)
+            {
+                var col = colliders[i];
+                if (col == null)
+                    continue;
+                int id = col.gameObject.GetInstanceID();
+                if (!seen.Add(id))
+                    continue;
+
+                RegisterStrikeHit(col, puzzleCols, notifySwordPuzzleVolumes);
+            }
+        }
+
+        private static void RegisterStrikeHit(
+            Collider col,
+            List<Collider> puzzleCols,
+            bool notifySwordPuzzleVolumes)
+        {
+            var destroyable = col.GetComponentInParent<ITrueStrikeDestroyable>();
+            if (destroyable != null)
+            {
+                destroyable.DestroyFromTrueStrike();
+                return;
+            }
+
+            if (notifySwordPuzzleVolumes)
+                puzzleCols.Add(col);
         }
     }
 }

@@ -20,4 +20,4 @@ MonoBehaviour:
   combatAction: {fileID: 11400000, guid: d24304a3a411c1a429ccb86d94d8ffff, type: 2}
   soulAbilityPrimary: {fileID: 11400000, guid: d9abc7dbb24697440a19cc5df1627fba, type: 2}
   soulAbilitySecondary: {fileID: 11400000, guid: 3cf6e5f99d885234f9f012fd66c7c9f5, type: 2}
-  buildsLyreResonance: 1
+  buildsLyreResonance: 0

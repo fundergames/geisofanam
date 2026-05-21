@@ -14,7 +14,7 @@
 namespace Geis.Animation
 {
     /// <summary>
-    /// How <see cref="LocomotionAnimatorApplier"/> applies <see cref="LocomotionPresentationSnapshot"/> (air vs ground, optional IsJumping).
+    /// How <see cref="LocomotionAnimatorApplier"/> applies <see cref="LocomotionPresentationSnapshot"/> (air vs ground, IsJumping).
     /// </summary>
     public struct LocomotionApplyContext
     {
@@ -24,7 +24,12 @@ namespace Geis.Animation
         public bool HasFallingBlendParameter;
         public float FallingBlendValue;
 
-        public bool SetIsJumping;
         public bool IsJumpingValue;
+
+        public bool OverrideIsStarting;
+        public bool IsStartingValue;
+
+        public bool OverrideLocomotionStartDirection;
+        public float LocomotionStartDirectionValue;
     }
 }

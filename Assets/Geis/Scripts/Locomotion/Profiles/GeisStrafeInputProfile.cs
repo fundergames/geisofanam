@@ -29,5 +29,8 @@ namespace Geis.Locomotion
 
         [Tooltip("Initial forward strafe blend (animator).")]
         public float forwardStrafe = GeisLocomotionTuningDefaults.ForwardStrafe;
+
+        [Tooltip("Offset for camera rotation passed to the locomotion animator.")]
+        public float cameraRotationOffset = GeisLocomotionTuningDefaults.CameraRotationOffset;
     }
 }

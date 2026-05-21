@@ -145,6 +145,20 @@ namespace Geis.Combat
             if (_playerController == null)
                 return;
 
+            if (!IsBowEquipped)
+            {
+                if (_isCharging || _heavyAttackWasPressed)
+                {
+                    _isCharging = false;
+                    _heavyAttackWasPressed = false;
+                    ClearBowDrawAnimatorState();
+                    SetDrawArrowVisible(false);
+                }
+
+                PollHeavyAttackEdges();
+                return;
+            }
+
             PollHeavyAttackEdges();
 
             if (_isCharging && IsBowEquipped)
@@ -256,6 +270,9 @@ namespace Geis.Combat
                 _equippedBowAnimators.Clear();
                 return _equippedBowAnimators;
             }
+
+            if (_cachedBowAnimatorWeaponRoot != weaponInstance && _cachedBowAnimatorWeaponRoot != null)
+                _drawArrowVisual = null;
 
             if (_cachedBowAnimatorWeaponRoot == weaponInstance && _equippedBowAnimators.Count > 0)
                 return _equippedBowAnimators;

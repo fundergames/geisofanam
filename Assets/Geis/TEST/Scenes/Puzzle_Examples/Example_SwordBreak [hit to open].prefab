@@ -781,7 +781,9 @@ MonoBehaviour:
   visualWhenActivated: {fileID: 0}
   visualWhenInactive: {fileID: 0}
   hitsRequired: 1
-  acceptedWeaponSlots: 02000000
+  acceptedWeaponSlots:
+  - 0
+  - 1
   acceptedActionNames: []
   actionNameMatchIgnoreCase: 1
   acceptedWeaponTypes: 

@@ -190,6 +190,15 @@ namespace RogueDeal.Combat
 
         /// <summary>
         /// Uses the same sphere centers/radius as <see cref="FindTargetsInRange"/> so sword-break zones align with melee hits.
+        /// Call from weapon-hitbox schedules when <see cref="PerformHitCheck"/> is skipped.
+        /// </summary>
+        public void NotifyPuzzleMeleeHitSinks(CombatAction action, int hitWindowIndex, int weaponSlotIndex)
+        {
+            NotifySwordPuzzleTriggers(action, hitWindowIndex, weaponSlotIndex);
+        }
+
+        /// <summary>
+        /// Uses the same sphere centers/radius as <see cref="FindTargetsInRange"/> so sword-break zones align with melee hits.
         /// </summary>
         private void NotifySwordPuzzleTriggers(CombatAction action, int hitWindowIndex, int weaponSlotIndex)
         {
