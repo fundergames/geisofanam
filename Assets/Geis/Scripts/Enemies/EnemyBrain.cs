@@ -2,13 +2,6 @@
  * Copyright (c) 2026 Funder Games
  *
  * All rights reserved.
- *
- * This software and associated documentation files are proprietary and confidential.
- * Unauthorized copying, modification, distribution, or use of this software,
- * via any medium, is strictly prohibited without explicit written permission.
- *
- * This code is provided for personal use only by authorized recipients.
- * It may not be redistributed, sublicensed, or sold in any form.
  */
 
 using RogueDeal.Combat;
@@ -40,11 +33,17 @@ namespace Geis.Enemies
         private EnemyAnimatorDriver _animatorDriver;
         private CombatEntity _combatEntity;
 
+        private readonly EnemyBehaviorContext _context = new EnemyBehaviorContext();
+        private EnemyBehavior[] _activePipeline;
+        private EnemyAiDefinition _cachedPipelineDefinition;
+        private EnemyBehavior[] _cachedPipelineSource;
+
         private float _staggerRemaining;
         private float _strafeDirectionUntil;
         private int _strafeDirection = 1;
 
         public EnemyState CurrentState { get; private set; } = EnemyState.Idle;
+        public int StrafeDirection => _strafeDirection;
 
         private void Awake()
         {
@@ -54,6 +53,9 @@ namespace Geis.Enemies
             _attackDriver = GetComponent<EnemyAttackDriver>() ?? GetComponentInParent<EnemyAttackDriver>();
             _animatorDriver = GetComponent<EnemyAnimatorDriver>() ?? GetComponentInParent<EnemyAnimatorDriver>();
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
+
+            _context.Bind(this, _combatant, _perception, _motor, _attackDriver, _animatorDriver, _combatEntity);
+            RebuildPipeline();
         }
 
         private void OnEnable()
@@ -71,104 +73,59 @@ namespace Geis.Enemies
             if (!autoRun || _combatant == null || _combatant.Definition == null)
                 return;
 
-            if (_combatant.IsDefeated)
-            {
-                EnterState(EnemyState.Dead);
-                _motor?.StopMovement();
-                UpdateAnimator(false, false);
-                return;
-            }
+            RebuildPipelineIfDefinitionChanged();
 
             _perception?.RefreshTarget();
-            CombatEntity target = _perception != null ? _perception.CurrentTarget : null;
-            bool hasTarget = target != null;
-            bool isStrafing = false;
+            _context.RefreshTargetData();
+            _context.StaggerRemaining = _staggerRemaining;
+            _context.StrafeDirection = _strafeDirection;
+            _context.StrafeDirectionUntil = _strafeDirectionUntil;
+            _context.IsStrafingThisTick = false;
 
-            if (!hasTarget)
+            if (_context.Target != null)
+                _context.FaceTarget();
+
+            if (_activePipeline == null || _activePipeline.Length == 0)
             {
-                EnterState(EnemyState.Acquire);
-                _motor?.StopMovement();
-                UpdateAnimator(false, false);
+                TickIdleFallback();
                 return;
             }
 
-            Vector3 targetPoint = target.GetHitPoint();
-            _motor?.FaceTarget(targetPoint);
-
-            if (_staggerRemaining > 0f)
+            for (int i = 0; i < _activePipeline.Length; i++)
             {
-                _staggerRemaining -= Time.deltaTime;
-                EnterState(EnemyState.Stagger);
-                _motor?.StopMovement();
-                UpdateAnimator(true, false);
-                return;
-            }
+                EnemyBehavior step = _activePipeline[i];
+                if (step == null || !step.Enabled)
+                    continue;
 
-            if (_attackDriver != null && _attackDriver.IsBusy)
-            {
-                switch (_attackDriver.CurrentPhase)
+                if (step.TryExecute(_context))
                 {
-                    case EnemyAttackDriver.AttackPhase.Telegraph:
-                        EnterState(EnemyState.Telegraph);
-                        break;
-                    case EnemyAttackDriver.AttackPhase.Execute:
-                        EnterState(EnemyState.Attack);
-                        break;
-                    case EnemyAttackDriver.AttackPhase.Recover:
-                        EnterState(EnemyState.Recover);
-                        break;
-                    default:
-                        EnterState(EnemyState.Attack);
-                        break;
+                    _staggerRemaining = _context.StaggerRemaining;
+                    _strafeDirection = _context.StrafeDirection;
+                    _strafeDirectionUntil = _context.StrafeDirectionUntil;
+                    return;
                 }
-
-                if (hasTarget && target != null)
-                    _motor?.FaceTarget(target.GetHitPoint());
-
-                _motor?.StopMovement();
-                UpdateAnimator(true, false);
-                return;
             }
 
-            float desiredDistance = _combatant.Definition.GetPreferredCombatDistance();
-            float distance = _perception != null ? _perception.GetDistanceToCurrentTarget() : float.PositiveInfinity;
-            bool hasLineOfSight = _perception != null && _perception.HasLineOfSightToCurrentTarget();
+            TickIdleFallback();
+        }
 
-            // Do NOT gate melee attempts on preferredSpacing + tolerance alone — NavMesh often parks the agent
-            // slightly outside that band while still inside authored attack maxRange; the old check caused infinite Approach.
-            float strikeHorizon = _combatant.Definition.GetMaxStrikeRange() + 0.3f;
-            if (distance > strikeHorizon)
-            {
-                EnterState(EnemyState.Approach);
-                _motor?.ApplyApproachLocomotion(distance, desiredDistance);
-                _motor?.MoveToCombatDistance(target.transform.position, desiredDistance);
-                UpdateAnimator(true, false);
+        public void EnterState(EnemyState nextState)
+        {
+            CurrentState = nextState;
+        }
+
+        public void UpdateStrafeDirection()
+        {
+            if (_combatant == null || _combatant.Definition == null)
                 return;
-            }
 
-            if (_attackDriver != null && _attackDriver.TryStartAttack(target, distance, hasLineOfSight))
-            {
-                EnterState(EnemyState.Telegraph);
-                _motor?.StopMovement();
-                UpdateAnimator(true, false);
+            if (Time.time < _strafeDirectionUntil)
                 return;
-            }
 
-            if (_attackDriver != null && _attackDriver.HasAnyAttackInRange(distance, hasLineOfSight))
-            {
-                EnterState(EnemyState.Strafe);
-                isStrafing = true;
-                UpdateStrafeDirection();
-                _motor?.ApplyStrafeLocomotion();
-                _motor?.StrafeAround(target.transform.position, desiredDistance, _strafeDirection);
-                UpdateAnimator(true, isStrafing);
-                return;
-            }
-
-            EnterState(EnemyState.Approach);
-            _motor?.ApplyApproachLocomotion(distance, desiredDistance);
-            _motor?.MoveToCombatDistance(target.transform.position, desiredDistance);
-            UpdateAnimator(true, false);
+            _strafeDirection *= -1;
+            _strafeDirectionUntil = Time.time + Mathf.Max(0.25f, _combatant.Definition.movement.strafeRepathInterval);
+            _context.StrafeDirection = _strafeDirection;
+            _context.StrafeDirectionUntil = _strafeDirectionUntil;
         }
 
         public void ResetBrain()
@@ -177,6 +134,7 @@ namespace Geis.Enemies
             _staggerRemaining = 0f;
             _strafeDirection = 1;
             _strafeDirectionUntil = 0f;
+            RebuildPipeline();
         }
 
         public void HandleDefeated()
@@ -184,7 +142,7 @@ namespace Geis.Enemies
             EnterState(EnemyState.Dead);
             _motor?.StopMovement();
             _attackDriver?.CancelActiveAttack();
-            UpdateAnimator(false, false);
+            _context.PresentLocomotion(hasTarget: false);
         }
 
         private void HandleDamageApplied(CombatEventData data)
@@ -198,33 +156,46 @@ namespace Geis.Enemies
             _staggerRemaining = _combatant.Definition.reactions.staggerDurationOnHit;
             _motor?.StopMovement();
 
-            // Directional hit reacts use TakeDamage + HitDirection via ICombatHitReactionPresenter (CombatEvents).
             if (_combatEntity.GetComponent<ICombatHitReactionPresenter>() == null)
                 _animatorDriver?.TriggerHitReaction();
         }
 
-        private void UpdateAnimator(bool hasTarget, bool isStrafing)
+        private void RebuildPipelineIfDefinitionChanged()
         {
-            _animatorDriver?.UpdateState(
-                _motor != null ? _motor.CurrentNormalisedSpeed : 0f,
-                hasTarget,
-                isStrafing,
-                CurrentState,
-                _motor != null ? _motor.LocomotionGaitIndex : 0);
-        }
-
-        private void EnterState(EnemyState nextState)
-        {
-            CurrentState = nextState;
-        }
-
-        private void UpdateStrafeDirection()
-        {
-            if (Time.time < _strafeDirectionUntil)
+            EnemyAiDefinition definition = _combatant != null ? _combatant.Definition : null;
+            EnemyBehavior[] source = ResolvePipelineSource(definition);
+            if (ReferenceEquals(definition, _cachedPipelineDefinition) && ReferenceEquals(source, _cachedPipelineSource))
                 return;
 
-            _strafeDirection *= -1;
-            _strafeDirectionUntil = Time.time + Mathf.Max(0.25f, _combatant.Definition.movement.strafeRepathInterval);
+            _cachedPipelineDefinition = definition;
+            _cachedPipelineSource = source;
+            _activePipeline = source;
+        }
+
+        private void RebuildPipeline()
+        {
+            EnemyAiDefinition definition = _combatant != null ? _combatant.Definition : null;
+            _cachedPipelineDefinition = definition;
+            _cachedPipelineSource = ResolvePipelineSource(definition);
+            _activePipeline = _cachedPipelineSource;
+        }
+
+        private static EnemyBehavior[] ResolvePipelineSource(EnemyAiDefinition definition)
+        {
+            if (definition == null)
+                return EnemyBuiltinBehaviorPipeline.GetOrCreate();
+
+            EnemyBehavior[] authored = definition.behaviorPipeline;
+            return authored != null && authored.Length > 0
+                ? authored
+                : EnemyBuiltinBehaviorPipeline.GetOrCreate();
+        }
+
+        private void TickIdleFallback()
+        {
+            EnterState(EnemyState.Idle);
+            _motor?.StopMovement();
+            _context.PresentLocomotion(hasTarget: _context.Target != null);
         }
     }
 }

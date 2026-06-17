@@ -53,6 +53,10 @@ namespace Geis.Enemies
         [Header("Reactions")]
         public EnemyReactionSettings reactions = new EnemyReactionSettings();
 
+        [Header("Behavior Pipeline")]
+        [Tooltip("Ordered list — first behavior that handles the tick wins. Leave empty to use the built-in melee pipeline (dead → stagger → attack phase → acquire → melee attack → strafe → approach).")]
+        public EnemyBehavior[] behaviorPipeline = new EnemyBehavior[0];
+
         [Header("Attack Loadout")]
         public EnemyAttackDefinition[] attacks = new EnemyAttackDefinition[0];
 
@@ -117,6 +121,18 @@ namespace Geis.Enemies
 
             return max > 0.05f ? max : fallback;
         }
+
+        /// <summary>
+        /// NavMesh goal distance from the target when closing for melee — inside <see cref="EnemyAttackDriver"/> select range.
+        /// </summary>
+        public float GetMeleeClosingDistance()
+        {
+            float maxRange = GetMaxStrikeRange();
+            float inset = maxRange - EnemyAttackDriver.AttackRangeSelectionSlack - 0.08f;
+            float preferred = movement.preferredDistance > 0f ? movement.preferredDistance : inset;
+            float minDist = Mathf.Max(0.35f, movement.stopDistance + 0.15f);
+            return Mathf.Clamp(Mathf.Min(preferred, inset), minDist, maxRange - EnemyAttackDriver.AttackRangeSelectionSlack);
+        }
     }
 
     [System.Serializable]
@@ -142,15 +158,21 @@ namespace Geis.Enemies
         [Min(0.25f)] public float strafeRepathInterval = 1.25f;
         [Min(0f)] public float directMoveFallbackSpeed = 3f;
 
+        [Header("Animator locomotion (Polygon / Synty)")]
+        [Tooltip("Planar speed (m/s) thresholds for CurrentGait — should match player tuning when using AC_Polygon_Masculine_Geis.")]
+        [Min(0.1f)] public float animatorWalkSpeedReference = Geis.Locomotion.GeisLocomotionTuningDefaults.WalkSpeed;
+        [Min(0.1f)] public float animatorRunSpeedReference = Geis.Locomotion.GeisLocomotionTuningDefaults.RunSpeed;
+        [Min(0.1f)] public float animatorSprintSpeedReference = Geis.Locomotion.GeisLocomotionTuningDefaults.SprintSpeed;
+
         [Header("Approach locomotion (animation / NavMesh speed)")]
-        [Tooltip("When distance to target exceeds preferred combat distance by at least this amount, use Approach Fast Gait and Run Speed Multiplier (closing from far away).")]
+        [Tooltip("When horizontal distance to the target is at least this value, use fast gait and run speed multiplier.")]
         [Min(0.25f)] public float approachRunDistanceThreshold = 4f;
         [Range(0.25f, 1f)]
         [Tooltip("NavMesh speed multiplier when closing inside the run threshold (jog / slower close).")]
-        public float approachJogSpeedMultiplier = 0.58f;
-        [Range(0.9f, 1.6f)]
+        public float approachJogSpeedMultiplier = 0.75f;
+        [Range(0.9f, 2f)]
         [Tooltip("NavMesh speed multiplier when closing beyond the run threshold.")]
-        public float approachRunSpeedMultiplier = 1.1f;
+        public float approachRunSpeedMultiplier = 1.45f;
         [Tooltip("Written to Animator CurrentGait when closing slowly (Polygon: 1 = Walk).")]
         public int approachSlowGait = 1;
         [Tooltip("Written to Animator CurrentGait when closing from far away (Polygon: 2 = Run, 3 = Sprint).")]
@@ -197,13 +219,17 @@ namespace Geis.Enemies
         public GeisComboInputType comboAdvanceInput = GeisComboInputType.Light;
         [Min(0f)] public float minRange = 0f;
         [Min(0.1f)] public float maxRange = 2.25f;
-        [Min(0f)] public float telegraphDuration = 0.45f;
+        [Tooltip("Extra wait before Attack trigger. Set to 0 when wind-up is inside the combo clip (use GeisComboData multiHitNormalizedTimes for hit frame).")]
+        [Min(0f)] public float telegraphDuration = 0f;
+        [Tooltip("Max telegraph wait while still moving into range (planar m/s above driver threshold). Ignored when telegraphDuration is 0.")]
+        [Min(0f)] public float telegraphCapWhileMoving = 0.1f;
         [Min(0f)] public float recoveryDuration = 0.8f;
         [Min(0f)] public float cooldownSeconds = 1.25f;
         [Range(0f, 180f)] public float facingToleranceDegrees = 35f;
         public bool requiresLineOfSight = true;
         [Min(1)] public int selectionWeight = 1;
-        public string telegraphTrigger = "Telegraph";
+        [Tooltip("Optional separate animator trigger before Attack. Leave empty when telegraphDuration is 0 and wind-up is in the attack clip.")]
+        public string telegraphTrigger = "";
         public string attackTriggerOverride;
         [Min(0f)] public float executionTimeout = 0.75f;
     }

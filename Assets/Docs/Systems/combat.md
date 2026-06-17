@@ -1,7 +1,7 @@
 # Combat (Geis)
 
 **Status**: current  
-**Last updated**: 2026-05-07
+**Last updated**: 2026-06-03
 
 ## Purpose
 
@@ -30,6 +30,17 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 - **Flow**: Subscribes to `GeisPlayerAnimationController.OnAttackPerformed(weaponIndex)`. Resolves `CombatAction` + `Weapon` from **`GeisWeaponSwitcher.GetWeaponDefinition`** when non-null; applies `GeisComboData.ResolveCombatAction(comboState, …)` and optional **multi-hit times** from combo data (`TryGetMultiHitTimesSeconds`). Falls back to **legacy** arrays on the bridge if no definition: `combatActionsByWeapon` / `weaponsBySlot` (same 4-slot indexing).
 - **Hit path selection**: Uses `WeaponHitbox` only when the equipped weapon has a hitbox **and** the current combo state defines `multiHitNormalizedTimes`. Otherwise falls through to `SimpleAttackHitDetector` (most light attacks).
 - Sets `CombatEntity` entity data `equippedWeapon` for the resolved strike.
+- **Attack presentation (SFX/VFX)**: On each attack, `CombatPresentationScheduler` schedules cues from `GeisComboData` per-state `presentationEvents` (combo graph, cyan track), else `CombatAction.effectBindings`. Times are normalized on the combo clip and converted to seconds (same clock as multi-hit damage). `GeisCombatBridge.CancelPendingHits` and `CombatAttackInterruptController` cancel pending presentation. Defender hit sparks remain on `CombatEvents` → target `CombatVFXController` / `CombatSFXController`.
+
+### Attack presentation authoring
+
+- **Combo graph** (`Funder Games/Geis/Tools/Combat/Combo Graph`): per state, **Combat Binding** → orange track = `multiHitNormalizedTimes` (damage), cyan track = `presentationEvents` (swing whoosh, trails). Shift+click to add markers; drag to move.
+- **Fallback**: `CombatAction.effectBindings` with `normalizedTime` when a combo step has no `presentationEvents`.
+- **Prefab setup**: **Geis → Combat → Add Presentation To Player Prefab** / **Phase1 Enemy Prefab** (adds `CombatPresentationScheduler`, `CombatVFXController`, `CombatSFXController`). Runtime also self-heals via `CombatPresentationRuntimeSetup` on `GeisCombatBridge` Awake.
+
+**VFX placement (planned polish)** — MVP spawns at `CombatEntity.vfxSpawnPoint` or attacker root rotation; timing is data-driven but **position/rotation do not yet follow the weapon mesh or strike arc**. Later work should parent or align VFX to the equipped weapon (`GeisWeaponSwitcher.CurrentWeaponInstance`, hand/ blade sockets), optionally match hitbox forward, and support trail/slash prefabs that move with the swing. SFX timing can stay as-is.
+
+**Impact feel (camera shake + hit-stop)** — Per combo state under **Impact feel** in the combo graph (fires at each orange hit time). Per cyan presentation marker optional shake/stop on wind-up. `CombatCameraShake` on `GeisCameraController`; `CombatHitStopService` on the combat entity (stacked real-time; cancelled on attack interrupt). Modes: global time scale, attacker animator freeze, or both. Presets: Light / Heavy impact in combo editor.
 
 ### `SimpleAttackHitDetector` (player melee probes)
 
@@ -49,7 +60,7 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 ### Cross-cutting
 
 - **Physical interactions in soul realm**: `SoulRealmInteractable.BlockPhysicalInteractions` is true while soul realm is active — weapon **switching** respects this; other systems (puzzles, use) may check the same flag.
-- **Enemy strike targeting**: Enemy AI chooses only player-like `CombatEntity` targets (`Player` tag / `PlayerVisual`) and passes that explicit target into `CombatExecutor` so generic targeting assets do not retarget onto nearby enemies at execute time.
+- **Enemy strike targeting**: Enemy AI chooses only player-like `CombatEntity` targets (`Player` tag / `PlayerVisual`) and passes that explicit target into `CombatExecutor` so generic targeting assets do not retarget onto nearby enemies at execute time. Pipeline and locomotion: [enemies.md](enemies.md).
 - **Directional hit reactions**: `CombatHitDirection` on `CombatEventData` (strike origin). `GeisDirectionalHitReaction` on player and enemies (`ICombatHitReactionPresenter`); `CombatEvents.TriggerHitReactionStarted` calls `PresentHitReaction`. Synty F/B/L/R = recoil direction ([locomotion.md](locomotion.md)). Menu: **Geis → Combat → Setup Directional Hit Reactions On Selected Enemy** / **Add Directional Hit Reactions To Phase1 Enemy Prefab**. `EnemyBrain` skips legacy `Hit` trigger when a presenter is present.
 
 ## Scope
@@ -66,6 +77,7 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 | Piece | Path |
 |-------|------|
 | Core | `Assets/Geis/Scripts/Combat/GeisCombatBridge.cs`, `GeisWeaponSwitcher.cs`, `GeisWeaponDefinition.cs`, `GeisBowController.cs` |
+| Presentation | `Assets/Geis/Scripts/RogueDeal/Combat/Presentation/CombatPresentationScheduler.cs`, `CombatPresentationResolve.cs`, `CombatEffectBindingPlayer.cs` |
 | Weapons | `Assets/Geis/Weapons/` |
 
 ## Integration
@@ -90,6 +102,9 @@ Weapon definitions, switching, combos, hit detection, and bridges between Geis a
 
 ## Changelog
 
+- **2026-06-03**: Impact camera shake + hit-stop at multi-hit times (`impactCameraShake`, `impactHitStop`, `CombatCameraShake`, `CombatHitStopService`).
+- **2026-06-03**: Data-driven attack presentation (`presentationEvents` in combo graph, `CombatPresentationScheduler` on player/enemy, `effectBindings` fallback).
+- **2026-06-03**: Linked enemy behavior pipeline and run-when-far approach to [enemies.md](enemies.md).
 - **2026-05-19**: `CombatAttackInterruptController` on `CombatEntity` cancels attacks when damaged and blocks outbound hits until the swing ends; respects combo startup super armor (`GeisComboData`). Player implements `IAttackerPhaseProvider`.
 - **2026-05-19**: Gamepad bow draw/release on RT (`HeavyAttack`); aim remains LT.
 - **2026-05-18**: `GeisCombatBridge` falls back to `SimpleAttackHitDetector` when a weapon hitbox exists but the combo step has no authored hit timings; enemy runtime setup tags roots `Enemy` for melee filters.

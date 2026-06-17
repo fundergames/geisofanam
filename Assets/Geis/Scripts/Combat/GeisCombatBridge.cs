@@ -45,6 +45,7 @@ namespace Geis.Combat
         private CombatEntity _combatEntity;
         private CombatExecutor _executor;
         private SimpleAttackHitDetector _hitDetector;
+        private CombatPresentationScheduler _presentationScheduler;
         private Coroutine _hitboxScheduleRoutine;
         private int _hitboxScheduleGeneration;
 
@@ -53,6 +54,7 @@ namespace Geis.Combat
             _combatEntity = GetComponent<CombatEntity>();
             _executor = GetComponent<CombatExecutor>();
             _hitDetector = GetComponent<SimpleAttackHitDetector>();
+            _presentationScheduler = CombatPresentationRuntimeSetup.EnsureOn(gameObject);
 
             if (_geisController == null)
                 _geisController = GetComponent<GeisPlayerAnimationController>();
@@ -92,6 +94,7 @@ namespace Geis.Combat
         public void CancelPendingHits()
         {
             StopHitboxSchedule();
+            _presentationScheduler?.Cancel();
             _hitDetector?.CancelPendingHitChecks();
             _executor?.ClearCurrentAction();
         }
@@ -131,6 +134,7 @@ namespace Geis.Combat
                 entityData.equippedWeapon = weapon;
 
             _executor.SetCurrentAction(action);
+            _presentationScheduler?.ScheduleFromCombo(comboData, comboState, action);
 
             bool isBow = def != null && def.IsBowWeapon;
             WeaponHitbox weaponHitbox = ResolveActiveWeaponHitbox();

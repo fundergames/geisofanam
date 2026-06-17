@@ -12,8 +12,9 @@ Data-driven combo system with weapon equipping (keys 1-4).
 
 4. **Weapon Switcher**: Run `Tools > Geis > Add GeisWeaponSwitcher to PF_PolygonPlayer` to add the component to the player prefab.
 
-5. **Assign in Inspector**: On the player with GeisPlayerAnimationController, assign:
-   - `Combo Data`: The ComboData_Unarmed asset (or your custom one).
+5. **Assign combos on weapons**: Set `comboData` on each `GeisWeaponDefinition` in `GeisWeaponSwitcher.weaponSlots` (not on the animation controller).
+
+6. **Attack SFX/VFX**: Open **Funder Games → Geis → Tools → Combat → Combo Graph** on each `GeisComboData`. Under **Combat Binding**, use the **orange** track for damage hit times and the **cyan** track for presentation (whoosh, trails). Run **Geis → Combat → Add Presentation To Player Prefab** once.
 
 ## RogueDeal Combat (Damage, Health Bars, Hit Detection)
 

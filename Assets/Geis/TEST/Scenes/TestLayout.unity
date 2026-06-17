@@ -7302,6 +7302,135 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 362460452}
   m_Mesh: {fileID: 10209, guid: 0000000000000000e000000000000000, type: 0}
+--- !u!1 &370406372
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 370406374}
+  - component: {fileID: 370406373}
+  m_Layer: 0
+  m_Name: AudioSource
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!82 &370406373
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 370406372}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 0
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!4 &370406374
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 370406372}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &371684673
 GameObject:
   m_ObjectHideFlags: 0
@@ -42793,91 +42922,10 @@ MonoBehaviour:
   _inputReader: {fileID: 9022905960281365610}
   _animator: {fileID: 9022905960281365611}
   _controller: {fileID: 8663971696254839474}
-  _alwaysStrafe: 1
-  _walkSpeed: 1.4
-  _runSpeed: 3.2
-  _sprintSpeed: 5.5
-  _speedChangeDamping: 10
-  _accelRate: 25
-  _decelRate: 15
-  _sprintInstantFraction: 0.85
-  _rotationSmoothing: 10
-  _maxTurnDegPerSecond: 720
-  _cameraRotationOffset: 0
-  _bowAimBodyEulerOffset: {x: 0, y: 0, z: 0}
-  _buttonHoldThreshold: 0.15
-  _capsuleStandingHeight: 1.8
-  _capsuleStandingCentre: 0.93
-  _capsuleCrouchingHeight: 1.2
-  _capsuleCrouchingCentre: 0.6
-  _forwardStrafeMinThreshold: -55
-  _forwardStrafeMaxThreshold: 125
   _rearRayPos: {fileID: 5825215148077825390}
   _frontRayPos: {fileID: 1127523209969722715}
-  _groundLayerMask:
-    serializedVersion: 2
-    m_Bits: 4294967295
-  _groundedOffset: 0.14
-  _jumpForce: 10
-  _gravityMultiplier: 2
-  _coyoteTimeSeconds: 0.1
-  _jumpBufferSeconds: 0.15
-  _enableHeadTurn: 1
-  _headLookDelay: 0
-  _headLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _headLookLimitDegrees: 60
-  _bowAimHeadLookMultiplier: 0.6
-  _enableBodyTurn: 1
-  _bodyLookDelay: 0
-  _bodyLookXCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _bowAimBodyLookMultiplier: 0.4
-  _enableLean: 1
-  _leanDelay: 0
-  _leanCurve:
-    serializedVersion: 2
-    m_Curve: []
-    m_PreInfinity: 2
-    m_PostInfinity: 2
-    m_RotationOrder: 4
-  _leansHeadLooksDelay: 0
-  _applyRootRotationDuringAttack: 0
-  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
-  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
   _weaponSwitcher: {fileID: 1644897884}
   _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
-  _applyRootRotationDuringDodge: 1
-  _bowEquipLayerBlendSpeed: 8
-  _dodgeInputDeadzone: 0.05
-  _dodgeFallbackDuration: 1.2
-  _requireMovementInputForDodge: 1
-  _dodgeScriptedPlaneSpeed: 7
-  _dodgeScriptedDuration: 0.35
-  _attackMoveCancelStickThreshold: 0.5
-  _attackRecoveryExitNormalizedTime: 0.85
-  _attackExitVelocityCarry: 0.6
-  _dodgeRecoveryStartNormalizedTime: 0.65
-  _rollRecoveryStartNormalizedTime: 0.72
-  _dodgeInvulnerabilityEndNormalizedTime: 0.38
-  _rollInvulnerabilityEndNormalizedTime: 0.52
-  _dodgeMoveCancelStickThreshold: 0.3
-  _dodgeExitVelocityCarry: 0.75
-  _rollExitVelocityCarry: 0
-  _inputBufferSeconds: 0.18
-  _dodgeDoubleTapWindow: 0.25
-  _dodgeDoubleTapRollEnabled: 1
-  _rollDistanceMultiplier: 1
-  _strafeStyleMaxPlanarSpeed: 5
-  _debugDodgeDoubleTap: 0
   _lockOnIndicator: {fileID: 1302732657}
   _locomotionProfiles: {fileID: 11400000, guid: 7c8b1b11746485446bc29adb4cf9c9fa, type: 2}
 --- !u!114 &1976761596
@@ -46679,6 +46727,7 @@ GameObject:
   - component: {fileID: 9022905960281365612}
   - component: {fileID: 9022905960281365613}
   - component: {fileID: 9022905960281365614}
+  - component: {fileID: 9022905960281365615}
   m_Layer: 3
   m_Name: GeisPlayer
   m_TagString: Player
@@ -50347,6 +50396,23 @@ MonoBehaviour:
   isInvulnerable: 0
   isDodgeInvulnerable: 0
   isParrying: 0
+--- !u!114 &9022905960281365615
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2247419633768223799}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5287f6ade583ad449bbc91c921f6c6fd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Geis::RogueDeal.Combat.CombatSFXController
+  audioSource: {fileID: 370406373}
+  normalHitSound: {fileID: 0}
+  criticalHitSound: {fileID: 0}
+  blockSound: {fileID: 0}
+  dodgeSound: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -50362,3 +50428,4 @@ SceneRoots:
   - {fileID: 615326031}
   - {fileID: 886569158}
   - {fileID: 991696501}
+  - {fileID: 370406374}

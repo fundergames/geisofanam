@@ -27,26 +27,20 @@ namespace Geis.Locomotion
         public bool AttackAnimatorEnteredLeaf { get; set; }
         public float AttackStateTimeout { get; set; }
 
-        private GeisComboData _comboData;
-        private GeisWeaponComboData _weaponComboData;
         private GeisWeaponSwitcher _weaponSwitcher;
         private GeisComboPlaceholders _comboPlaceholders;
         private AnimatorOverrideController _comboOverrideController;
         private GeisComboData _lastAppliedComboData;
 
         public void Configure(
-            GeisComboData comboData,
-            GeisWeaponComboData weaponComboData,
             GeisWeaponSwitcher weaponSwitcher,
             GeisComboPlaceholders comboPlaceholders,
             Animator presentationAnimator)
         {
-            _comboData = comboData;
-            _weaponComboData = weaponComboData;
             _weaponSwitcher = weaponSwitcher;
             _comboPlaceholders = comboPlaceholders;
 
-            UseDataDrivenCombo = _comboData != null && presentationAnimator != null
+            UseDataDrivenCombo = _weaponSwitcher != null && presentationAnimator != null
                 && AnimatorParameterGuard.HasParameter(presentationAnimator, "Attack")
                 && (AnimatorParameterGuard.HasParameter(presentationAnimator, "ComboStateBlend")
                     || AnimatorParameterGuard.HasParameter(presentationAnimator, "ComboState"));
@@ -61,21 +55,12 @@ namespace Geis.Locomotion
 
         public GeisComboData GetCurrentComboData()
         {
-            if (_weaponSwitcher != null
-                && _weaponSwitcher.TryGetComboForWeapon(_weaponSwitcher.CurrentWeaponIndex, out var unifiedCombo))
-            {
-                return unifiedCombo;
-            }
+            if (_weaponSwitcher == null)
+                return null;
 
-            if (_weaponComboData != null && _weaponSwitcher != null)
-            {
-                int idx = _weaponSwitcher.CurrentWeaponIndex;
-                var data = _weaponComboData.GetComboForWeapon(idx);
-                if (data != null)
-                    return data;
-            }
-
-            return _comboData;
+            return _weaponSwitcher.TryGetComboForWeapon(_weaponSwitcher.CurrentWeaponIndex, out var combo)
+                ? combo
+                : null;
         }
 
         public void ApplyOverridesIfReady(Animator presentationAnimator)

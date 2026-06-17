@@ -190,13 +190,7 @@ namespace Geis.Locomotion
         /// </summary>
         public int CurrentComboState => _comboController.CurrentComboState;
 
-        [Tooltip("Combo data (transitions + clips). When null, uses legacy Attack_1 if available.")]
-        [SerializeField]
-        private GeisComboData _comboData;
-        [Tooltip("Optional: resolves combo by weapon index when set.")]
-        [SerializeField]
-        private GeisWeaponComboData _weaponComboData;
-        [Tooltip("Optional: provides current weapon index for _weaponComboData lookup.")]
+        [Tooltip("Resolves combo clips and transitions from GeisWeaponDefinition.comboData on the active slot.")]
         [SerializeField]
         private GeisWeaponSwitcher _weaponSwitcher;
         [Tooltip("Optional: placeholders for runtime override. Loaded from Resources/GeisComboPlaceholders if null.")]
@@ -640,12 +634,7 @@ namespace Geis.Locomotion
             if (_controller != null)
                 CapsuleCrouchingSize(_isCrouching);
 
-            _comboController.Configure(
-                _comboData,
-                _weaponComboData,
-                _weaponSwitcher,
-                _comboPlaceholders,
-                _animator);
+            _comboController.Configure(_weaponSwitcher, _comboPlaceholders, _animator);
             _useDataDrivenCombo = _comboController.UseDataDrivenCombo;
 
             ApplyComboOverridesIfReady();
@@ -666,6 +655,7 @@ namespace Geis.Locomotion
             if (!IsBowEquipped)
             {
                 PrepareAnimatorForNonBowWeapon(reevaluateAnimator: true);
+                ApplyComboOverridesIfReady();
             }
             else
             {

@@ -1279,8 +1279,6 @@ MonoBehaviour:
   _leansHeadLooksDelay: 0
   _animationClipEnd: 0
   _applyRootRotationDuringAttack: 0
-  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
-  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
   _weaponSwitcher: {fileID: 1386048861169640747}
   _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
   _applyRootRotationDuringDodge: 0

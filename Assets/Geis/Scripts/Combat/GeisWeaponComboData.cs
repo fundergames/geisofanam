@@ -19,7 +19,7 @@ using UnityEngine;
 namespace Geis.Combat
 {
     /// <summary>
-    /// Maps weapon slots to combo data. One GeisComboData per weapon.
+    /// Legacy per-slot combo map. Player combat uses <see cref="GeisWeaponDefinition.comboData"/> on <see cref="GeisWeaponSwitcher"/> instead.
     /// </summary>
     [CreateAssetMenu(fileName = "WeaponComboData_", menuName = "Funder Games/Geis/Combat/Weapon Combo Data")]
     public class GeisWeaponComboData : ScriptableObject

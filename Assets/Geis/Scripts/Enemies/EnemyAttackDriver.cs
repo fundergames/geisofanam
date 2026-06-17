@@ -24,6 +24,13 @@ namespace Geis.Enemies
     [RequireComponent(typeof(CombatExecutor))]
     public class EnemyAttackDriver : MonoBehaviour, IAttackerPhaseProvider
     {
+        /// <summary>Must match <see cref="SelectAttack"/> max-range test.</summary>
+        public const float AttackRangeSelectionSlack = 0.12f;
+
+        private const float MovingTelegraphSpeedThresholdMps = 0.25f;
+
+        private EnemyMotor _motor;
+
         public enum AttackPhase
         {
             None = 0,
@@ -84,6 +91,7 @@ namespace Geis.Enemies
         private void Awake()
         {
             _combatant = GetComponent<EnemyCombatant>() ?? GetComponentInParent<EnemyCombatant>();
+            _motor = GetComponent<EnemyMotor>() ?? GetComponentInParent<EnemyMotor>();
             _coordination = GetComponent<EnemyCoordinationContext>() ?? GetComponentInParent<EnemyCoordinationContext>();
             _animatorDriver = GetComponent<EnemyAnimatorDriver>() ?? GetComponentInParent<EnemyAnimatorDriver>();
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
@@ -143,6 +151,9 @@ namespace Geis.Enemies
             if (attack == null || ResolveCombatAction(attack) == null)
                 return false;
 
+            if (!IsFacingTargetForAttack(attack, target))
+                return false;
+
             if (_combatEntity != null
                 && _combatEntity.TryGetComponent(out CombatAttackInterruptController interrupt))
                 interrupt.NotifyAttackStarted();
@@ -154,6 +165,12 @@ namespace Geis.Enemies
         public bool HasAnyAttackInRange(float distanceToTarget, bool hasLineOfSight)
         {
             return SelectAttack(distanceToTarget, hasLineOfSight) != null;
+        }
+
+        /// <summary>True when a timed/scripted telegraph runs before the Attack trigger (not clip-driven wind-up).</summary>
+        public static bool UsesCodeTelegraph(EnemyAttackDefinition attack)
+        {
+            return attack != null && attack.telegraphDuration > 0f;
         }
 
         private CombatAction ResolveCombatAction(EnemyAttackDefinition attack)
@@ -250,7 +267,7 @@ namespace Geis.Enemies
                 if (resolved == null)
                     continue;
 
-                if (distanceToTarget < attack.minRange || distanceToTarget > attack.maxRange + 0.12f)
+                if (distanceToTarget < attack.minRange || distanceToTarget > attack.maxRange + AttackRangeSelectionSlack)
                     continue;
 
                 if (attack.requiresLineOfSight && !hasLineOfSight)
@@ -271,25 +288,64 @@ namespace Geis.Enemies
             return best;
         }
 
+        private float GetEffectiveTelegraphSeconds(EnemyAttackDefinition attack)
+        {
+            if (attack == null || attack.telegraphDuration <= 0f)
+                return 0f;
+
+            float planarSpeed = _motor != null ? _motor.PlanarSpeedMps : 0f;
+            if (planarSpeed <= MovingTelegraphSpeedThresholdMps)
+                return attack.telegraphDuration;
+
+            return Mathf.Min(attack.telegraphDuration, attack.telegraphCapWhileMoving);
+        }
+
+        private bool IsFacingTargetForAttack(EnemyAttackDefinition attack, CombatEntity target)
+        {
+            if (attack == null || target == null || _combatEntity == null)
+                return true;
+
+            float tolerance = Mathf.Clamp(attack.facingToleranceDegrees, 0f, 180f);
+            if (tolerance <= 0.01f)
+                return true;
+
+            Vector3 toTarget = target.GetHitPoint() - _combatEntity.transform.position;
+            toTarget.y = 0f;
+            if (toTarget.sqrMagnitude < 1e-8f)
+                return true;
+
+            Vector3 forward = _combatEntity.transform.forward;
+            forward.y = 0f;
+            if (forward.sqrMagnitude < 1e-8f)
+                return true;
+
+            return Vector3.Angle(forward.normalized, toTarget.normalized) <= tolerance;
+        }
+
         private IEnumerator AttackRoutine(EnemyAttackDefinition attack, CombatEntity target)
         {
             CombatAction runtimeAction = ResolveCombatAction(attack);
 
             CurrentAttack = attack;
-            CurrentPhase = AttackPhase.Telegraph;
             _coordination?.TryReserveAttackWindow(target);
             _coordination?.MarkEngagedTarget(target);
 
             SyncWeaponAnimatorBeforeSwing();
 
-            if (_animatorDriver != null && !string.IsNullOrEmpty(attack.telegraphTrigger))
-                _animatorDriver.TriggerAttack(attack.telegraphTrigger);
+            float telegraphRemaining = GetEffectiveTelegraphSeconds(attack);
+            bool codeTelegraph = telegraphRemaining > 0f;
 
-            float telegraphRemaining = attack.telegraphDuration;
-            while (telegraphRemaining > 0f)
+            if (codeTelegraph)
             {
-                telegraphRemaining -= Time.deltaTime;
-                yield return null;
+                CurrentPhase = AttackPhase.Telegraph;
+                if (_animatorDriver != null && !string.IsNullOrEmpty(attack.telegraphTrigger))
+                    _animatorDriver.TriggerAttack(attack.telegraphTrigger);
+
+                while (telegraphRemaining > 0f)
+                {
+                    telegraphRemaining -= Time.deltaTime;
+                    yield return null;
+                }
             }
 
             CurrentPhase = AttackPhase.Execute;

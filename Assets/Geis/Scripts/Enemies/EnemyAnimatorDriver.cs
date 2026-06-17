@@ -2,13 +2,6 @@
  * Copyright (c) 2026 Funder Games
  *
  * All rights reserved.
- *
- * This software and associated documentation files are proprietary and confidential.
- * Unauthorized copying, modification, distribution, or use of this software,
- * via any medium, is strictly prohibited without explicit written permission.
- *
- * This code is provided for personal use only by authorized recipients.
- * It may not be redistributed, sublicensed, or sold in any form.
  */
 
 using System.Collections.Generic;
@@ -21,11 +14,6 @@ namespace Geis.Enemies
 {
     public class EnemyAnimatorDriver : MonoBehaviour
     {
-        [Header("Locomotion")]
-        [SerializeField] private string moveSpeedParameter = "MoveSpeed";
-        [Tooltip("Polygon/Synty gait index (Idle=0, Walk=1, Run=2, Sprint=3). Skipped if empty or parameter missing.")]
-        [SerializeField] private string currentGaitParameter = "CurrentGait";
-
         [Header("Behaviour flags (omit from Animator Controller to skip)")]
         [SerializeField] private string hasTargetParameter = "HasTarget";
         [SerializeField] private string strafeParameter = "IsStrafing";
@@ -36,49 +24,41 @@ namespace Geis.Enemies
         [SerializeField] private string staggeringParameter = "IsStaggering";
 
         [Header("Locomotion compatibility")]
-        [Tooltip("If set, forced true while alive so controllers like AC_Polygon_Masculine_Geis stay in grounded locomotion (skipped if the parameter is missing).")]
+        [Tooltip("If set, forced true while alive so controllers like AC_Polygon_Masculine_Geis stay in grounded locomotion.")]
         [SerializeField] private string locomotionGroundedParameter = "IsGrounded";
-        [Tooltip("Polygon: default animator values leave IsGrounded false until the first brain tick; Animator may evaluate earlier and stick in fall. Bootstrap runs OnEnable and whenever the runtime controller is assigned.")]
         [SerializeField] private bool bootstrapGroundedOnEnable = true;
-        [Tooltip("While grounded (alive), keep fall blend inputs at zero so AC_Polygon-style Falling_BlendTree does not latch.")]
         [SerializeField] private bool suppressFallingBlendWhileGrounded = true;
         [SerializeField] private string fallingDurationParameter = "FallingDuration";
         [SerializeField] private string fallingBlendParameter = "FallingBlend";
 
-        [Tooltip("AC_Polygon_Masculine_Geis enters locomotion via MovementInputHeld / IsWalking; enemies have no input device, so we synthesize those from brain state + MoveSpeed. Disable for fully custom Animator setups.")]
-        [SerializeField] private bool drivePolygonStyleMovementIntent = true;
-        [Range(0f, 0.5f)]
-        [SerializeField] private float polygonWalkMoveSpeedThreshold = 0.05f;
-        [SerializeField] private string movementInputHeldParameter = "MovementInputHeld";
-        [SerializeField] private string movementInputPressedParameter = "MovementInputPressed";
-        [SerializeField] private string movementInputTappedParameter = "MovementInputTapped";
-        [SerializeField] private string polygonIsWalkingParameter = "IsWalking";
-        [SerializeField] private string polygonIsStoppedParameter = "IsStopped";
+        [Tooltip("Uses LocomotionAnimatorApplier (same path as the player) for MoveSpeed, CurrentGait, MovementInputHeld, IsWalking.")]
+        [SerializeField] private bool useSharedLocomotionApplier = true;
 
         [Header("Discrete brain state (optional)")]
-        [Tooltip("Integer parameter written as (int)EnemyBrain.EnemyState — Idle=0, Acquire=1, Approach=2, Strafe=3, Telegraph=4, Attack=5, Recover=6, Stagger=7, Dead=8. Leave empty to disable.")]
         [SerializeField] private string enemyStateParameter = "";
 
         [Header("Combat triggers")]
         [SerializeField] private string attackTrigger = "Attack";
-        [Tooltip("Legacy single hit trigger when no ICombatHitReactionPresenter. Polygon controller uses TakeDamage + HitDirection.")]
         [SerializeField] private string hitTrigger = "TakeDamage";
 
         [Header("Weapon / combo (Polygon-style, optional)")]
         [SerializeField] private string equippedWeaponIndexParameter = "EquippedWeaponIndex";
         [SerializeField] private string comboStateBlendParameter = "ComboStateBlend";
         [SerializeField] private string comboStateIntParameter = "ComboState";
-        [Tooltip("When null, tries Resources ComboPlaceholders/GeisComboPlaceholders then GeisComboPlaceholders. Same placeholders as the player combo blend tree.")]
         [SerializeField] private GeisComboPlaceholders enemyComboPlaceholders;
 
         private const int ComboBlendSlotCount = 32;
+        private const float VelocityGaitBlendThresholdMps = 0.12f;
 
+        private EnemyCombatant _combatant;
         private CombatEntity _combatEntity;
         private Animator _animator;
         private AnimatorOverrideController _weaponComboRuntimeOverride;
+        private bool _hasFallingBlendParameter;
 
         private void Awake()
         {
+            _combatant = GetComponent<EnemyCombatant>() ?? GetComponentInParent<EnemyCombatant>();
             CacheAnimatorReference();
         }
 
@@ -88,23 +68,21 @@ namespace Geis.Enemies
                 ApplyLocomotionBootstrap(forceGrounded: true);
         }
 
-        /// <summary>
-        /// Pushes brain locomotion and high-level state into Animator parameters so transitions can mirror Acquire → Approach → Strafe → Telegraph → Attack → Recover → Stagger → Dead.
-        /// Attack-specific clips may still be fired via <see cref="TriggerAttack"/> / CombatExecutor triggers configured on <see cref="EnemyAttackDefinition"/>.
-        /// </summary>
-        public void UpdateState(float moveSpeedNormalised, bool hasTarget, bool isStrafing, EnemyBrain.EnemyState brainState, int locomotionGaitIndex)
+        public void UpdateState(EnemyMotor motor, bool hasTarget, bool isStrafing, EnemyBrain.EnemyState brainState)
         {
             CacheAnimatorReference();
             if (_animator == null)
                 return;
 
-            SetFloatIfPresent(moveSpeedParameter, moveSpeedNormalised);
+            float planarSpeedMps = motor != null ? motor.PlanarSpeedMps : 0f;
+            int gaitIntent = motor != null ? motor.LocomotionGaitIntent : 0;
 
-            if (!string.IsNullOrEmpty(currentGaitParameter))
-                SetIntIfPresent(currentGaitParameter, locomotionGaitIndex);
+            if (useSharedLocomotionApplier)
+                ApplySharedLocomotionPresentation(planarSpeedMps, gaitIntent, isStrafing, brainState);
+            else
+                ApplyLegacyLocomotionPresentation(planarSpeedMps, gaitIntent, isStrafing, brainState);
 
             SetBoolIfPresent(hasTargetParameter, hasTarget);
-            ApplyStrafeIntent(strafeParameter, isStrafing);
             SetBoolIfPresent(telegraphParameter, brainState == EnemyBrain.EnemyState.Telegraph);
             SetBoolIfPresent(deadParameter, brainState == EnemyBrain.EnemyState.Dead);
             SetBoolIfPresent(attackingParameter, brainState == EnemyBrain.EnemyState.Attack);
@@ -113,15 +91,92 @@ namespace Geis.Enemies
 
             if (!string.IsNullOrEmpty(enemyStateParameter))
                 SetIntIfPresent(enemyStateParameter, (int)brainState);
-
-            ApplyGroundedAndFallingParameters(brainState != EnemyBrain.EnemyState.Dead);
-            ApplyPolygonStyleMovementIntent(moveSpeedNormalised, brainState);
         }
 
-        /// <summary>
-        /// Sets Polygon-style grounded/fall blend inputs before the first <see cref="EnemyBrain"/> tick
-        /// so the Animator does not evaluate with default IsGrounded=false.
-        /// </summary>
+        private void ApplySharedLocomotionPresentation(
+            float planarSpeedMps,
+            int gaitIntent,
+            bool isStrafing,
+            EnemyBrain.EnemyState brainState)
+        {
+            EnemyMovementSettings movement = _combatant != null && _combatant.Definition != null
+                ? _combatant.Definition.movement
+                : null;
+
+            float walkRef = movement != null ? movement.animatorWalkSpeedReference : GeisLocomotionGait.DefaultWalkSpeed;
+            float runRef = movement != null ? movement.animatorRunSpeedReference : GeisLocomotionGait.DefaultRunSpeed;
+            float sprintRef = movement != null ? movement.animatorSprintSpeedReference : GeisLocomotionGait.DefaultSprintSpeed;
+
+            bool frozenForCombat =
+                brainState == EnemyBrain.EnemyState.Telegraph
+                || brainState == EnemyBrain.EnemyState.Attack
+                || brainState == EnemyBrain.EnemyState.Recover
+                || brainState == EnemyBrain.EnemyState.Stagger
+                || brainState == EnemyBrain.EnemyState.Dead;
+
+            bool locomotionBrain =
+                brainState == EnemyBrain.EnemyState.Approach
+                || brainState == EnemyBrain.EnemyState.Strafe;
+
+            int gait = GeisLocomotionGait.FromPlanarSpeed(planarSpeedMps, walkRef, runRef, sprintRef);
+            float moveSpeed2D = planarSpeedMps;
+
+            if (!frozenForCombat && locomotionBrain && planarSpeedMps < VelocityGaitBlendThresholdMps && gaitIntent > GeisLocomotionGait.Idle)
+            {
+                gait = gaitIntent;
+                moveSpeed2D = GeisLocomotionGait.ReferenceSpeedForGait(gaitIntent, walkRef, runRef, sprintRef);
+            }
+
+            bool wantsLocomotion = !frozenForCombat && locomotionBrain && moveSpeed2D > 0.01f;
+            bool isWalking = wantsLocomotion && gait == GeisLocomotionGait.Walk;
+
+            var snap = new LocomotionPresentationSnapshot
+            {
+                MoveSpeed2D = frozenForCombat ? 0f : moveSpeed2D,
+                CurrentGait = frozenForCombat ? GeisLocomotionGait.Idle : gait,
+                IsStrafingFloat = isStrafing ? 1f : 0f,
+                IsGrounded = brainState != EnemyBrain.EnemyState.Dead,
+                MovementInputHeld = wantsLocomotion,
+                MovementInputPressed = false,
+                MovementInputTapped = false,
+                IsWalking = isWalking,
+                IsStopped = !wantsLocomotion,
+                IsStarting = false,
+                FallingDuration = 0f
+            };
+
+            var ctx = new LocomotionApplyContext
+            {
+                AirGaitForAnimator = false,
+                HasFallingBlendParameter = _hasFallingBlendParameter,
+                FallingBlendValue = 0f,
+                IsJumpingValue = false
+            };
+
+            LocomotionAnimatorApplier.ApplySyntyLocomotion(_animator, snap, ctx);
+
+            if (suppressFallingBlendWhileGrounded && snap.IsGrounded)
+            {
+                SetFloatIfPresent(fallingDurationParameter, 0f);
+                if (_hasFallingBlendParameter)
+                    SetFloatIfPresent(fallingBlendParameter, 0f);
+            }
+        }
+
+        /// <summary>Minimal float/int writes when shared applier is disabled.</summary>
+        private void ApplyLegacyLocomotionPresentation(
+            float planarSpeedMps,
+            int gaitIntent,
+            bool isStrafing,
+            EnemyBrain.EnemyState brainState)
+        {
+            int gait = planarSpeedMps < VelocityGaitBlendThresholdMps ? gaitIntent : gaitIntent;
+            SetFloatIfPresent("MoveSpeed", planarSpeedMps);
+            SetIntIfPresent("CurrentGait", gait);
+            ApplyStrafeIntent(strafeParameter, isStrafing);
+            ApplyGroundedAndFallingParameters(brainState != EnemyBrain.EnemyState.Dead);
+        }
+
         private void ApplyLocomotionBootstrap(bool forceGrounded)
         {
             CacheAnimatorReference();
@@ -149,43 +204,6 @@ namespace Geis.Enemies
             }
         }
 
-        /// <summary>
-        /// Polygon controllers gate transitions into locomotion blend trees on player input bools.
-        /// Enemies only move via NavMesh/agent velocity — mirror intent here when those parameters exist.
-        /// </summary>
-        private void ApplyPolygonStyleMovementIntent(float moveSpeedNormalised, EnemyBrain.EnemyState brainState)
-        {
-            if (!drivePolygonStyleMovementIntent || _animator == null || _animator.runtimeAnimatorController == null)
-                return;
-
-            if (!AnimatorParameterGuard.HasParameter(_animator, movementInputHeldParameter))
-                return;
-
-            bool frozenForCombat =
-                brainState == EnemyBrain.EnemyState.Telegraph
-                || brainState == EnemyBrain.EnemyState.Attack
-                || brainState == EnemyBrain.EnemyState.Recover
-                || brainState == EnemyBrain.EnemyState.Stagger
-                || brainState == EnemyBrain.EnemyState.Dead;
-
-            bool locomotionBrain =
-                brainState == EnemyBrain.EnemyState.Approach
-                || brainState == EnemyBrain.EnemyState.Strafe;
-
-            bool wantsWalk =
-                !frozenForCombat
-                && (locomotionBrain || moveSpeedNormalised > polygonWalkMoveSpeedThreshold);
-
-            SetBoolIfPresent(movementInputHeldParameter, wantsWalk);
-            SetBoolIfPresent(movementInputPressedParameter, false);
-            SetBoolIfPresent(movementInputTappedParameter, false);
-            SetBoolIfPresent(polygonIsWalkingParameter, wantsWalk);
-            SetBoolIfPresent(polygonIsStoppedParameter, !wantsWalk);
-        }
-
-        /// <summary>
-        /// AC_Polygon_Masculine_Geis exposes <c>IsStrafing</c> as a float blend (0/1), not a bool.
-        /// </summary>
         private void ApplyStrafeIntent(string parameterName, bool strafing)
         {
             if (_animator == null || string.IsNullOrEmpty(parameterName))
@@ -204,6 +222,8 @@ namespace Geis.Enemies
 
             _combatEntity = GetComponent<CombatEntity>() ?? GetComponentInParent<CombatEntity>();
             _animator = _combatEntity != null ? _combatEntity.animator : GetComponentInChildren<Animator>();
+            _hasFallingBlendParameter = _animator != null
+                && AnimatorParameterGuard.HasParameter(_animator, fallingBlendParameter);
         }
 
         public void ApplyAnimatorOverride(RuntimeAnimatorController controller)
@@ -217,11 +237,6 @@ namespace Geis.Enemies
             ApplyLocomotionBootstrap(forceGrounded: true);
         }
 
-        /// <summary>
-        /// Applies <see cref="EnemyAiDefinition.animatorOverrideController"/> and, when <c>weaponDefinition.comboData</c> is set,
-        /// maps <see cref="GeisComboData"/> clips onto <see cref="GeisComboPlaceholders"/> like the player
-        /// (<see cref="Geis.Locomotion.GeisPlayerAnimationController"/>), so <c>Attack</c> + <c>ComboStateBlend</c> select real weapon swings.
-        /// </summary>
         public void ApplyAnimatorOverrideFromDefinition(EnemyAiDefinition definition)
         {
             if (definition == null)
@@ -252,8 +267,7 @@ namespace Geis.Enemies
             if (placeholders == null)
             {
                 Debug.LogWarning(
-                    "[EnemyAnimatorDriver] Assign Enemy Combo Placeholders on this component or add Resources/ComboPlaceholders/GeisComboPlaceholders. " +
-                    "Without placeholder assets, GeisComboData clips cannot be applied to the Animator.",
+                    "[EnemyAnimatorDriver] Assign Enemy Combo Placeholders on this component or add Resources/ComboPlaceholders/GeisComboPlaceholders.",
                     this);
                 _weaponComboRuntimeOverride = null;
                 ApplyAnimatorOverride(source);
@@ -282,9 +296,6 @@ namespace Geis.Enemies
             ApplyLocomotionBootstrap(forceGrounded: true);
         }
 
-        /// <summary>
-        /// Sets animator weapon slot when <paramref name="definition"/> uses <see cref="EnemyAiDefinition.weaponDefinition"/> (same indices as <see cref="Geis.Combat.GeisWeaponSwitcher"/>).
-        /// </summary>
         public void SyncAnimatorWeaponSlotFromDefinition(EnemyAiDefinition definition)
         {
             if (definition?.weaponDefinition == null)
@@ -299,9 +310,6 @@ namespace Geis.Enemies
             SetIntIfPresent(equippedWeaponIndexParameter, slotIndex);
         }
 
-        /// <summary>
-        /// Mirrors <c>GeisPlayerAnimationController.SetComboStateBlend</c> via <see cref="GeisComboAnimatorBlend"/>.
-        /// </summary>
         public void SetWeaponComboState(int state)
         {
             CacheAnimatorReference();

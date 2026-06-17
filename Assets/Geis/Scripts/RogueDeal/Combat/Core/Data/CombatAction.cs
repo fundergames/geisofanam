@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Timeline;
 using RogueDeal.Combat;
+using RogueDeal.Combat.Presentation;
 using RogueDeal.Combat.Core.Effects;
 using RogueDeal.Combat.Core.Cooldowns;
 using RogueDeal.Combat.Core.Targeting;
@@ -137,14 +138,22 @@ namespace RogueDeal.Combat.Core.Data
     [System.Serializable]
     public class EffectBinding
     {
-        [Tooltip("Animation event name (e.g., 'SpawnVFX')")]
+        [Tooltip("Optional label for debugging and animation-event lookup (PlaySFX:/SpawnVFX: param).")]
         public string eventName;
-        
+
+        [Tooltip("Normalized clip time (0-1) for data-driven scheduling. Ignored by animation-event path.")]
+        [Range(0f, 1f)]
+        public float normalizedTime;
+
         [Tooltip("VFX prefab to spawn")]
         public GameObject vfxPrefab;
-        
+
         [Tooltip("SFX to play")]
         public AudioClip sfx;
+
+        [Header("Feel (optional)")]
+        public CombatCameraShakeSpec cameraShake;
+        public CombatHitStopSpec hitStop;
     }
 }
 

@@ -115,16 +115,15 @@ namespace Geis.Combat
         public bool TryGetComboForWeapon(int weaponIndex, out GeisComboData combo)
         {
             combo = null;
-            if (weaponSlots != null && weaponIndex >= 0 && weaponIndex < weaponSlots.Length)
-            {
-                var def = weaponSlots[weaponIndex];
-                if (def != null)
-                {
-                    combo = def.comboData;
-                    return true;
-                }
-            }
-            return false;
+            if (weaponSlots == null || weaponIndex < 0 || weaponIndex >= weaponSlots.Length)
+                return false;
+
+            var def = weaponSlots[weaponIndex];
+            if (def == null)
+                return false;
+
+            combo = def.comboData;
+            return combo != null;
         }
 
         /// <summary>

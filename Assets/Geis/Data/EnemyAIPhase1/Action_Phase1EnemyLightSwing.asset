@@ -47,4 +47,8 @@ MonoBehaviour:
     hasResourceCost: 0
     manaCost: 0
     staminaCost: 0
-  effectBindings: []
+  effectBindings:
+  - eventName: swing_whoosh
+    normalizedTime: 0.12
+    vfxPrefab: {fileID: 0}
+    sfx: {fileID: 0}

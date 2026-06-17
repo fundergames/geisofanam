@@ -4046,8 +4046,6 @@ MonoBehaviour:
   _attackDodgeProfile: {fileID: 0}
   _rearRayPos: {fileID: 5825215148077825390}
   _frontRayPos: {fileID: 1127523209969722715}
-  _comboData: {fileID: 11400000, guid: f676c25f31a2f499c8b233261a7f00b7, type: 2}
-  _weaponComboData: {fileID: 11400000, guid: 57c4c9b81f0f444a08bb53e1e2831a3f, type: 2}
   _weaponSwitcher: {fileID: 1644897884}
   _comboPlaceholders: {fileID: 11400000, guid: 4c9709767d1044e3d81349973e6b05b3, type: 2}
 --- !u!114 &1976761596

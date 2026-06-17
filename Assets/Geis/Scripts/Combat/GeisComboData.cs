@@ -16,6 +16,7 @@
 
 using UnityEngine;
 using RogueDeal.Combat.Core.Data;
+using RogueDeal.Combat.Presentation;
 
 namespace Geis.Combat
 {
@@ -45,6 +46,28 @@ namespace Geis.Combat
     }
 
     /// <summary>
+    /// Scheduled SFX/VFX on a combo step (authored in combo graph presentation track).
+    /// </summary>
+    [System.Serializable]
+    public class GeisComboPresentationEvent
+    {
+        [Tooltip("When to fire relative to attack start (0-1 on the combo clip).")]
+        [Range(0f, 1f)]
+        public float normalizedTime;
+
+        [Tooltip("Optional label for debugging.")]
+        public string eventName;
+
+        public AudioClip sfx;
+
+        public GameObject vfxPrefab;
+
+        [Header("Feel (optional)")]
+        public CombatCameraShakeSpec cameraShake;
+        public CombatHitStopSpec hitStop;
+    }
+
+    /// <summary>
     /// Per combo state (same index as animation clips array): optional RogueDeal action override and multi-hit timing on that clip.
     /// </summary>
     [System.Serializable]
@@ -55,6 +78,16 @@ namespace Geis.Combat
 
         [Tooltip("Multi-hit in this clip: contact times as normalized clip time (0-1). One entry = one hit. Empty = SimpleAttackHitDetector uses action/inspector timing.")]
         public float[] multiHitNormalizedTimes;
+
+        [Tooltip("Per-step swing/whoosh/trail SFX and VFX (cyan track in combo editor). Empty falls back to CombatAction.effectBindings.")]
+        public GeisComboPresentationEvent[] presentationEvents;
+
+        [Header("Impact feel (at multi-hit / damage times)")]
+        [Tooltip("Camera shake when each orange hit marker fires.")]
+        public CombatCameraShakeSpec impactCameraShake;
+
+        [Tooltip("Hit-stop when each orange hit marker fires.")]
+        public CombatHitStopSpec impactHitStop;
     }
 
 /// <summary>Startup / active / recovery segment of a combo step (fighting-game frame data).</summary>
@@ -237,13 +270,67 @@ public class GeisComboStateTiming
             if (binding == null || binding.multiHitNormalizedTimes == null || binding.multiHitNormalizedTimes.Length == 0)
                 return false;
 
-            AnimationClip clip = GetClipForState(state);
-            float len = clip != null ? clip.length : (fallbackClip != null ? fallbackClip.length : 1f);
-
+            float len = GetClipLengthSeconds(state);
             int n = binding.multiHitNormalizedTimes.Length;
             secondsFromAttackStart = new float[n];
             for (int i = 0; i < n; i++)
                 secondsFromAttackStart[i] = Mathf.Clamp01(binding.multiHitNormalizedTimes[i]) * len;
+            return true;
+        }
+
+        /// <summary>
+        /// Combo-step presentation events for this state. Returns false when empty (caller should fall back to CombatAction.effectBindings).
+        /// </summary>
+        public bool TryGetPresentationEvents(int state, out GeisComboPresentationEvent[] events)
+        {
+            events = null;
+            var binding = GetBinding(state);
+            if (binding?.presentationEvents == null || binding.presentationEvents.Length == 0)
+                return false;
+
+            events = binding.presentationEvents;
+            return true;
+        }
+
+        /// <summary>
+        /// Clip length used to convert normalized times to seconds-from-attack-start.
+        /// </summary>
+        public float GetClipLengthSeconds(int state)
+        {
+            AnimationClip clip = GetClipForState(state);
+            if (clip != null)
+                return clip.length;
+            return fallbackClip != null ? fallbackClip.length : 1f;
+        }
+
+        /// <summary>
+        /// Impact feel scheduled at each <see cref="GeisComboStateCombatBinding.multiHitNormalizedTimes"/> entry.
+        /// </summary>
+        public bool TryGetImpactFeelCues(int state, out CombatImpactFeelCue[] cues)
+        {
+            cues = null;
+            var binding = GetBinding(state);
+            if (binding == null || binding.multiHitNormalizedTimes == null || binding.multiHitNormalizedTimes.Length == 0)
+                return false;
+
+            bool hasShake = binding.impactCameraShake.enabled;
+            bool hasStop = binding.impactHitStop.enabled;
+            if (!hasShake && !hasStop)
+                return false;
+
+            float clipLen = GetClipLengthSeconds(state);
+            int n = binding.multiHitNormalizedTimes.Length;
+            cues = new CombatImpactFeelCue[n];
+            for (int i = 0; i < n; i++)
+            {
+                cues[i] = new CombatImpactFeelCue
+                {
+                    timeSeconds = Mathf.Clamp01(binding.multiHitNormalizedTimes[i]) * clipLen,
+                    cameraShake = binding.impactCameraShake,
+                    hitStop = binding.impactHitStop
+                };
+            }
+
             return true;
         }
 

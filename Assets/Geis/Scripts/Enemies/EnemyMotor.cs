@@ -24,12 +24,15 @@ namespace Geis.Enemies
         [SerializeField] private NavMeshAgent navMeshAgent;
 
         private EnemyCombatant _combatant;
-        private float _currentNormalisedSpeed;
+        private float _planarSpeedMps;
         private float _speedMultiplier = 1f;
-        private int _locomotionGaitIndex;
+        private int _locomotionGaitIntent;
 
-        public float CurrentNormalisedSpeed => _currentNormalisedSpeed;
-        public int LocomotionGaitIndex => _locomotionGaitIndex;
+        /// <summary>Horizontal speed in m/s (feeds Animator MoveSpeed like the player).</summary>
+        public float PlanarSpeedMps => _planarSpeedMps;
+
+        /// <summary>Desired gait while velocity is still ramping (0=idle, 1=walk, 2=run, 3=sprint).</summary>
+        public int LocomotionGaitIntent => _locomotionGaitIntent;
 
         private void Awake()
         {
@@ -53,20 +56,22 @@ namespace Geis.Enemies
         }
 
         /// <summary>
-        /// Far from preferred combat distance: faster NavMesh speed + fast gait (run/sprint).
-        /// Close: slower speed + walk gait (jog-style close).
+        /// Uses horizontal distance to the target: at or beyond <see cref="EnemyMovementSettings.approachRunDistanceThreshold"/>
+        /// the agent runs (fast gait + higher NavMesh speed); closer bands jog/walk.
         /// </summary>
-        public void ApplyApproachLocomotion(float distanceToTarget, float preferredCombatDistance)
+        public void ApplyApproachLocomotion(float horizontalDistanceToTarget, float meleeClosingDistance = 0f)
         {
             EnemyAiDefinition definition = _combatant != null ? _combatant.Definition : null;
             if (definition == null)
                 return;
 
             EnemyMovementSettings m = definition.movement;
-            float excess = Mathf.Max(0f, distanceToTarget - preferredCombatDistance);
-            bool useRunBand = excess >= m.approachRunDistanceThreshold;
+            float closing = meleeClosingDistance > 0f ? meleeClosingDistance : definition.GetMeleeClosingDistance();
+            bool stillClosingForMelee = horizontalDistanceToTarget > closing + 0.25f;
+            bool useRunBand = stillClosingForMelee
+                || horizontalDistanceToTarget >= m.approachRunDistanceThreshold;
             _speedMultiplier = useRunBand ? m.approachRunSpeedMultiplier : m.approachJogSpeedMultiplier;
-            _locomotionGaitIndex = useRunBand ? m.approachFastGait : m.approachSlowGait;
+            _locomotionGaitIntent = useRunBand ? m.approachFastGait : m.approachSlowGait;
 
             if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled)
                 navMeshAgent.speed = m.moveSpeed * _speedMultiplier;
@@ -80,7 +85,7 @@ namespace Geis.Enemies
 
             EnemyMovementSettings m = definition.movement;
             _speedMultiplier = m.strafeLocomotionSpeedMultiplier;
-            _locomotionGaitIndex = m.strafeLocomotionGait;
+            _locomotionGaitIntent = m.strafeLocomotionGait;
 
             if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled)
                 navMeshAgent.speed = m.moveSpeed * _speedMultiplier;
@@ -89,7 +94,7 @@ namespace Geis.Enemies
         public void ResetLocomotionPresentation()
         {
             _speedMultiplier = 1f;
-            _locomotionGaitIndex = 0;
+            _locomotionGaitIntent = 0;
 
             if (navMeshAgent != null && navMeshAgent.isActiveAndEnabled && _combatant != null && _combatant.Definition != null)
                 navMeshAgent.speed = _combatant.Definition.movement.moveSpeed;
@@ -132,7 +137,7 @@ namespace Geis.Enemies
                 navMeshAgent.stoppingDistance = clampedTolerance;
                 navMeshAgent.SetDestination(destination);
                 float navCap = Mathf.Max(navMeshAgent.speed, 0.01f);
-                UpdateNormalisedSpeed(navMeshAgent.velocity.magnitude, navCap);
+                UpdatePlanarSpeed(navMeshAgent.velocity.magnitude);
                 return;
             }
 
@@ -151,7 +156,7 @@ namespace Geis.Enemies
 
             transform.position += step;
             float directCap = Mathf.Max(definition.movement.directMoveFallbackSpeed * _speedMultiplier, 0.01f);
-            UpdateNormalisedSpeed(step.magnitude / Mathf.Max(Time.deltaTime, 0.0001f), directCap);
+            UpdatePlanarSpeed(step.magnitude / Mathf.Max(Time.deltaTime, 0.0001f));
         }
 
         public void StopMovement()
@@ -162,7 +167,7 @@ namespace Geis.Enemies
                 navMeshAgent.ResetPath();
             }
 
-            _currentNormalisedSpeed = 0f;
+            _planarSpeedMps = 0f;
             ResetLocomotionPresentation();
         }
 
@@ -189,7 +194,7 @@ namespace Geis.Enemies
             else
                 transform.position = position;
 
-            _currentNormalisedSpeed = 0f;
+            _planarSpeedMps = 0f;
             ResetLocomotionPresentation();
         }
 
@@ -200,9 +205,9 @@ namespace Geis.Enemies
                 && navMeshAgent.isOnNavMesh;
         }
 
-        private void UpdateNormalisedSpeed(float speed, float maxSpeed)
+        private void UpdatePlanarSpeed(float speedMps)
         {
-            _currentNormalisedSpeed = maxSpeed > 0.01f ? Mathf.Clamp01(speed / maxSpeed) : 0f;
+            _planarSpeedMps = Mathf.Max(0f, speedMps);
         }
     }
 }

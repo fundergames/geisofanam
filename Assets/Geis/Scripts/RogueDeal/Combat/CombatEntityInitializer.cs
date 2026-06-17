@@ -12,6 +12,7 @@
  */
 
 using UnityEngine;
+using RogueDeal.Combat.Presentation;
 using RogueDeal.Player;
 
 namespace RogueDeal.Combat
@@ -44,6 +45,7 @@ namespace RogueDeal.Combat
             EnsureAnimationController(target);
             EnsureVFXController(target);
             EnsureSFXController(target);
+            EnsurePresentationScheduler(target);
             EnsureHitPoint(target, entity);
             EnsureVFXSpawnPoint(target, entity);
 
@@ -130,8 +132,19 @@ namespace RogueDeal.Combat
             CombatSFXController sfxController = target.GetComponent<CombatSFXController>();
             if (sfxController == null)
             {
-                target.AddComponent<CombatSFXController>();
+                sfxController = target.AddComponent<CombatSFXController>();
                 Debug.Log($"[CombatEntityInitializer] Added CombatSFXController to {target.name}");
+            }
+
+            CombatPresentationRuntimeSetup.EnsureAbilityAudioSource(target, sfxController);
+        }
+
+        private static void EnsurePresentationScheduler(GameObject target)
+        {
+            if (target.GetComponent<CombatPresentationScheduler>() == null)
+            {
+                target.AddComponent<CombatPresentationScheduler>();
+                Debug.Log($"[CombatEntityInitializer] Added CombatPresentationScheduler to {target.name}");
             }
         }
 

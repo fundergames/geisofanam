@@ -71,6 +71,11 @@ namespace Geis.Combat.Editor
         private float _multiHitDragStartMouseX;
         private float _multiHitDragStartNormalized;
         private bool _showRawMultiHitTimes;
+        private int _draggingPresentationIndex = -1;
+        private float _presentationDragStartMouseX;
+        private float _presentationDragStartNormalized;
+        private int _selectedPresentationIndex = -1;
+        private bool _showRawPresentationEvents;
         private PreviewRenderUtility _nodePreviewUtility;
         private GameObject _nodePreviewInstance;
         private GameObject _nodePreviewSource;
@@ -663,6 +668,8 @@ namespace Geis.Combat.Editor
                 SerializedProperty bindingProp = _stateCombatBindingsProp.GetArrayElementAtIndex(_selectedState);
                 EditorGUILayout.PropertyField(bindingProp.FindPropertyRelative("combatActionOverride"), new GUIContent("Combat Action"));
                 DrawMultiHitTimingAuthoring(bindingProp);
+                DrawImpactFeelAuthoring(bindingProp);
+                DrawPresentationEventAuthoring(bindingProp);
             }
 
             EditorGUILayout.Space(8f);
@@ -714,12 +721,409 @@ namespace Geis.Combat.Editor
 
             EditorGUILayout.EndHorizontal();
 
-            DrawMultiHitTimeline(timesProp, Mathf.Clamp01(_previewNormalizedTime));
+            DrawNormalizedFloatTimeline(
+                timesProp,
+                new Color(1f, 0.45f, 0.2f, 1f),
+                Mathf.Clamp01(_previewNormalizedTime),
+                ref _draggingMultiHitIndex,
+                ref _multiHitDragStartMouseX,
+                ref _multiHitDragStartNormalized,
+                "Add combo hit time",
+                "Remove combo hit time",
+                "Sort combo hit times",
+                AddMultiHitAtNormalized,
+                SortMultiHitTimesProperty);
 
             EditorGUILayout.Space(2f);
             _showRawMultiHitTimes = EditorGUILayout.Foldout(_showRawMultiHitTimes, "Raw multi-hit normalized times");
             if (_showRawMultiHitTimes)
                 EditorGUILayout.PropertyField(timesProp, true);
+        }
+
+        private void DrawImpactFeelAuthoring(SerializedProperty bindingProp)
+        {
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Impact feel (at orange hit times)", EditorStyles.miniBoldLabel);
+            EditorGUILayout.HelpBox(
+                "Camera shake and hit-stop fire when each damage hit marker runs (God of War / Wukong style contact punch).",
+                MessageType.None);
+
+            SerializedProperty shakeProp = bindingProp.FindPropertyRelative("impactCameraShake");
+            SerializedProperty stopProp = bindingProp.FindPropertyRelative("impactHitStop");
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Light impact preset"))
+            {
+                Undo.RecordObject(_comboData, "Light impact feel preset");
+                ApplyImpactFeelPreset(shakeProp, stopProp, light: true);
+            }
+
+            if (GUILayout.Button("Heavy impact preset"))
+            {
+                Undo.RecordObject(_comboData, "Heavy impact feel preset");
+                ApplyImpactFeelPreset(shakeProp, stopProp, light: false);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            EditorGUILayout.PropertyField(shakeProp, true);
+            EditorGUILayout.PropertyField(stopProp, true);
+        }
+
+        private static void ApplyImpactFeelPreset(SerializedProperty shakeProp, SerializedProperty stopProp, bool light)
+        {
+            if (light)
+            {
+                SetShakePreset(shakeProp, 0.06f, 0.1f, 28f);
+                SetStopPreset(stopProp, 1, 0.1f, 0.04f);
+            }
+            else
+            {
+                SetShakePreset(shakeProp, 0.14f, 0.16f, 22f);
+                SetStopPreset(stopProp, 2, 0.08f, 0.07f);
+            }
+        }
+
+        private static void SetShakePreset(SerializedProperty shakeProp, float amplitude, float duration, float frequency)
+        {
+            shakeProp.FindPropertyRelative("enabled").boolValue = true;
+            shakeProp.FindPropertyRelative("amplitude").floatValue = amplitude;
+            shakeProp.FindPropertyRelative("duration").floatValue = duration;
+            shakeProp.FindPropertyRelative("frequency").floatValue = frequency;
+        }
+
+        private static void SetStopPreset(SerializedProperty stopProp, int mode, float timeScale, float duration)
+        {
+            stopProp.FindPropertyRelative("enabled").boolValue = true;
+            stopProp.FindPropertyRelative("mode").enumValueIndex = mode;
+            stopProp.FindPropertyRelative("timeScale").floatValue = timeScale;
+            stopProp.FindPropertyRelative("durationRealSeconds").floatValue = duration;
+        }
+
+        private void DrawPresentationEventAuthoring(SerializedProperty bindingProp)
+        {
+            SerializedProperty eventsProp = bindingProp.FindPropertyRelative("presentationEvents");
+            AnimationClip clip = GetClipForStateSerialized(_selectedState);
+
+            EditorGUILayout.Space(6f);
+            EditorGUILayout.LabelField("Presentation (SFX / VFX)", EditorStyles.miniBoldLabel);
+            EditorGUILayout.LabelField("Orange track above = damage hits. Cyan track = swing / whoosh / trails.", EditorStyles.miniLabel);
+            if (clip != null)
+                EditorGUILayout.LabelField($"Clip length: {clip.length:0.###} s", EditorStyles.miniLabel);
+
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("Add at scrub"))
+            {
+                Undo.RecordObject(_comboData, "Add presentation event");
+                AddPresentationEventAtNormalized(eventsProp, Mathf.Clamp01(_previewNormalizedTime));
+            }
+
+            if (GUILayout.Button("Sort", GUILayout.Width(44f)))
+            {
+                Undo.RecordObject(_comboData, "Sort presentation events");
+                SortPresentationEventsProperty(eventsProp);
+            }
+
+            using (new EditorGUI.DisabledScope(eventsProp.arraySize == 0))
+            {
+                if (GUILayout.Button("Clear", GUILayout.Width(44f)))
+                {
+                    Undo.RecordObject(_comboData, "Clear presentation events");
+                    eventsProp.arraySize = 0;
+                    _draggingPresentationIndex = -1;
+                    _selectedPresentationIndex = -1;
+                }
+            }
+
+            if (GUILayout.Button("Import from Combat Action"))
+            {
+                Undo.RecordObject(_comboData, "Import presentation from combat action");
+                ImportPresentationFromCombatAction(bindingProp, eventsProp);
+            }
+
+            EditorGUILayout.EndHorizontal();
+
+            DrawPresentationEventsTimeline(eventsProp, Mathf.Clamp01(_previewNormalizedTime));
+
+            if (_selectedPresentationIndex >= 0 && _selectedPresentationIndex < eventsProp.arraySize)
+            {
+                EditorGUILayout.Space(4f);
+                EditorGUILayout.LabelField($"Event {_selectedPresentationIndex}", EditorStyles.miniBoldLabel);
+                SerializedProperty ev = eventsProp.GetArrayElementAtIndex(_selectedPresentationIndex);
+                EditorGUILayout.PropertyField(ev.FindPropertyRelative("eventName"), new GUIContent("Name"));
+                EditorGUILayout.PropertyField(ev.FindPropertyRelative("sfx"), new GUIContent("SFX"));
+                EditorGUILayout.PropertyField(ev.FindPropertyRelative("vfxPrefab"), new GUIContent("VFX Prefab"));
+                EditorGUILayout.PropertyField(ev.FindPropertyRelative("cameraShake"), new GUIContent("Camera Shake"));
+                EditorGUILayout.PropertyField(ev.FindPropertyRelative("hitStop"), new GUIContent("Hit Stop"));
+            }
+
+            EditorGUILayout.Space(2f);
+            _showRawPresentationEvents = EditorGUILayout.Foldout(_showRawPresentationEvents, "Raw presentation events");
+            if (_showRawPresentationEvents)
+                EditorGUILayout.PropertyField(eventsProp, true);
+        }
+
+        private void ImportPresentationFromCombatAction(SerializedProperty bindingProp, SerializedProperty eventsProp)
+        {
+            SerializedProperty actionProp = bindingProp.FindPropertyRelative("combatActionOverride");
+            var action = actionProp.objectReferenceValue as RogueDeal.Combat.Core.Data.CombatAction;
+            if (action == null || action.effectBindings == null || action.effectBindings.Length == 0)
+            {
+                EditorUtility.DisplayDialog("Import presentation", "Assign a Combat Action override with effect bindings, or add bindings on the weapon default action and copy manually.", "OK");
+                return;
+            }
+
+            eventsProp.arraySize = action.effectBindings.Length;
+            for (int i = 0; i < action.effectBindings.Length; i++)
+            {
+                var src = action.effectBindings[i];
+                SerializedProperty dst = eventsProp.GetArrayElementAtIndex(i);
+                dst.FindPropertyRelative("normalizedTime").floatValue = src != null ? Mathf.Clamp01(src.normalizedTime) : 0f;
+                dst.FindPropertyRelative("eventName").stringValue = src?.eventName ?? "";
+                dst.FindPropertyRelative("sfx").objectReferenceValue = src?.sfx;
+                dst.FindPropertyRelative("vfxPrefab").objectReferenceValue = src?.vfxPrefab;
+            }
+
+            SortPresentationEventsProperty(eventsProp);
+            _serializedCombo.ApplyModifiedProperties();
+        }
+
+        private void AddPresentationEventAtNormalized(SerializedProperty eventsProp, float normalized)
+        {
+            normalized = Mathf.Clamp01(normalized);
+            const float epsilon = 0.01f;
+            for (int i = 0; i < eventsProp.arraySize; i++)
+            {
+                float t = eventsProp.GetArrayElementAtIndex(i).FindPropertyRelative("normalizedTime").floatValue;
+                if (Mathf.Abs(t - normalized) < epsilon)
+                {
+                    _selectedPresentationIndex = i;
+                    return;
+                }
+            }
+
+            int idx = eventsProp.arraySize;
+            eventsProp.InsertArrayElementAtIndex(idx);
+            SerializedProperty ev = eventsProp.GetArrayElementAtIndex(idx);
+            ev.FindPropertyRelative("normalizedTime").floatValue = normalized;
+            ev.FindPropertyRelative("eventName").stringValue = "";
+            ev.FindPropertyRelative("sfx").objectReferenceValue = null;
+            ev.FindPropertyRelative("vfxPrefab").objectReferenceValue = null;
+            SortPresentationEventsProperty(eventsProp);
+            _selectedPresentationIndex = idx;
+        }
+
+        private static void SortPresentationEventsProperty(SerializedProperty eventsProp)
+        {
+            if (eventsProp == null || eventsProp.arraySize <= 1)
+                return;
+
+            int n = eventsProp.arraySize;
+            var times = new float[n];
+            var names = new string[n];
+            var clips = new UnityEngine.AudioClip[n];
+            var prefabs = new GameObject[n];
+            for (int i = 0; i < n; i++)
+            {
+                SerializedProperty el = eventsProp.GetArrayElementAtIndex(i);
+                times[i] = el.FindPropertyRelative("normalizedTime").floatValue;
+                names[i] = el.FindPropertyRelative("eventName").stringValue;
+                clips[i] = el.FindPropertyRelative("sfx").objectReferenceValue as UnityEngine.AudioClip;
+                prefabs[i] = el.FindPropertyRelative("vfxPrefab").objectReferenceValue as GameObject;
+            }
+
+            var order = Enumerable.Range(0, n).OrderBy(i => times[i]).ToArray();
+            for (int i = 0; i < n; i++)
+            {
+                int src = order[i];
+                SerializedProperty dst = eventsProp.GetArrayElementAtIndex(i);
+                dst.FindPropertyRelative("normalizedTime").floatValue = times[src];
+                dst.FindPropertyRelative("eventName").stringValue = names[src];
+                dst.FindPropertyRelative("sfx").objectReferenceValue = clips[src];
+                dst.FindPropertyRelative("vfxPrefab").objectReferenceValue = prefabs[src];
+            }
+        }
+
+        private void DrawPresentationEventsTimeline(SerializedProperty eventsProp, float playheadNormalized)
+        {
+            const float markerWidth = 8f;
+            Color markerColor = new Color(0.35f, 0.85f, 1f, 1f);
+            Color dragColor = new Color(0.55f, 0.95f, 1f, 1f);
+            Rect track = GUILayoutUtility.GetRect(10f, 34f, GUILayout.ExpandWidth(true));
+            playheadNormalized = Mathf.Clamp01(playheadNormalized);
+
+            EditorGUI.DrawRect(track, new Color(0.1f, 0.1f, 0.11f, 1f));
+            EditorGUI.DrawRect(new Rect(track.x, track.yMax - 2f, track.width, 1f), new Color(0.38f, 0.38f, 0.42f, 1f));
+
+            Event evt = Event.current;
+
+            for (int i = 0; i < eventsProp.arraySize; i++)
+            {
+                float t = Mathf.Clamp01(eventsProp.GetArrayElementAtIndex(i).FindPropertyRelative("normalizedTime").floatValue);
+                float cx = track.x + t * track.width;
+                Rect hitRect = new Rect(cx - markerWidth * 0.5f, track.y + 4f, markerWidth, track.height - 8f);
+                Color c = _draggingPresentationIndex == i ? dragColor
+                    : _selectedPresentationIndex == i ? new Color(0.5f, 1f, 1f, 1f)
+                    : markerColor;
+                EditorGUI.DrawRect(hitRect, c);
+
+                if (evt.type == EventType.MouseDown && evt.button == 1 && hitRect.Contains(evt.mousePosition))
+                {
+                    Undo.RecordObject(_comboData, "Remove presentation event");
+                    eventsProp.DeleteArrayElementAtIndex(i);
+                    if (_draggingPresentationIndex == i)
+                        _draggingPresentationIndex = -1;
+                    else if (_draggingPresentationIndex > i)
+                        _draggingPresentationIndex--;
+                    if (_selectedPresentationIndex == i)
+                        _selectedPresentationIndex = -1;
+                    else if (_selectedPresentationIndex > i)
+                        _selectedPresentationIndex--;
+                    evt.Use();
+                    GUI.changed = true;
+                    return;
+                }
+
+                if (evt.type == EventType.MouseDown && evt.button == 0 && hitRect.Contains(evt.mousePosition))
+                {
+                    _draggingPresentationIndex = i;
+                    _selectedPresentationIndex = i;
+                    _presentationDragStartMouseX = evt.mousePosition.x;
+                    _presentationDragStartNormalized = t;
+                    evt.Use();
+                }
+            }
+
+            if (_draggingPresentationIndex >= 0 && _draggingPresentationIndex < eventsProp.arraySize)
+            {
+                if (evt.type == EventType.MouseDrag && evt.button == 0)
+                {
+                    float deltaNorm = (evt.mousePosition.x - _presentationDragStartMouseX) / Mathf.Max(track.width, 0.001f);
+                    float next = Mathf.Clamp01(_presentationDragStartNormalized + deltaNorm);
+                    eventsProp.GetArrayElementAtIndex(_draggingPresentationIndex)
+                        .FindPropertyRelative("normalizedTime").floatValue = next;
+                    evt.Use();
+                    GUI.changed = true;
+                    Repaint();
+                }
+                else if (evt.type == EventType.MouseUp && evt.button == 0)
+                {
+                    _draggingPresentationIndex = -1;
+                    SortPresentationEventsProperty(eventsProp);
+                    evt.Use();
+                    GUI.changed = true;
+                }
+            }
+
+            float playX = track.x + playheadNormalized * track.width;
+            EditorGUI.DrawRect(new Rect(playX - 1f, track.y + 2f, 2f, track.height - 4f), new Color(0.95f, 0.92f, 0.35f, 0.95f));
+
+            if (evt.type == EventType.MouseDown && evt.button == 0 && track.Contains(evt.mousePosition) && evt.shift)
+            {
+                float n = Mathf.Clamp01((evt.mousePosition.x - track.x) / Mathf.Max(track.width, 0.001f));
+                Undo.RecordObject(_comboData, "Add presentation event");
+                AddPresentationEventAtNormalized(eventsProp, n);
+                evt.Use();
+                GUI.changed = true;
+            }
+
+            GUI.Label(new Rect(track.x + 4f, track.y + 1f, 24f, 12f), "0", EditorStyles.miniLabel);
+            GUI.Label(new Rect(track.xMax - 14f, track.y + 1f, 12f, 12f), "1", EditorStyles.miniLabel);
+        }
+
+        private delegate void AddNormalizedDelegate(SerializedProperty prop, float normalized);
+
+        private void DrawNormalizedFloatTimeline(
+            SerializedProperty timesProp,
+            Color markerColor,
+            float playheadNormalized,
+            ref int draggingIndex,
+            ref float dragStartMouseX,
+            ref float dragStartNormalized,
+            string undoAddLabel,
+            string undoRemoveLabel,
+            string undoSortLabel,
+            AddNormalizedDelegate addAtNormalized,
+            Action<SerializedProperty> sortProperty)
+        {
+            const float markerWidth = 8f;
+            Rect track = GUILayoutUtility.GetRect(10f, 34f, GUILayout.ExpandWidth(true));
+            playheadNormalized = Mathf.Clamp01(playheadNormalized);
+
+            EditorGUI.DrawRect(track, new Color(0.1f, 0.1f, 0.11f, 1f));
+            EditorGUI.DrawRect(new Rect(track.x, track.yMax - 2f, track.width, 1f), new Color(0.38f, 0.38f, 0.42f, 1f));
+
+            Event evt = Event.current;
+            Color dragColor = new Color(
+                Mathf.Min(markerColor.r + 0.2f, 1f),
+                Mathf.Min(markerColor.g + 0.2f, 1f),
+                Mathf.Min(markerColor.b + 0.2f, 1f),
+                1f);
+
+            for (int i = 0; i < timesProp.arraySize; i++)
+            {
+                float t = Mathf.Clamp01(timesProp.GetArrayElementAtIndex(i).floatValue);
+                float cx = track.x + t * track.width;
+                Rect hitRect = new Rect(cx - markerWidth * 0.5f, track.y + 4f, markerWidth, track.height - 8f);
+                Color c = draggingIndex == i ? dragColor : markerColor;
+                EditorGUI.DrawRect(hitRect, c);
+
+                if (evt.type == EventType.MouseDown && evt.button == 1 && hitRect.Contains(evt.mousePosition))
+                {
+                    Undo.RecordObject(_comboData, undoRemoveLabel);
+                    timesProp.DeleteArrayElementAtIndex(i);
+                    if (draggingIndex == i)
+                        draggingIndex = -1;
+                    else if (draggingIndex > i)
+                        draggingIndex--;
+                    evt.Use();
+                    GUI.changed = true;
+                    return;
+                }
+
+                if (evt.type == EventType.MouseDown && evt.button == 0 && hitRect.Contains(evt.mousePosition))
+                {
+                    draggingIndex = i;
+                    dragStartMouseX = evt.mousePosition.x;
+                    dragStartNormalized = t;
+                    evt.Use();
+                }
+            }
+
+            if (draggingIndex >= 0 && draggingIndex < timesProp.arraySize)
+            {
+                if (evt.type == EventType.MouseDrag && evt.button == 0)
+                {
+                    float deltaNorm = (evt.mousePosition.x - dragStartMouseX) / Mathf.Max(track.width, 0.001f);
+                    float next = Mathf.Clamp01(dragStartNormalized + deltaNorm);
+                    timesProp.GetArrayElementAtIndex(draggingIndex).floatValue = next;
+                    evt.Use();
+                    GUI.changed = true;
+                    Repaint();
+                }
+                else if (evt.type == EventType.MouseUp && evt.button == 0)
+                {
+                    draggingIndex = -1;
+                    sortProperty(timesProp);
+                    evt.Use();
+                    GUI.changed = true;
+                }
+            }
+
+            float playX = track.x + playheadNormalized * track.width;
+            EditorGUI.DrawRect(new Rect(playX - 1f, track.y + 2f, 2f, track.height - 4f), new Color(0.95f, 0.92f, 0.35f, 0.95f));
+
+            if (evt.type == EventType.MouseDown && evt.button == 0 && track.Contains(evt.mousePosition) && evt.shift)
+            {
+                float n = Mathf.Clamp01((evt.mousePosition.x - track.x) / Mathf.Max(track.width, 0.001f));
+                Undo.RecordObject(_comboData, undoAddLabel);
+                addAtNormalized(timesProp, n);
+                evt.Use();
+                GUI.changed = true;
+            }
+
+            GUI.Label(new Rect(track.x + 4f, track.y + 1f, 24f, 12f), "0", EditorStyles.miniLabel);
+            GUI.Label(new Rect(track.xMax - 14f, track.y + 1f, 12f, 12f), "1", EditorStyles.miniLabel);
         }
 
         private void AddMultiHitAtNormalized(SerializedProperty timesProp, float normalized)
@@ -749,85 +1153,6 @@ namespace Geis.Combat.Editor
             values.Sort();
             for (int i = 0; i < values.Count; i++)
                 timesProp.GetArrayElementAtIndex(i).floatValue = values[i];
-        }
-
-        private void DrawMultiHitTimeline(SerializedProperty timesProp, float playheadNormalized)
-        {
-            const float markerWidth = 8f;
-            Rect track = GUILayoutUtility.GetRect(10f, 34f, GUILayout.ExpandWidth(true));
-            playheadNormalized = Mathf.Clamp01(playheadNormalized);
-
-            EditorGUI.DrawRect(track, new Color(0.1f, 0.1f, 0.11f, 1f));
-            EditorGUI.DrawRect(new Rect(track.x, track.yMax - 2f, track.width, 1f), new Color(0.38f, 0.38f, 0.42f, 1f));
-
-            Event evt = Event.current;
-
-            for (int i = 0; i < timesProp.arraySize; i++)
-            {
-                float t = Mathf.Clamp01(timesProp.GetArrayElementAtIndex(i).floatValue);
-                float cx = track.x + t * track.width;
-                Rect hitRect = new Rect(cx - markerWidth * 0.5f, track.y + 4f, markerWidth, track.height - 8f);
-                Color c = _draggingMultiHitIndex == i
-                    ? new Color(1f, 0.78f, 0.4f, 1f)
-                    : new Color(1f, 0.45f, 0.2f, 1f);
-                EditorGUI.DrawRect(hitRect, c);
-
-                if (evt.type == EventType.MouseDown && evt.button == 1 && hitRect.Contains(evt.mousePosition))
-                {
-                    Undo.RecordObject(_comboData, "Remove combo hit time");
-                    timesProp.DeleteArrayElementAtIndex(i);
-                    if (_draggingMultiHitIndex == i)
-                        _draggingMultiHitIndex = -1;
-                    else if (_draggingMultiHitIndex > i)
-                        _draggingMultiHitIndex--;
-                    evt.Use();
-                    GUI.changed = true;
-                    return;
-                }
-
-                if (evt.type == EventType.MouseDown && evt.button == 0 && hitRect.Contains(evt.mousePosition))
-                {
-                    _draggingMultiHitIndex = i;
-                    _multiHitDragStartMouseX = evt.mousePosition.x;
-                    _multiHitDragStartNormalized = t;
-                    evt.Use();
-                }
-            }
-
-            if (_draggingMultiHitIndex >= 0 && _draggingMultiHitIndex < timesProp.arraySize)
-            {
-                if (evt.type == EventType.MouseDrag && evt.button == 0)
-                {
-                    float deltaNorm = (evt.mousePosition.x - _multiHitDragStartMouseX) / Mathf.Max(track.width, 0.001f);
-                    float next = Mathf.Clamp01(_multiHitDragStartNormalized + deltaNorm);
-                    timesProp.GetArrayElementAtIndex(_draggingMultiHitIndex).floatValue = next;
-                    evt.Use();
-                    GUI.changed = true;
-                    Repaint();
-                }
-                else if (evt.type == EventType.MouseUp && evt.button == 0)
-                {
-                    _draggingMultiHitIndex = -1;
-                    SortMultiHitTimesProperty(timesProp);
-                    evt.Use();
-                    GUI.changed = true;
-                }
-            }
-
-            float playX = track.x + playheadNormalized * track.width;
-            EditorGUI.DrawRect(new Rect(playX - 1f, track.y + 2f, 2f, track.height - 4f), new Color(0.95f, 0.92f, 0.35f, 0.95f));
-
-            if (evt.type == EventType.MouseDown && evt.button == 0 && track.Contains(evt.mousePosition) && evt.shift)
-            {
-                float n = Mathf.Clamp01((evt.mousePosition.x - track.x) / Mathf.Max(track.width, 0.001f));
-                Undo.RecordObject(_comboData, "Add combo hit time");
-                AddMultiHitAtNormalized(timesProp, n);
-                evt.Use();
-                GUI.changed = true;
-            }
-
-            GUI.Label(new Rect(track.x + 4f, track.y + 1f, 24f, 12f), "0", EditorStyles.miniLabel);
-            GUI.Label(new Rect(track.xMax - 14f, track.y + 1f, 12f, 12f), "1", EditorStyles.miniLabel);
         }
 
         private void DrawPreviewSection()
@@ -1596,6 +1921,7 @@ namespace Geis.Combat.Editor
                     SerializedProperty binding = _stateCombatBindingsProp.GetArrayElementAtIndex(i);
                     binding.FindPropertyRelative("combatActionOverride").objectReferenceValue = null;
                     binding.FindPropertyRelative("multiHitNormalizedTimes").arraySize = 0;
+                    binding.FindPropertyRelative("presentationEvents").arraySize = 0;
                 }
             }
 

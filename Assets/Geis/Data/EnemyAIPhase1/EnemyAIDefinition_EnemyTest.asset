@@ -42,16 +42,27 @@ MonoBehaviour:
     strafeDistance: 1.85
     strafeRepathInterval: 1.15
     directMoveFallbackSpeed: 3.25
-    approachRunDistanceThreshold: 3
-    approachJogSpeedMultiplier: 0.58
-    approachRunSpeedMultiplier: 1.1
+    animatorWalkSpeedReference: 1.4
+    animatorRunSpeedReference: 2.5
+    animatorSprintSpeedReference: 5.5
+    approachRunDistanceThreshold: 4
+    approachJogSpeedMultiplier: 0.75
+    approachRunSpeedMultiplier: 1.45
     approachSlowGait: 1
-    approachFastGait: 2
+    approachFastGait: 3
     strafeLocomotionSpeedMultiplier: 0.68
     strafeLocomotionGait: 1
   reactions:
     staggerDurationOnHit: 0.2
     deathDisableDelay: 0.65
+  behaviorPipeline:
+  - {fileID: 11400000, guid: 9e73754dad33beb4392f276471168075, type: 2}
+  - {fileID: 11400000, guid: c867c8e269500194db4b99f0335cc48a, type: 2}
+  - {fileID: 11400000, guid: b2e3d3a8de7bc8f439d1fcc61d84e489, type: 2}
+  - {fileID: 11400000, guid: e8b8667535b0a124983f7df986becf56, type: 2}
+  - {fileID: 11400000, guid: e9ea981e40b5a6c469fc255f41c70c64, type: 2}
+  - {fileID: 11400000, guid: 638684bc6e3f16b44a4d9e8ce80cad0a, type: 2}
+  - {fileID: 11400000, guid: 04963c99a57e4ac4f9e384f03a7bc939, type: 2}
   attacks:
   - attackId: light_swing
     action: {fileID: 11400000, guid: 8785a5ee3cedafc42bd9c58c79cde861, type: 2}
@@ -59,13 +70,14 @@ MonoBehaviour:
     comboAdvanceInput: 0
     minRange: 0
     maxRange: 2.2
-    telegraphDuration: 0.45
+    telegraphDuration: 0
+    telegraphCapWhileMoving: 0
     recoveryDuration: 0.8
     cooldownSeconds: 1.25
     facingToleranceDegrees: 35
     requiresLineOfSight: 1
     selectionWeight: 1
-    telegraphTrigger: Telegraph
+    telegraphTrigger: 
     attackTriggerOverride: Attack
     executionTimeout: 0.3
   defaultSquadId: phase1_test

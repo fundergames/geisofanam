@@ -28,8 +28,35 @@ namespace RogueDeal.Combat
 
         private void Awake()
         {
+            EnsureAudioSource();
+        }
+
+        /// <summary>Called by <see cref="Presentation.CombatPresentationRuntimeSetup"/> when it creates a source.</summary>
+        public void BindAudioSource(AudioSource source)
+        {
+            audioSource = source;
+        }
+
+        private void EnsureAudioSource()
+        {
             if (audioSource == null)
                 audioSource = GetComponent<AudioSource>();
+        }
+
+        public bool PlayAbilitySFX(AudioClip clip)
+        {
+            if (clip == null)
+                return false;
+
+            EnsureAudioSource();
+            if (audioSource != null)
+            {
+                audioSource.PlayOneShot(clip);
+                return true;
+            }
+
+            AudioSource.PlayClipAtPoint(clip, transform.position);
+            return true;
         }
 
         public void PlayHitSFX(EffectType effectType)
@@ -57,10 +84,5 @@ namespace RogueDeal.Combat
                 audioSource.PlayOneShot(dodgeSound);
         }
 
-        public void PlayAbilitySFX(AudioClip clip)
-        {
-            if (audioSource != null && clip != null)
-                audioSource.PlayOneShot(clip);
-        }
     }
 }

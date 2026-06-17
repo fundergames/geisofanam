@@ -31,17 +31,103 @@ MonoBehaviour:
   stateCombatBindings:
   - combatActionOverride: {fileID: 11400000, guid: 367213d445a93cf47a439691c12db1ef, type: 2}
     multiHitNormalizedTimes:
-    - 0.106
+    - 0.10781675
+    presentationEvents:
+    - normalizedTime: 0.08181675
+      eventName: swing_whoosh
+      sfx: {fileID: 8300000, guid: b8666099e08eb43dfb52187232635179, type: 3}
+      vfxPrefab: {fileID: 5580099684966698413, guid: d8870fd13a9433044a1ba8b396a5890c, type: 3}
+      cameraShake:
+        enabled: 0
+        amplitude: 0
+        duration: 0.1
+        frequency: 28
+      hitStop:
+        enabled: 0
+        mode: 0
+        timeScale: 0.1
+        durationRealSeconds: 0.04
+    impactCameraShake:
+      enabled: 1
+      amplitude: 0.06
+      duration: 0.1
+      frequency: 28
+    impactHitStop:
+      enabled: 1
+      mode: 1
+      timeScale: 0.1
+      durationRealSeconds: 0.04
   - combatActionOverride: {fileID: 0}
     multiHitNormalizedTimes:
     - 0.287
+    presentationEvents:
+    - normalizedTime: 0.306
+      eventName: 
+      sfx: {fileID: 8300000, guid: e87e6204db23a4718a8d9d1e5a35d8e7, type: 3}
+      vfxPrefab: {fileID: 0}
+      cameraShake:
+        enabled: 0
+        amplitude: 0
+        duration: 0
+        frequency: 0
+      hitStop:
+        enabled: 0
+        mode: 0
+        timeScale: 0
+        durationRealSeconds: 0
+    impactCameraShake:
+      enabled: 1
+      amplitude: 0.06
+      duration: 0.1
+      frequency: 28
+    impactHitStop:
+      enabled: 1
+      mode: 1
+      timeScale: 0.1
+      durationRealSeconds: 0.04
   - combatActionOverride: {fileID: 0}
     multiHitNormalizedTimes:
     - 0.37
+    presentationEvents:
+    - normalizedTime: 0.361
+      eventName: 
+      sfx: {fileID: 8300000, guid: 6e5a16da7a9694b3ea7b632b2fb34bb1, type: 3}
+      vfxPrefab: {fileID: 0}
+      cameraShake:
+        enabled: 0
+        amplitude: 0
+        duration: 0
+        frequency: 0
+      hitStop:
+        enabled: 0
+        mode: 0
+        timeScale: 0
+        durationRealSeconds: 0
+    impactCameraShake:
+      enabled: 1
+      amplitude: 0.14
+      duration: 0.16
+      frequency: 22
+    impactHitStop:
+      enabled: 1
+      mode: 2
+      timeScale: 0.08
+      durationRealSeconds: 0.07
   - combatActionOverride: {fileID: 11400000, guid: bcded832c6b551548af4435287adbced, type: 2}
     multiHitNormalizedTimes:
     - 0.158
     - 0.389
+    presentationEvents: []
+    impactCameraShake:
+      enabled: 1
+      amplitude: 0.14
+      duration: 0.16
+      frequency: 22
+    impactHitStop:
+      enabled: 1
+      mode: 2
+      timeScale: 0.08
+      durationRealSeconds: 0.07
   cancelWindowStart: 0.5
   cancelWindowEnd: 0.7
   stateTimings:

@@ -134,72 +134,73 @@ namespace RogueDeal.Combat.Presentation
         
         private void HandleSpawnVFX(string vfxName)
         {
-            if (string.IsNullOrEmpty(vfxName)) return;
-            
-            Transform spawnPoint = transform;
+            if (string.IsNullOrEmpty(vfxName))
+                return;
+
+            Vector3 pos = ResolveVfxSpawnPosition();
+            var action = combatExecutor?.GetCurrentAction();
+            if (action?.effectBindings == null)
+            {
+                Debug.LogWarning($"[CombatEventReceiver] No VFX binding found for: {vfxName}");
+                return;
+            }
+
+            bool played = false;
+            for (int i = 0; i < action.effectBindings.Length; i++)
+            {
+                EffectBinding binding = action.effectBindings[i];
+                if (binding != null && binding.eventName == vfxName && binding.vfxPrefab != null)
+                {
+                    if (vfxController != null)
+                        vfxController.PlayAbilityVFX(binding.vfxPrefab, pos);
+                    else
+                        Instantiate(binding.vfxPrefab, pos, transform.rotation);
+                    played = true;
+                }
+            }
+
+            if (!played)
+                Debug.LogWarning($"[CombatEventReceiver] No VFX binding found for: {vfxName}");
+        }
+
+        private void HandlePlaySFX(string sfxName)
+        {
+            if (string.IsNullOrEmpty(sfxName))
+                return;
+
+            var action = combatExecutor?.GetCurrentAction();
+            if (action?.effectBindings == null)
+            {
+                Debug.LogWarning($"[CombatEventReceiver] No SFX binding found for: {sfxName}");
+                return;
+            }
+
+            for (int i = 0; i < action.effectBindings.Length; i++)
+            {
+                EffectBinding binding = action.effectBindings[i];
+                if (binding != null && binding.eventName == sfxName && binding.sfx != null)
+                {
+                    if (sfxController != null)
+                        sfxController.PlayAbilitySFX(binding.sfx);
+                    else
+                        AudioSource.PlayClipAtPoint(binding.sfx, transform.position);
+                    return;
+                }
+            }
+
+            Debug.LogWarning($"[CombatEventReceiver] No SFX binding found for: {sfxName}");
+        }
+
+        private Vector3 ResolveVfxSpawnPosition()
+        {
             if (combatExecutor != null)
             {
                 var entity = combatExecutor.GetComponent<CombatEntity>();
                 if (entity != null && entity.vfxSpawnPoint != null)
-                {
-                    spawnPoint = entity.vfxSpawnPoint;
-                }
+                    return entity.vfxSpawnPoint.position;
             }
-            
-            var action = combatExecutor?.GetCurrentAction();
-            if (action?.effectBindings != null)
-            {
-                foreach (var binding in action.effectBindings)
-                {
-                    if (binding.eventName == vfxName && binding.vfxPrefab != null)
-                    {
-                        // Use existing VFX controller method if available
-                        if (vfxController != null)
-                        {
-                            vfxController.PlayAbilityVFX(binding.vfxPrefab, spawnPoint.position);
-                        }
-                        else
-                        {
-                            // Fallback: instantiate directly
-                            Instantiate(binding.vfxPrefab, spawnPoint.position, spawnPoint.rotation);
-                        }
-                        return;
-                    }
-                }
-            }
-            
-            // If no binding found, try to find by name (optional - would need a lookup system)
-            Debug.LogWarning($"[CombatEventReceiver] No VFX binding found for: {vfxName}");
-        }
-        
-        private void HandlePlaySFX(string sfxName)
-        {
-            if (string.IsNullOrEmpty(sfxName)) return;
-            
-            var action = combatExecutor?.GetCurrentAction();
-            if (action?.effectBindings != null)
-            {
-                foreach (var binding in action.effectBindings)
-                {
-                    if (binding.eventName == sfxName && binding.sfx != null)
-                    {
-                        // Use existing SFX controller method if available
-                        if (sfxController != null)
-                        {
-                            sfxController.PlayAbilitySFX(binding.sfx);
-                        }
-                        else
-                        {
-                            // Fallback: play at point
-                            AudioSource.PlayClipAtPoint(binding.sfx, transform.position);
-                        }
-                        return;
-                    }
-                }
-            }
-            
-            // If no binding found, try to find by name (optional - would need a lookup system)
-            Debug.LogWarning($"[CombatEventReceiver] No SFX binding found for: {sfxName}");
+
+            return transform.position;
         }
         
         private void HandleFireProjectile()
