@@ -75,7 +75,7 @@ namespace Geis.SoulRealm
         [Tooltip("Optional URP Lit (or other) material for the ghost copy. If set, overrides dissolve shader below.")]
         [SerializeField] private Material spectralMaterial;
 
-        [Tooltip("Noise dissolve material (e.g. Dissolve_Metallic_DoubleSide). Used when Spectral Material is empty; copies each mesh slot from the body materials.")]
+        [Tooltip("Spectral material template (e.g. Geis/Materials/SoulRealmTaken_Default for Taken-style smoke, or Dissolve_Metallic_DoubleSide). Used when Spectral Material is empty; copies each mesh slot from the body materials.")]
         [SerializeField] private Material spectralDissolveMaterialTemplate;
 
         [Tooltip("Seconds for the ghost to dissolve in after entering soul realm (not used during exit hold). Clamped to at least 0.2s so one frame cannot snap the effect.")]

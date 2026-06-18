@@ -1471,7 +1471,7 @@ MonoBehaviour:
   exitHoldVfx: {fileID: 0}
   spectralCharacterVisualRoot: {fileID: 666165706435539312}
   spectralMaterial: {fileID: 0}
-  spectralDissolveMaterialTemplate: {fileID: 0}
+  spectralDissolveMaterialTemplate: {fileID: 2100000, guid: d4e8b1c7a9f2035647c2e8d1b0a6f3e2, type: 2}
   spectralDissolveEnterDuration: 0.45
   spectralDissolveInvertForShader: 0
   useSpectralDissolveShader: 1

@@ -23,6 +23,7 @@ namespace Geis.SoulRealm
     /// </summary>
     public static class SoulSpectralGhostVisual
     {
+        public const string TakenShaderName = "Geis/SoulRealm/Taken";
         /// <summary>
         /// Finds a reasonable mesh root: first SkinnedMeshRenderer's transform, else first MeshRenderer's transform.
         /// </summary>
@@ -156,7 +157,7 @@ namespace Geis.SoulRealm
                     var m = new Material(dissolveTemplate);
                     if (orig[i] != null)
                         m.CopyPropertiesFromMaterial(orig[i]);
-                    ApplySpectralTintToDissolveMaterial(m);
+                    ApplySpectralTintToMaterial(m);
                     m.SetFloat("_Dissolve", SoulSpectralDissolveDriver.ToShaderDissolve(1f, invertDissolveForShader));
                     mats[i] = m;
                 }
@@ -171,9 +172,29 @@ namespace Geis.SoulRealm
                 ApplyToRenderer(r);
         }
 
-        private static void ApplySpectralTintToDissolveMaterial(Material m)
+        private static bool UsesTakenShader(Material m)
         {
-            if (m == null) return;
+            return m != null && m.shader != null && m.shader.name == TakenShaderName;
+        }
+
+        private static void ApplySpectralTintToMaterial(Material m)
+        {
+            if (m == null)
+                return;
+
+            if (UsesTakenShader(m))
+            {
+                if (m.HasProperty("_DarkColor"))
+                    m.SetColor("_DarkColor", new Color(0.02f, 0.05f, 0.07f, 0.9f));
+                if (m.HasProperty("_VeinColor"))
+                    m.SetColor("_VeinColor", new Color(0.7f, 1f, 0.9f, 1f));
+                if (m.HasProperty("_FresnelColor"))
+                    m.SetColor("_FresnelColor", new Color(0.3f, 0.92f, 0.78f, 1f));
+                if (m.HasProperty("_EdgeColor"))
+                    m.SetColor("_EdgeColor", new Color(0.18f, 0.95f, 1f, 1.4f));
+                return;
+            }
+
             var c = new Color(0.35f, 0.95f, 0.6f, 0.48f);
             if (m.HasProperty("_BaseColor"))
                 m.SetColor("_BaseColor", c);
