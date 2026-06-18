@@ -185,3 +185,35 @@ Discord coordination is supported via `Tools/discord_agent_bot`. Discord is sign
 - **Feature registry**: `Assets/Docs/FeatureRegistry.json`
 - **Role definitions**: `Assets/Docs/Agents/*.md` (Design, Architect, Modeler3D, Rigger, QA, Product, Validator_*)
 - **Role refinements**: `Assets/Docs/Agents/Refinements/*.md` (learnings and improvements per role)
+
+## Cursor Cloud specific instructions
+
+### Environment overview
+
+This is a **Unity 6** game project (version 6000.3.9f1). The primary development tool is the Unity Editor, which **cannot run in the Cloud Agent VM** (it requires a GUI, the specific Unity version, and a Unity license). The cloud environment is suitable for:
+
+- **Python tooling**: `Tools/meshy_generate.py` (Meshy.ai 3D model generation) and `Tools/discord_agent_bot/` (Discord coordination bot). Both are fully functional.
+- **C# code editing and review**: All game code is under `Assets/Geis/Scripts/` (~385 files). Code can be read and edited but not compiled or tested without Unity Editor.
+- **Documentation and feature file work**: The agent orchestration pipeline (feature files, design/architect/modeler roles) works entirely via markdown files.
+
+### What works in Cloud Agent
+
+| Capability | Status | Notes |
+|---|---|---|
+| Python tooling (Meshy, Discord bot) | Working | `pip install -r Tools/requirements.txt -r Tools/discord_agent_bot/requirements.txt` |
+| C# code editing | Working | Edit files, but cannot compile/test outside Unity |
+| Feature file orchestration | Working | Read/write markdown feature files per AGENTS.md workflow |
+| Unity Editor (compile, test, play) | Not available | Requires local Unity 6000.3.9f1 installation |
+| Unity Test Runner (NUnit tests) | Not available | Tests in `Assets/Geis/Tests/` require Unity Editor |
+| C# linting | Not configured | No linting tools (StyleCop, Roslyn analyzers) are set up in the repo |
+
+### Running Python tools
+
+- **Meshy.ai generator**: `MESHY_API_KEY=<key> python3 Tools/meshy_generate.py "<prompt>" -o Assets/_Generated/Staging/<name>.glb` (use test key `msy_dummy_api_key_for_test_mode_12345678` for dry runs)
+- **Discord bot**: Requires `DISCORD_BOT_TOKEN` env var. Run via `python3 -m discord_agent_bot.main` from `Tools/` directory.
+
+### Key caveats
+
+- No `.editorconfig`, StyleCop, or Roslyn analyzers exist in the repo — there is no C# linting to run.
+- Unity NUnit tests (`Assets/Geis/Tests/`, `Packages/com.funder.core/Tests/`) can only be executed inside Unity Editor's Test Runner.
+- The project has no CI/CD pipelines, no Docker setup, and no build scripts — all build/test operations go through Unity Editor.
