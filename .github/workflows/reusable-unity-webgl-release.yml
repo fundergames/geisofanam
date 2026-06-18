@@ -1,0 +1,283 @@
+name: Reusable Unity WebGL Build and Release
+
+on:
+  workflow_call:
+    inputs:
+      unity_project_path:
+        description: Path to Unity project root
+        required: false
+        type: string
+        default: .
+      unity_version_file:
+        description: Path to ProjectVersion file (relative to unity_project_path)
+        required: false
+        type: string
+        default: ProjectSettings/ProjectVersion.txt
+      unity_build_name:
+        description: Unity WebGL build name
+        required: false
+        type: string
+        default: WebGLBuild
+      unity_target_platform:
+        description: Unity build target platform
+        required: false
+        type: string
+        default: WebGL
+      build_output_path:
+        description: Build output path (relative to repo root)
+        required: false
+        type: string
+        default: build/WebGL
+      build_artifact_name:
+        description: GitHub artifact name for the build output
+        required: false
+        type: string
+        default: webgl-build
+      aws_region:
+        description: AWS region for deployment
+        required: false
+        type: string
+        default: us-east-1
+      aws_s3_bucket:
+        description: S3 bucket for WebGL artifacts and release manifests
+        required: true
+        type: string
+      aws_s3_prefix:
+        description: Optional S3 prefix for all artifacts/manifests
+        required: false
+        type: string
+        default: ""
+      aws_s3_keep_builds:
+        description: Number of immutable build folders to retain
+        required: false
+        type: string
+        default: "10"
+      aws_release_environments:
+        description: Comma-separated envs protected during prune
+        required: false
+        type: string
+        default: dev,staging,production
+      aws_role_to_assume:
+        description: AWS IAM role ARN for GitHub OIDC auth
+        required: false
+        type: string
+        default: ""
+      release_copy_to_channel:
+        description: Copy promoted builds into channels/<env>/latest
+        required: false
+        type: string
+        default: "false"
+      keep_builds_override:
+        description: Optional one-run override for keep-builds count
+        required: false
+        type: string
+        default: ""
+      deploy_prefix_override:
+        description: Optional one-run override for S3 prefix
+        required: false
+        type: string
+        default: ""
+      target_environment:
+        description: Explicit promotion environment (none/dev/staging/production)
+        required: false
+        type: string
+        default: none
+      copy_to_channel_override:
+        description: Optional one-run override for channel copy behavior
+        required: false
+        type: string
+        default: ""
+      dev_branch_patterns:
+        description: Comma-separated branch refs to auto-promote to dev
+        required: false
+        type: string
+        default: refs/heads/dev,refs/heads/develop
+      staging_branch_patterns:
+        description: Comma-separated branch refs to auto-promote to staging
+        required: false
+        type: string
+        default: refs/heads/staging
+    secrets:
+      UNITY_EMAIL:
+        required: false
+      UNITY_PASSWORD:
+        required: false
+      UNITY_SERIAL:
+        required: false
+      UNITY_LICENSE:
+        required: false
+      AWS_ACCESS_KEY_ID:
+        required: false
+      AWS_SECRET_ACCESS_KEY:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: unity-webgl-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-webgl:
+    name: Build Unity WebGL
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Detect Unity editor version
+        id: unity_version
+        shell: bash
+        run: |
+          version_file="${{ inputs.unity_project_path }}/${{ inputs.unity_version_file }}"
+          version="$(awk '/^m_EditorVersion:/{print $2}' "$version_file")"
+          if [ -z "$version" ]; then
+            echo "::error::Unable to read Unity version from ${version_file}"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+
+      - name: Build Unity player
+        uses: game-ci/unity-builder@v4
+        env:
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+          UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+        with:
+          projectPath: ${{ inputs.unity_project_path }}
+          targetPlatform: ${{ inputs.unity_target_platform }}
+          unityVersion: ${{ steps.unity_version.outputs.version }}
+          buildName: ${{ inputs.unity_build_name }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.build_artifact_name }}
+          path: ${{ inputs.build_output_path }}
+          if-no-files-found: error
+
+  deploy-to-s3:
+    name: Publish build and optionally promote
+    runs-on: ubuntu-latest
+    needs: build-webgl
+    if: ${{ needs.build-webgl.result == 'success' }}
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: ${{ inputs.aws_region }}
+      AWS_S3_BUCKET: ${{ inputs.aws_s3_bucket }}
+      AWS_S3_PREFIX: ${{ inputs.aws_s3_prefix }}
+      AWS_S3_KEEP_BUILDS: ${{ inputs.aws_s3_keep_builds }}
+      AWS_RELEASE_ENVIRONMENTS: ${{ inputs.aws_release_environments }}
+      RELEASE_COPY_TO_CHANNEL: ${{ inputs.release_copy_to_channel }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.build_artifact_name }}
+          path: ${{ inputs.build_output_path }}
+
+      - name: Configure AWS credentials (OIDC role)
+        if: ${{ inputs.aws_role_to_assume != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ inputs.aws_role_to_assume }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (access keys)
+        if: ${{ inputs.aws_role_to_assume == '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate deployment configuration
+        shell: bash
+        run: |
+          if [ -z "$AWS_S3_BUCKET" ]; then
+            echo "::error::aws_s3_bucket input is required."
+            exit 1
+          fi
+          aws sts get-caller-identity >/dev/null
+
+      - name: Compute immutable build ID
+        id: build_id
+        shell: bash
+        run: |
+          BUILD_ID="$(date -u +%Y%m%dT%H%M%SZ)-${GITHUB_RUN_NUMBER}-${GITHUB_SHA::7}"
+          echo "build_id=$BUILD_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Publish immutable build and prune old versions
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -n "${{ inputs.keep_builds_override }}" ]; then
+            export AWS_S3_KEEP_BUILDS="${{ inputs.keep_builds_override }}"
+          fi
+          if [ -n "${{ inputs.deploy_prefix_override }}" ]; then
+            export DEPLOY_PREFIX_OVERRIDE="${{ inputs.deploy_prefix_override }}"
+          fi
+
+          export BUILD_ID="${{ steps.build_id.outputs.build_id }}"
+          export SOURCE_DIR="${{ inputs.build_output_path }}"
+          bash .github/scripts/s3-release-manager.sh publish
+
+      - name: Resolve promotion target
+        id: promote_target
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          explicit_target="${{ inputs.target_environment }}"
+          if [ -n "$explicit_target" ] && [ "$explicit_target" != "none" ]; then
+            target="$explicit_target"
+          else
+            target="none"
+            IFS=',' read -r -a dev_refs <<< "${{ inputs.dev_branch_patterns }}"
+            for ref in "${dev_refs[@]}"; do
+              ref="$(echo "$ref" | xargs)"
+              [ -n "$ref" ] || continue
+              if [ "$GITHUB_REF" = "$ref" ]; then
+                target="dev"
+                break
+              fi
+            done
+
+            if [ "$target" = "none" ]; then
+              IFS=',' read -r -a staging_refs <<< "${{ inputs.staging_branch_patterns }}"
+              for ref in "${staging_refs[@]}"; do
+                ref="$(echo "$ref" | xargs)"
+                [ -n "$ref" ] || continue
+                if [ "$GITHUB_REF" = "$ref" ]; then
+                  target="staging"
+                  break
+                fi
+              done
+            fi
+          fi
+
+          echo "target=$target" >> "$GITHUB_OUTPUT"
+
+      - name: Promote build to release environment
+        if: ${{ steps.promote_target.outputs.target != 'none' }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          if [ -n "${{ inputs.copy_to_channel_override }}" ]; then
+            export RELEASE_COPY_TO_CHANNEL="${{ inputs.copy_to_channel_override }}"
+          fi
+
+          export TARGET_ENVIRONMENT="${{ steps.promote_target.outputs.target }}"
+          export BUILD_ID="${{ steps.build_id.outputs.build_id }}"
+          bash .github/scripts/s3-release-manager.sh promote

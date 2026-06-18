@@ -2,6 +2,135 @@
 
 Unity project consuming **Funder Core** via the Package Manager.
 
+## CI/CD: Modular WebGL release management (dev/staging/production)
+
+This repository now includes modular GitHub Actions workflows and a reusable script:
+
+- `.github/workflows/unity-webgl-s3.yml`
+- `.github/workflows/reusable-unity-webgl-release.yml`
+- `.github/workflows/promote-webgl-release.yml`
+- `.github/workflows/rollback-webgl-release.yml`
+- `.github/scripts/s3-release-manager.sh`
+
+### Release model
+
+- Immutable build artifacts are published to:
+  - `builds/<build-id>/`
+- Environment pointers are managed via manifests:
+  - `releases/dev/current.json`
+  - `releases/staging/current.json`
+  - `releases/production/current.json`
+- Previous pointers are retained:
+  - `releases/<env>/previous.json`
+- Promotion history is retained:
+  - `releases/<env>/history/*.json`
+
+Optional channel copy (for simple hosting/CDN setups):
+
+- `channels/<env>/latest/` (enabled only when `AWS_RELEASE_COPY_TO_CHANNEL=true`)
+
+### Workflows
+
+1. **Build and publish** (`unity-webgl-s3.yml`)
+   - Builds Unity WebGL
+   - Publishes immutable build to `builds/<build-id>/`
+   - Prunes old builds while protecting currently referenced releases
+2. **Promote** (`promote-webgl-release.yml`)
+   - Promotes a specific `build_id` to `dev`, `staging`, or `production`
+   - Updates `current.json`, shifts prior `current` to `previous.json`, appends history
+3. **Rollback** (`rollback-webgl-release.yml`)
+   - Rolls back selected environment to prior history entry
+   - Updates `current.json`, keeps rollback in history trail
+
+### Reusable workflow entrypoint
+
+- `reusable-unity-webgl-release.yml` exposes this pipeline via `workflow_call` so other repositories can reuse it.
+- `unity-webgl-s3.yml` is now just a thin caller with this repo's defaults.
+
+Minimal example for another repo (after copying `reusable-unity-webgl-release.yml` and `s3-release-manager.sh` into that repo):
+
+```yaml
+name: Build and Release WebGL
+
+on:
+  push:
+    branches: [main, dev, staging]
+  workflow_dispatch:
+
+jobs:
+  webgl-release:
+    uses: ./.github/workflows/reusable-unity-webgl-release.yml
+    with:
+      unity_project_path: .
+      unity_build_name: MyGameWebGL
+      aws_region: us-east-1
+      aws_s3_bucket: your-bucket
+      aws_s3_prefix: your-game/webgl
+      aws_s3_keep_builds: "8"
+    secrets:
+      UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+      UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+      UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+      UNITY_SERIAL: ${{ secrets.UNITY_SERIAL }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+```
+
+### Suggested flow
+
+- Developers publish builds from feature branches/manual runs, then promote to `dev`
+- QA promotes validated build from `dev` to `staging`
+- Release manager promotes approved staging build to `production`
+- If production issue appears, trigger rollback workflow for `production`
+
+### Required GitHub repository configuration
+
+Set these repository **Variables**:
+
+- `AWS_S3_BUCKET` (required): target bucket name
+- `AWS_REGION` (optional, default `us-east-1`)
+- `AWS_S3_PREFIX` (optional): prefix/folder under bucket (for example `geis/webgl`)
+- `AWS_S3_KEEP_BUILDS` (optional, default `10`): how many historical builds to retain
+- `AWS_ROLE_TO_ASSUME` (optional but recommended): IAM role ARN for GitHub OIDC
+- `AWS_RELEASE_ENVIRONMENTS` (optional, default `dev,staging,production`): environments to protect during prune
+- `AWS_RELEASE_COPY_TO_CHANNEL` (optional, default `false`): copy promoted build to `channels/<env>/latest/`
+
+Set either:
+
+- **Recommended**: OIDC role via `AWS_ROLE_TO_ASSUME`, or
+- **Fallback secrets**:
+  - `AWS_ACCESS_KEY_ID`
+  - `AWS_SECRET_ACCESS_KEY`
+
+Unity build credentials (required by game-ci):
+
+- `UNITY_LICENSE` (preferred) or license credentials used by your plan
+- `UNITY_EMAIL` / `UNITY_PASSWORD` / `UNITY_SERIAL` (if applicable)
+
+### Cost control notes
+
+- Keep `AWS_S3_KEEP_BUILDS` low (for example `3` to `10`) to reduce storage.
+- Build prune automatically deletes old `builds/` folders while preserving builds referenced by release manifests.
+- Optional: also add an S3 lifecycle rule to expire very old objects as a safety net.
+
+### Frontend integration contract
+
+Your frontend (Railway or any other host) should read a release manifest, not hardcode `latest`:
+
+- Dev: `https://<cdn>/<prefix>/releases/dev/current.json`
+- Staging: `https://<cdn>/<prefix>/releases/staging/current.json`
+- Prod: `https://<cdn>/<prefix>/releases/production/current.json`
+
+Then load the game from `buildPrefix` in the manifest. This keeps frontend and game deployments decoupled and makes promotion/rollback instant without frontend redeploys.
+
+### Reuse in another repo
+
+This setup is product-agnostic:
+
+- Move `.github/scripts/s3-release-manager.sh` and the workflows to another repo
+- Change Unity build details only (project specifics and credentials)
+- Keep the same S3 release folder contract and promote/rollback workflows
+
 ## Documentation quick start (agents and contributors)
 
 For low-token, high-signal project context, start here:

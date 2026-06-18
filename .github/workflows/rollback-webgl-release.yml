@@ -1,0 +1,74 @@
+name: Rollback WebGL Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_environment:
+        description: Environment to rollback (dev, staging, production)
+        required: true
+        type: choice
+        options:
+          - dev
+          - staging
+          - production
+      deploy_prefix:
+        description: Optional S3 key prefix override
+        required: false
+        type: string
+      copy_to_channel:
+        description: Sync channel latest folder after rollback
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: unity-webgl-rollback-${{ github.event.inputs.target_environment }}
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    name: Rollback release
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_S3_BUCKET: ${{ vars.AWS_S3_BUCKET }}
+      AWS_S3_PREFIX: ${{ vars.AWS_S3_PREFIX }}
+      DEPLOY_PREFIX_OVERRIDE: ${{ github.event.inputs.deploy_prefix }}
+      RELEASE_COPY_TO_CHANNEL: ${{ github.event.inputs.copy_to_channel }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC role)
+        if: ${{ vars.AWS_ROLE_TO_ASSUME != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Configure AWS credentials (access keys)
+        if: ${{ vars.AWS_ROLE_TO_ASSUME == '' && secrets.AWS_ACCESS_KEY_ID != '' && secrets.AWS_SECRET_ACCESS_KEY != '' }}
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Validate rollback configuration
+        shell: bash
+        run: |
+          if [ -z "$AWS_S3_BUCKET" ]; then
+            echo "::error::Repository variable AWS_S3_BUCKET is required."
+            exit 1
+          fi
+          aws sts get-caller-identity >/dev/null
+
+      - name: Rollback environment to previous release
+        shell: bash
+        run: |
+          chmod +x .github/scripts/s3-release-manager.sh
+          .github/scripts/s3-release-manager.sh rollback "${{ github.event.inputs.target_environment }}"

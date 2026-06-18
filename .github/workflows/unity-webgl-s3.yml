@@ -1,0 +1,64 @@
+name: Unity WebGL Build and Release
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - develop
+      - staging
+  workflow_dispatch:
+    inputs:
+      keep_builds:
+        description: Number of build folders to keep in S3
+        required: false
+        type: string
+      deploy_prefix:
+        description: Optional S3 key prefix override
+        required: false
+        type: string
+      target_environment:
+        description: Promote build to environment after publish
+        required: false
+        type: choice
+        default: none
+        options:
+          - none
+          - dev
+          - staging
+          - production
+      copy_to_channel:
+        description: Copy promoted build into channels/<env>/latest
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  release:
+    name: Build, publish, and optional promote
+    uses: ./.github/workflows/reusable-unity-webgl-release.yml
+    with:
+      unity_project_path: .
+      unity_version_file: ProjectSettings/ProjectVersion.txt
+      unity_target_platform: WebGL
+      unity_build_name: ${{ vars.UNITY_WEBGL_BUILD_NAME || 'WebGLBuild' }}
+      build_output_path: build/WebGL
+      build_artifact_name: webgl-build
+      aws_region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      aws_s3_bucket: ${{ vars.AWS_S3_BUCKET }}
+      aws_s3_prefix: ${{ vars.AWS_S3_PREFIX || '' }}
+      aws_s3_keep_builds: ${{ vars.AWS_S3_KEEP_BUILDS || '10' }}
+      aws_release_environments: ${{ vars.AWS_RELEASE_ENVIRONMENTS || 'dev,staging,production' }}
+      aws_role_to_assume: ${{ vars.AWS_ROLE_TO_ASSUME || '' }}
+      release_copy_to_channel: ${{ vars.AWS_RELEASE_COPY_TO_CHANNEL || 'false' }}
+      keep_builds_override: ${{ github.event.inputs.keep_builds || '' }}
+      deploy_prefix_override: ${{ github.event.inputs.deploy_prefix || '' }}
+      target_environment: ${{ github.event.inputs.target_environment || 'none' }}
+      copy_to_channel_override: ${{ github.event.inputs.copy_to_channel || '' }}
+      dev_branch_patterns: refs/heads/dev,refs/heads/develop
+      staging_branch_patterns: refs/heads/staging
+    secrets: inherit
