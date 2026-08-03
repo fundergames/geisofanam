@@ -187,8 +187,13 @@ def print_session_table(df: pd.DataFrame):
 # Feature selection
 # ---------------------------------------------------------------------------
 
-def select_features(df: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
-    """Return scene census columns with non-zero variance and no NaNs."""
+def select_features(df: pd.DataFrame, corr_threshold: float = 0.90) -> tuple[list[str], pd.DataFrame]:
+    """
+    Return scene census columns suitable for Ridge regression:
+    - no NaNs
+    - non-zero variance
+    - no pair with Pearson |r| > corr_threshold (prevents near-singular matrix / matmul warning)
+    """
     candidates = [c for c in SCENE_CENSUS_FEATURES if c in df.columns]
 
     # Drop columns with any NaN
@@ -197,14 +202,23 @@ def select_features(df: pd.DataFrame) -> tuple[list[str], pd.DataFrame]:
     # Drop zero-variance columns (same value in every session = no signal)
     varied = [c for c in complete if df[c].nunique() > 1]
 
-    dropped = set(candidates) - set(varied)
-    if dropped:
-        print(f"Dropped {len(dropped)} constant/incomplete feature(s): {sorted(dropped)}")
+    dropped_basic = set(candidates) - set(varied)
+    if dropped_basic:
+        print(f"Dropped {len(dropped_basic)} constant/incomplete feature(s): {sorted(dropped_basic)}")
 
-    keep_cols = varied + [TARGET_COL]
+    # Drop highly correlated features — keeps the first of each correlated pair.
+    # e.g. activeGameObjects ≈ activeRenderers ≈ meshRenderers at small N.
+    corr_matrix = df[varied].corr().abs()
+    upper = corr_matrix.where(np.triu(np.ones(corr_matrix.shape, dtype=bool), k=1))
+    drop_collinear = [c for c in upper.columns if (upper[c] > corr_threshold).any()]
+    kept = [c for c in varied if c not in drop_collinear]
+    if drop_collinear:
+        print(f"Dropped {len(drop_collinear)} collinear feature(s) (|r|>{corr_threshold}): {drop_collinear}")
+
+    keep_cols = kept + [TARGET_COL]
     if "sceneName" in df.columns:
         keep_cols.append("sceneName")
-    return varied, df[keep_cols].dropna()
+    return kept, df[keep_cols].dropna()
 
 # ---------------------------------------------------------------------------
 # Training
